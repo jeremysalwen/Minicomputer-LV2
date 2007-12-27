@@ -17,11 +17,22 @@ Minicomputer is free open source software.
 
 Its split into the engine and an editor.
 
-Dependancys includes:
+Dependancies includes:
 
 - Jack
 - FLTK
 - Alsaseq
 
+and 
+
+- Scons for building
+
 Take care, it can be harsh! Use it on your own risk, you have been warnend!
+
+For building Minicomputer just type
+
+scons
+
+for building it. Yet missed is an installation routine so put the to files anywhere you need them
+
 
