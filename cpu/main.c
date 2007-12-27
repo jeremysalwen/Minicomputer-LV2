@@ -276,7 +276,7 @@ unsigned int index;
 		
 for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice)
 {		
-	float *buffer = jack_port_get_buffer(port[currentvoice], nframes);
+	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 		buffer[index]=0.0f;
 
 // calc the modulators
@@ -631,6 +631,7 @@ int main() {
 	port[5] = jack_port_register(client, "output6", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	
 	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 	/* jack is callback based. That means we register 
 	 * a callback function (see process() above)
