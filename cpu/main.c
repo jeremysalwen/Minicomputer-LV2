@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <jack/jack.h>
-#include <jack/midiport.h>
+//#include <jack/midiport.h> // later we use the jack midi ports to, but not this time
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -74,7 +74,7 @@ jack_client_t *client;
 #define tabM 4095
 #define tabF 4096.f
 
-jack_port_t   *port[_MULTITEMP];
+jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
 float phase[_MULTITEMP][3];//=0.f;
 float parameter[_MULTITEMP][_PARACOUNT];
 float modulator[_MULTITEMP][_MODCOUNT];
@@ -399,6 +399,7 @@ float PI=3.145;
 float increment = (float)(PI*2) / (float)TableSize;
 float x = 0.0f;
 float tri = -0.9f;
+// calculate wavetables
 for (i=0; i<TableSize; i++)
 {
 			table[0][i] = (float)((float)sin(x+(
@@ -632,6 +633,10 @@ int main() {
 	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	
+	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 	/* jack is callback based. That means we register 
 	 * a callback function (see process() above)

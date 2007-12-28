@@ -25,9 +25,6 @@ if not conf.CheckLibWithHeader('lo', 'lo/lo.h','c'):
 if not conf.CheckLibWithHeader('asound', 'alsa/asoundlib.h','c'):
 	print 'Did not find alsa, exiting!'
 	Exit(1)
-if not conf.CheckLibWithHeader('fltk', 'FL/Fl.H','c++'):
-	print 'Did not find FLTK for the gui, exiting!'
-	Exit(1)
 env = conf.Finish()
 
 print"-                    checking dependencies for the editor:"
