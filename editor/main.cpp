@@ -48,12 +48,35 @@ o->callback((Fl_Callback*)callback);
 }
   return w;
 }*/
+/*
+void reloadSoundNames()
+{
+  int i;
+  for (i = 0;i<8;++i)
+  {
+  	Schaltbrett.soundchoice[i]->clear();
+  } 
+  
+  Speicher.load();
+  
+  for (i=0;i<512;i++) 
+  {
+  	Schaltbrett.soundchoice[0]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[1]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[2]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[3]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[4]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[5]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[6]->add(Speicher.getName(0,i).c_str());
+  	Schaltbrett.soundchoice[7]->add(Speicher.getName(0,i).c_str());
+  }
+}*/
 int main(int argc, char **argv)
 {
    t = lo_address_new(NULL, "7770");
   Fl_Double_Window* w =Schaltbrett.make_window();
   //
-  for (int i = 0;i<2;i++)
+  for (int i = 0;i<8;++i)
   {
   	printf("bei %i\n",i);
   	fflush(stdout);
@@ -78,7 +101,7 @@ int main(int argc, char **argv)
   	Schaltbrett.multichoice->add(Speicher.multis[i].name);
   }
   printf("weiter...\n");
-w->show(argc, argv);
+  w->show(argc, argv);
     /* an address to send messages to. sometimes it is better to let the server
      * pick a port number for you by passing NULL as the last argument */
     

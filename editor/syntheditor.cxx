@@ -28,6 +28,7 @@
 // string multiname[128];
  bool transmit;
  Fl_Choice* auswahl[8][17];
+ Fl_Input_Choice* schoice[8];
 //Fl_Chart * EG[7];
 static void choicecallback(Fl_Widget* o, void*)
 {
@@ -93,11 +94,12 @@ static void tabcallback(Fl_Widget* o, void* )
 	//printf("sound %i value  xtab %i\n",(int)((Fl_Group*)o)->argument(),*g);//currentsound);
 	//fflush(stdout);
 	Fl_Widget* e =((Fl_Tabs*)o)->value();
-	for (int i=0; i<8;i++)
+	for (int i=0; i<8;++i)
 	{
-		if (e==tab[i]){ currentsound=i;
-	break;
-	}
+		if (e==tab[i]){ 
+			currentsound=i;
+			break;
+		}
 	}	
 	//else currentsound=1;
 	printf("sound %i\n", currentsound );
@@ -522,8 +524,28 @@ static void storesound(Fl_Widget* o, void* e)
 	fflush(stdout);
 	Speicher.save();
 	
-	// ok, now we have saved but we sho
+	// ok, now we have saved but we should update the userinterface
+  	for (i = 0;i<8;++i)
+  	{
+  		schoice[i]->clear();
+  	} 
+  
+  	for (i=0;i<512;i++) 
+  	{
+  		schoice[0]->add(Speicher.getName(0,i).c_str());
+	  	schoice[1]->add(Speicher.getName(0,i).c_str());
+	  	schoice[2]->add(Speicher.getName(0,i).c_str());
+	  	schoice[3]->add(Speicher.getName(0,i).c_str());
+	  	schoice[4]->add(Speicher.getName(0,i).c_str());
+	  	schoice[5]->add(Speicher.getName(0,i).c_str());
+  		schoice[6]->add(Speicher.getName(0,i).c_str());
+  		schoice[7]->add(Speicher.getName(0,i).c_str());
+  	}
+	
 }
+/**
+ *
+ */
 static void recall(unsigned int preset)
 {
 	int i,j=-1024;
@@ -9944,7 +9966,7 @@ Fl_Double_Window* UserInterface::make_window() {
         o->menubutton()->textsize(8);
         o->align(FL_ALIGN_TOP_LEFT);
         soundchoice[i] = o;
-       
+        schoice[i] = o; 
       }
       { Fl_Button* o = new Fl_Button(606, 473, 55, 19, "store sound");
         o->tooltip("store this sound after current entry");
