@@ -465,7 +465,6 @@ table[6][6] = 0.6f;
 table[6][7] = 0.9f;
 table[6][8] = 0.6f;
 table[6][9] = 0.2f;
-sampleRate = 48000.0f;    //  %Sample rate
 /*
 float pi = 3.145f;
 float oscfreq = 1000.0; //%Oscillator frequency in Hz
@@ -481,7 +480,8 @@ d2 = 0;*/
 // miditable for notes to frequency
 for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 
-}
+} // end of initialization
+
 void *midiprocessor(void *handle) {
 	struct sched_param param;
 	int policy;
@@ -645,6 +645,12 @@ int main() {
 	 * which will then get called by jack once per process cycle */
 	jack_set_process_callback(client, process, 0);
 	bufsize = jack_get_buffer_size(client);
+
+	// handling the sampling frequency
+	sampleRate = (float) jack_get_sample_rate (client); 
+	tabX = 4096.f / sampleRate;
+	srate = 3.145f/ sampleRate;
+
 	/* tell jack that we are ready to do our thing */
 	jack_activate(client);
 	
