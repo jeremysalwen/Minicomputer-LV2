@@ -21,6 +21,8 @@
 #include <string.h>
 #include <lo/lo.h>
 lo_address t;
+// some common definitions
+#include "../common.h"
 
 #include "Memory.h"
 Memory Speicher;
@@ -73,7 +75,7 @@ void reloadSoundNames()
 }*/
 int main(int argc, char **argv)
 {
-   t = lo_address_new(NULL, "7770");
+   t = lo_address_new(NULL, _OSCPORT);
   Fl_Double_Window* w =Schaltbrett.make_window();
   //
   for (int i = 0;i<8;++i)

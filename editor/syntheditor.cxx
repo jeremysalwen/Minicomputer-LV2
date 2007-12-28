@@ -32,7 +32,7 @@
 //Fl_Chart * EG[7];
 static void choicecallback(Fl_Widget* o, void*)
 {
-	if (transmit) lo_send(t, "/Akkord/choice", "iii",currentsound,((Fl_Choice*)o)->argument(),((Fl_Choice*)o)->value());
+	if (transmit) lo_send(t, "/Minicomputer/choice", "iii",currentsound,((Fl_Choice*)o)->argument(),((Fl_Choice*)o)->value());
 }
 
 /*
@@ -124,21 +124,21 @@ if (strcmp(o->label(),"f3")==0)
 	lo_send(t, "/f3", "f",((Fl_Valuator*)o)->value());
 }*/
 /*if (((Fl_Valuator*)o)->argument()!=10)
-	lo_send(t, "/Akkord", "if",((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
+	lo_send(t, "/Minicomputer", "if",((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 else if (((Fl_Valuator*)o)->value()!=0)
-    lo_send(t, "/Akkord", "if",10,1000.f);
+    lo_send(t, "/Minicomputer", "if",10,1000.f);
     else
-    lo_send(t, "/Akkord", "if",10,0.f);
+    lo_send(t, "/Minicomputer", "if",10,0.f);
 */
 switch (((Fl_Valuator*)o)->argument())
 {
 	case 256:
 	{
-		lo_send(t, "/Akkord", "iif",currentsound,0,0);
+		lo_send(t, "/Minicomputer", "iif",currentsound,0,0);
 	}
 	case 1:
 	{
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)Knob[1])->value());
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)Knob[1])->value());
 		Display[currentsound][0]->value( ((Fl_Valuator* )Knob[currentsound][1])->value() );
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 	break;
@@ -151,7 +151,7 @@ switch (((Fl_Valuator*)o)->argument())
 			Knob[currentsound][3]->activate();
 			Display[currentsound][1]->activate();
 			Display[currentsound][0]->deactivate();
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
 		}
 		else
 		{
@@ -159,7 +159,7 @@ switch (((Fl_Valuator*)o)->argument())
 			Knob[currentsound][1]->activate();
 			Display[currentsound][0]->activate();
 			Display[currentsound][1]->deactivate();
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 		printf("%li : %i     \r", ((Fl_Light_Button*)o)->argument(),((Fl_Light_Button*)o)->value());
 		
@@ -173,7 +173,7 @@ switch (((Fl_Valuator*)o)->argument())
 			Knob[currentsound][18]->activate();
 			Display[currentsound][3]->activate();
 			Display[currentsound][2]->deactivate();
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
 		}
 		else
 		{
@@ -181,7 +181,7 @@ switch (((Fl_Valuator*)o)->argument())
 			Knob[currentsound][16]->activate();
 			Display[currentsound][2]->activate();
 			Display[currentsound][3]->deactivate();
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 		printf("%li : %i     \r", ((Fl_Light_Button*)o)->argument(),((Fl_Light_Button*)o)->value());
 		
@@ -190,7 +190,7 @@ switch (((Fl_Valuator*)o)->argument())
 	case 3:
 	{
 		float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][1]->value( f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 	break;
@@ -198,10 +198,10 @@ switch (((Fl_Valuator*)o)->argument())
 	case 16:
 	{
 		/*float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
-		lo_send(t, "/Akkord", "if",((Fl_Positioner*)o)->argument(),f);
+		lo_send(t, "/Minicomputer", "if",((Fl_Positioner*)o)->argument(),f);
 		Display[2]->value( f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);*/
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 		Display[currentsound][2]->value( ((Fl_Valuator*)o)->value() );//Knob[16])->value() );
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 	break;
@@ -209,10 +209,10 @@ switch (((Fl_Valuator*)o)->argument())
 	case 18:
 	{ 
 		float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][3]->value( f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
-		/*lo_send(t, "/Akkord", "if",((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
+		/*lo_send(t, "/Minicomputer", "if",((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 		Display[3]->value( ((Fl_Valuator* )Knob[18])->value() );
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());*/
 	break;
@@ -222,11 +222,11 @@ switch (((Fl_Valuator*)o)->argument())
 	{
 		if (((Fl_Light_Button *)o)->value()==0)
 		{
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 		else
 		{
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1000.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1000.f);
 		}
 		printf("%li : %i     \r", ((Fl_Light_Button*)o)->argument(),((Fl_Light_Button*)o)->value());
 	break;	
@@ -241,11 +241,11 @@ switch (((Fl_Valuator*)o)->argument())
 	{
 		if (((Fl_Light_Button *)o)->value()==0)
 		{
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
 		}
 		else
 		{
-			if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 		printf("%li : %i     \r", ((Fl_Light_Button*)o)->argument(),((Fl_Light_Button*)o)->value());
 	break;	
@@ -266,7 +266,7 @@ switch (((Fl_Valuator*)o)->argument())
 	case 91:
 	
 	{
-		lo_send(t, "/Akkord", "if",((Fl_Choice*)o)->argument(),(float)((Fl_Choice*)o)->value());
+		lo_send(t, "/Minicomputer", "if",((Fl_Choice*)o)->argument(),(float)((Fl_Choice*)o)->value());
 		printf("%li : %i     \r", ((Fl_Choice*)o)->argument(),((Fl_Choice*)o)->value());
 		break;
 	}*/
@@ -297,39 +297,39 @@ switch (((Fl_Valuator*)o)->argument())
 	{
 		float tr=(((Fl_Valuator*)o)->value());///200.f;//exp(((Fl_Valuator*)o)->value())/200.f;
 		tr*= tr*tr/2.f;// tr * tr*20.f;//48000.0f;//trtr*tr/2;
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Valuator*)o)->argument(),tr);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),tr);
 		printf("eg %li : %g     \r", ((Fl_Valuator*)o)->argument(),tr);
 		break;
 	}	
 	
 	//************************************ filter cuts *****************************
 	case 30:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][4]->value(f);
 		break;
 	}
 	case 33:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][5]->value(f);
 		break;
 	}
 	case 40:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][6]->value(f);
 		break;
 	}
 	case 43:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][7]->value(f);
 		break;
 	}
 	case 50:{	
 		float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		//printf(",,do it\n");
 						fflush(stdout);
@@ -338,21 +338,21 @@ switch (((Fl_Valuator*)o)->argument())
 		break;
 	}
 	case 53:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][9]->value(f);
 		break;
 	}
 	case 90:
 	{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 		Display[currentsound][10]->value(f);
 		break;
 	}
 	default:
 	{
-		if (transmit)lo_send(t, "/Akkord", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 		
 		break;
@@ -678,7 +678,7 @@ static void recall(unsigned int preset)
 		}
 	}
 	// send a reset
-	if (transmit) lo_send(t, "/Akkord", "iif",currentsound,0,0.0f);
+	if (transmit) lo_send(t, "/Minicomputer", "iif",currentsound,0,0.0f);
 	printf("\n");
 	fflush(stdout);
 }

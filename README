@@ -22,6 +22,7 @@ Dependancies includes:
 - Jack
 - FLTK
 - Alsaseq
+- pthreads
 
 and 
 
@@ -29,10 +30,33 @@ and
 
 Take care, it can be harsh! Use it on your own risk, you have been warnend!
 
+----------------------------- building Minicomputer ------------------------
+
 For building Minicomputer just type
 
 scons
 
-for building it. Yet missed is an installation routine so put the to files anywhere you need them
+for building it. Yet missed is an installation routine so put the to files anywhere you need them.
+Cleaning the buildfiles but the new created programfiles TOO, is done by typing 
+
+scons -c
+
+The buildprocess accept parameters for refining architecture optimization:
+
+- 64bit=1
+forces a build for 64bit platforms with the -m64 option
+
+- k8=1
+optimizes for AMD K8 cpus, giving the compilers the -march=k8 -mtune=k8 settings
+
+So a k8 64bit build looks like
+
+scons 64bit=1 k8=1
+
+TROUBLESHOOTING:
+
+- 'I have library xyz installed but scons complains about not finding xyz'
+make sure that you have the developer version of the library installed which comes extra and additionally.Usually looks like libxyz.dev
+
 
 

@@ -21,8 +21,8 @@
 #include <iostream> //iostream
 #include <fstream> //fstream
 #include <string> //string
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+//#include <boost/archive/text_oarchive.hpp>
+//#include <boost/archive/text_iarchive.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 using namespace std;

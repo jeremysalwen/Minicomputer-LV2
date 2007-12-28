@@ -77,7 +77,7 @@ void Memory::save()
   system("mv minicomputerMemory.mcm minicomputerMemory.bak");
     if ((fh=fopen("minicomputerMemory.mcm","wb")) ==NULL)
 	{
-		printf("cant open file cbDevices.dat\n");
+		printf("cant open file minicomputerMemory.mcm\n");
 		
 	}
 	else
@@ -86,7 +86,7 @@ void Memory::save()
 	{
 		if ((fwrite(&sounds[i],sizeof(patch),1,fh)) == -1)
 			{
-         		printf("cant write into cbDevices.dat\n");
+         		printf("cant write into minicomputerMemory.mcm\n");
          		break;
 			}
 			fseek(fh,0,SEEK_END);
@@ -113,7 +113,7 @@ void Memory::load()
 	FILE *fh; // file handle
     if ((fh=fopen("minicomputerMemory.mcm","rb")) ==NULL)
 	{
-		printf("cant open file cbDevices.dat\n");
+		printf("cant open file minicomputerMemory.mcm\n");
 		
 	}
 	else
@@ -122,7 +122,7 @@ void Memory::load()
 	{
 		if ((fread(&sounds[i],sizeof(patch),1,fh)) == -1)
 			{
-         		printf("cant read  cbDevices.dat\n");
+         		printf("cant read  minicomputerMemory.mcm\n");
          		break;
 			}
 			
@@ -141,7 +141,7 @@ void Memory::saveMulti()
   		system("mv minicomputerMulti.mcm minicomputerMulti.bak");
     if ((fh=fopen("minicomputerMulti.mcm","wb")) ==NULL)
 	{
-		printf("cant open file cbDevices.dat\n");
+		printf("cant open file minicomputerMulti.mcm\n");
 		
 	}
 	else
@@ -150,7 +150,7 @@ void Memory::saveMulti()
 	{
 		if ((fwrite(&multis[i],sizeof(multi),1,fh)) == -1)
 			{
-         		printf("cant write into cbDevices.dat\n");
+         		printf("cant write into minicomputerMulti.mcm\n");
          		break;
 			}
 			fseek(fh,0,SEEK_END);
@@ -164,7 +164,7 @@ void Memory::loadMulti()
 	FILE *fh; // file handle
     if ((fh=fopen("minicomputerMulti.mcm","rb")) ==NULL)
 	{
-		printf("cant open file cbDevices.dat\n");
+		printf("cant open file minicomputerMulti.mcm\n");
 		
 	}
 	else
@@ -173,7 +173,7 @@ void Memory::loadMulti()
 	{
 		if ((fread(&multis[i],sizeof(multi),1,fh)) == -1)
 			{
-         		printf("cant read  cbDevices.dat\n");
+         		printf("cant read  minicomputerMulti.mcm\n");
          		break;
 			}
 			

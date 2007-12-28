@@ -25,6 +25,9 @@ if not conf.CheckLibWithHeader('lo', 'lo/lo.h','c'):
 if not conf.CheckLibWithHeader('asound', 'alsa/asoundlib.h','c'):
 	print 'Did not find alsa, exiting!'
 	Exit(1)
+if not conf.CheckLibWithHeader('pthread', 'pthread.h','c'):
+	print 'Did not find pthread library, exiting!'
+	Exit(1)
 env = conf.Finish()
 
 print"-                    checking dependencies for the editor:"

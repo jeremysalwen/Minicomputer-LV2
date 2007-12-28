@@ -26,6 +26,8 @@
 #include <string.h>
 #include <alsa/asoundlib.h>
 #include <pthread.h>
+// some common definitions
+#include "../common.h" 
 snd_seq_t *open_seq();
  snd_seq_t *seq_handle;
   int npfd;
@@ -42,8 +44,8 @@ snd_seq_t *open_seq() {
     fprintf(stderr, "Error opening ALSA sequencer.\n");
     exit(1);
   }
-  snd_seq_set_client_name(seq_handle, "Notstandskomitee");
-  if ((portid = snd_seq_create_simple_port(seq_handle, "Notstandskomitee",
+  snd_seq_set_client_name(seq_handle, "Minicomputer");
+  if ((portid = snd_seq_create_simple_port(seq_handle, "Minicomputer",
             SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
             SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
     fprintf(stderr, "Error creating sequencer port.\n");
@@ -588,15 +590,15 @@ int main() {
     // create the thread and tell it to use Midi::work as thread function
 	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
 // ------------------------ OSC Init ------------------------------------   
-  /* start a new server on port 7770 */
-    lo_server_thread st = lo_server_thread_new("7770", error);
+  /* start a new server on port definied in _OSCPORT */
+    lo_server_thread st = lo_server_thread_new(_OSCPORT, error);
 
     /* add method that will match any path and args */
-    lo_server_thread_add_method(st, "/Akkord/choice", "iii", generic_handler, NULL);
+    lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, NULL);
 
     /* add method that will match the path /foo/bar, with two numbers, coerced
      * to float and int */
-    lo_server_thread_add_method(st, "/Akkord", "iif", foo_handler, NULL);
+    lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, NULL);
 
     /* add method that will match the path /quit with no args */
   //  lo_server_thread_add_method(st, "/quit", "", quit_handler, NULL);
@@ -614,7 +616,7 @@ int main() {
 
 	init();
 	/* naturally we need to become a jack client :) */
-	client = jack_client_new("Notstandskomitee");
+	client = jack_client_new("Minicomputer");
 	if (!client) {
 		printf("couldn't connect to jack server. Either it's not running or the client name is already taken\n");
 		exit(1);
