@@ -50,6 +50,6 @@ env.Program('minicomputer','cpu/main.c');
 print""
 print"-                     building the editor:"
 
-guienv.Program('miniEditor',['editor/main.cpp','editor/Memory.cpp','editor/patch.cpp','editor/syntheditor.cxx']);
+guienv.Program('miniEditor',['editor/main.cpp','editor/Memory.cpp','editor/syntheditor.cxx']);
 
 

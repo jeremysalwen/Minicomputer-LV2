@@ -74,7 +74,7 @@ void Memory::save()
 	}
   ofs.close();*/
   FILE *fh; // file handle
-  system("mv minicomputerMemory.mcm minicomputerMemory.bak");
+  system("mv minicomputerMemory.mcm minicomputerMemory.bak");// make a backup
     if ((fh=fopen("minicomputerMemory.mcm","wb")) ==NULL)
 	{
 		printf("cant open file minicomputerMemory.mcm\n");
@@ -93,6 +93,28 @@ void Memory::save()
 	}
 	fclose(fh);
 	}
+// *************************************************************
+// new fileoutput
+
+ofstream File ("minicomputerMemory.txt");
+int p,j;
+for (int i=0;i<512;++i)
+	{
+	File<< "["<<i<<"]" <<endl;
+	File<< "'"<<sounds[i].name<<"'"<<endl;
+	
+	for (p=0;p<9;++p)
+	{
+		for (j=0;j<2;++j)
+			File<< "<"<< p << ";" << j << ":" <<sounds[i].freq[p][j]<<">"<<endl;
+	}
+	for (p=0;p<17;++p)
+		File<< "{"<< p << ":"<<sounds[i].choice[p]<<"}"<<endl;
+	for (p=0;p<139;++p)
+		File<< "("<< p << ":"<<sounds[i].parameter[p]<<")"<<endl;
+	}
+
+File.close();
 	
 }
 void Memory::load()
@@ -133,7 +155,52 @@ void Memory::load()
 	}
 	fclose(fh);
 	}
+// *************************************************************
+// new fileinput
+
+ifstream File ("minicomputerMemory.txt");
+int p,j,current=-1;
+int iParameter,iValue;
+string str,sParameter,sValue;
+getline(File,str);
+bool success;
+while (File)
+{
+	switch (str[0])
+	{
+		case '[':// setting the current sound inde// setting the current sound indexx
+		{
+			sParameter="";
+			if (parseNumbers(str,iParameter,iValue))
+			{
+				current = iParameter;
+			}
+		}
+		break;
+	}
+
+	getline(File,str);
+/*
+for (int i=0;i<512;++i)
+	{
+	File<< "["<<i<<"]" <<endl;
+	File<< "'"<<sounds[i].name<<"'"<<endl;
+	
+	for (p=0;p<9;++p)
+	{
+		for (j=0;j<2;++j)
+			File<< "<"<< p << ";" << j << ":" <<sounds[i].freq[p][j]<<">"<<endl;
+	}
+	for (p=0;p<17;++p)
+		File<< "{"<< p << ":"<<sounds[i].choice[p]<<"}"<<endl;
+	for (p=0;p<139;++p)
+		File<< "("<< p << ":"<<sounds[i].parameter[p]<<")"<<endl;
+	}
+*/
 }
+File.close();
+}
+
 void Memory::saveMulti()
 {
       int i;
@@ -185,5 +252,52 @@ void Memory::loadMulti()
 	fclose(fh);
 	}
 }
-
+bool Memory::parseNumbers(string &str,int &iParameter,int &iValue)
+{
+ bool rueck = false;
+ if (!str.empty())
+ {
+	istringstream sStream;
+	string sParameter="";
+	string sValue="";
+	int index = 0;
+	bool isValue = false;
+	// first getting each digit character
+	while (index<str.length())
+	{
+		if ((str[index]>='0') && (str[index]<='9'))
+		{
+			if (isValue)
+			{
+				sValue+=str[index];
+			}
+			else
+			{
+				sParameter+=str[index];
+			}
+		}
+		else if (str[index] == ':')
+		{
+			isValue=true;
+		}
+		++index;
+	}
 	
+	// now actually turn them to ints
+	sStream.str(sParameter);
+
+	if (sStream>>iParameter)
+	{
+		rueck = true;
+		if (isValue)
+		{
+			sStream.str(sValue);
+			if (sStream>>iValue)
+				rueck = true;
+			else
+				rueck = false;
+		}
+	}
+ }
+ return rueck;
+}	

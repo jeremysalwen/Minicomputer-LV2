@@ -20,6 +20,7 @@
 #define MEMORY_H_
 #include <iostream> //iostream
 #include <fstream> //fstream
+#include <sstream> //sstream
 #include <string> //string
 //#include <boost/archive/text_oarchive.hpp>
 //#include <boost/archive/text_iarchive.hpp>
@@ -59,6 +60,7 @@ public:
 	unsigned int getChoice(unsigned int voice);
 	private:
 	unsigned int choice[8];
+	bool parseNumbers(string &str,int &iParameter,int &iValue);
 };
 
 #endif /*MEMORY_H_*/
