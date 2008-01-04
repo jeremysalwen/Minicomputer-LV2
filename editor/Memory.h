@@ -60,7 +60,7 @@ public:
 	unsigned int getChoice(unsigned int voice);
 	private:
 	unsigned int choice[8];
-	bool parseNumbers(string &str,int &iParameter,int &iValue);
+	bool parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fValue);
 };
 
 #endif /*MEMORY_H_*/

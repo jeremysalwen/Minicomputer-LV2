@@ -26,6 +26,7 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Dial.H>
 #include <FL/Fl_Value_Output.H>
+#include <FL/Fl_Value_Input.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Light_Button.H>
 #include <FL/Fl_Box.H>
@@ -87,6 +88,8 @@ public:
   static Fl_Menu_Item menu_wave[];
   Fl_Input_Choice*  soundchoice[8];
   Fl_Input_Choice*  multichoice;
+ private:
+  string tablabel[8];
 };
 
 #endif

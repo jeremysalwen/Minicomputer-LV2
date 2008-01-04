@@ -132,6 +132,7 @@ void Memory::load()
 	ifs.close();
 	printf("so ...\n");
 	choice=2;*/
+/*
 	FILE *fh; // file handle
     if ((fh=fopen("minicomputerMemory.mcm","rb")) ==NULL)
 	{
@@ -148,35 +149,73 @@ void Memory::load()
          		break;
 			}
 			
-			/*if (fseek(fh,sizeof(patch),SEEK_CUR)==-1)
-				{
-					break;
-				}*/
+			//if (fseek(fh,sizeof(patch),SEEK_CUR)==-1)
+			//	{
+			//		break;
+			//	}
 	}
 	fclose(fh);
 	}
+	*/
 // *************************************************************
 // new fileinput
 
 ifstream File ("minicomputerMemory.txt");
 int p,j,current=-1;
-int iParameter,iValue;
+int iParameter,i2Parameter;
+float fValue;
 string str,sParameter,sValue;
 getline(File,str);
 bool success;
 while (File)
 {
+	sParameter="";
+	sValue = "";
 	switch (str[0])
 	{
-		case '[':// setting the current sound inde// setting the current sound indexx
+		case '(':// setting parameter
 		{
-			sParameter="";
-			if (parseNumbers(str,iParameter,iValue))
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].parameter[iParameter]=fValue;
+			}
+		}
+		break;
+		case '{':// setting additional parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].choice[iParameter]=fValue;
+			}
+		}
+		break;
+		case '<':// setting additional parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].freq[iParameter][i2Parameter]=fValue;
+			}
+		}
+		break;
+		case '\'': // setting the name
+		{
+			j = 1; // important, otherwise it would bail out at the first '	
+			while ((j<str.length()) && (str[j]!='\'') && (j<128) )
+			{
+				sounds[current].name[j-1] = str[j];
+				++j;
+			}
+		}
+		break;
+		case '[':// setting the current sound index
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
 			{
 				current = iParameter;
 			}
 		}
 		break;
+
 	}
 
 	getline(File,str);
@@ -252,16 +291,17 @@ void Memory::loadMulti()
 	fclose(fh);
 	}
 }
-bool Memory::parseNumbers(string &str,int &iParameter,int &iValue)
+bool Memory::parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fValue)
 {
  bool rueck = false;
  if (!str.empty())
  {
-	istringstream sStream;
+	istringstream sStream,fStream,s2Stream;
 	string sParameter="";
 	string sValue="";
+	string sP2="";
 	int index = 0;
-	bool isValue = false;
+	bool hasValue = false,hasP2 = false,isValue=false,isP2=false;
 	// first getting each digit character
 	while (index<str.length())
 	{
@@ -271,33 +311,62 @@ bool Memory::parseNumbers(string &str,int &iParameter,int &iValue)
 			{
 				sValue+=str[index];
 			}
-			else
+			else if (isP2)
 			{
+				sP2+=str[index];
+			}
+			else
+			{	
 				sParameter+=str[index];
+			}
+		}
+		else if (str[index] == '.')
+		{
+			if (isValue)
+			{
+				sValue+=str[index];
 			}
 		}
 		else if (str[index] == ':')
 		{
-			isValue=true;
+			hasValue = true;
+			isValue = true;
+			isP2 = false;
+		}
+		else if (str[index] == ';')
+		{
+			hasP2 	= true;
+			isP2	= true;
+			isValue = false;
 		}
 		++index;
 	}
-	
+//	cout << sParameter<<" sp2 "<<sP2<<" value "<<sValue<<endl;
 	// now actually turn them to ints
 	sStream.str(sParameter);
 
 	if (sStream>>iParameter)
 	{
 		rueck = true;
-		if (isValue)
+		if (hasValue)
 		{
-			sStream.str(sValue);
-			if (sStream>>iValue)
+			fStream.str(sValue);
+			if (fStream>>fValue)
+				rueck = true;
+			else
+				rueck = false;
+		}
+		
+		if (hasP2)
+		{
+			s2Stream.str(sP2);
+			if (s2Stream>>i2Parameter)
 				rueck = true;
 			else
 				rueck = false;
 		}
 	}
  }
+// cout << "p1: " << iParameter << " p2: " << i2Parameter<<" value: " << fValue<<" rueck: "<<rueck<<endl;
  return rueck;
 }	
