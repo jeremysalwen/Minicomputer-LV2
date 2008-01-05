@@ -6,7 +6,7 @@
 #define _OSCPORT "7770"
 
 // debug output
-#define _DEBUG
+#undef _DEBUG
 
 // 'old' binary fileformat, switched off per default
 #define _BINFILE

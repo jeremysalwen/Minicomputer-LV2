@@ -926,7 +926,7 @@ Fenster* UserInterface::make_window() {
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
       {
-      Fl_Group* d = new Fl_Group(225, 225, 30, 22,"oscillator 1");
+      Fl_Group* d = new Fl_Group(145, 225, 30, 22,"oscillator 1");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
 	d->end();
@@ -1099,7 +1099,7 @@ Fenster* UserInterface::make_window() {
    { Fl_Group* o = new Fl_Group(5, 238, 300, 212);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-      {Fl_Group* d = new Fl_Group(5, 446, 30, 22, "oscillator 2");
+      {Fl_Group* d = new Fl_Group(145, 446, 30, 22, "oscillator 2");
       	d->labelsize(8);
       	d->labelcolor(FL_BACKGROUND2_COLOR);
 	d->end();

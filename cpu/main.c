@@ -57,11 +57,11 @@ snd_seq_t *open_seq() {
 
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 int done = 0;
-void error(int num, const char *m, const char *path); 
-int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
-int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
+static inline void error(int num, const char *m, const char *path); 
+static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
+static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
 
-int quit_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
+static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
 
 
 
@@ -98,7 +98,8 @@ jack_nframes_t 	bufsize;
 
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
-    int i = (int)lrintf( *phase );
+    int i = (int)( *phase );
+
 	i=i&tabM;//i%=TableSize;
 	//if (i>tabM) i=tabM;
 	if (i<0) i=tabM;
@@ -483,7 +484,7 @@ for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 
 } // end of initialization
 
-void *midiprocessor(void *handle) {
+static void *midiprocessor(void *handle) {
 	struct sched_param param;
 	int policy;
   snd_seq_t *seq_handle = (snd_seq_t *)handle;
@@ -521,16 +522,20 @@ if (poll(pfd, npfd, 100000) > 0)
       }
       case SND_SEQ_EVENT_PITCHBEND:
       {
+#ifdef _DEBUG      
          fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
                 ev->data.control.channel, ev->data.control.value);
+#endif		
                 if (ev->data.control.channel<_MULTITEMP)
                	 modulator[ev->data.control.channel][2]=(float)ev->data.control.value*0.0001221f; // /8192.f;
         break;
       }   
       case SND_SEQ_EVENT_CHANPRESS:
       {
+#ifdef _DEBUG      
          fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
                 ev->data.control.channel, ev->data.control.value);
+#endif		
                 if (ev->data.control.channel<_MULTITEMP)
                	 modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value*0.007874f;
         break;
@@ -553,16 +558,20 @@ if (poll(pfd, npfd, 100000) > 0)
                	if (EGrepeat[c][5] == 0) egStart(c,5);
                	if (EGrepeat[c][6] == 0) egStart(c,6);
                
+#ifdef _DEBUG      
         fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
                 c, ev->data.note.note);
+#endif		
 		        break;  
                 }
       }      
       case SND_SEQ_EVENT_NOTEOFF: 
       {
       	unsigned int c = ev->data.note.channel;
+#ifdef _DEBUG      
         fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
                 c, ev->data.note.note);
+#endif		
                if  (c <_MULTITEMP)
                if (lastnote[c]==ev->data.note.note)
                {
@@ -679,8 +688,8 @@ int main() {
 	/* done !! */
 	return 0;
 }
-
-void error(int num, const char *msg, const char *path)
+// ******************************************** OSC handling for editors ***********************
+static inline void error(int num, const char *msg, const char *path)
 {
     printf("liblo server error %d in path %s: %s\n", num, path, msg);
     fflush(stdout);
@@ -688,7 +697,7 @@ void error(int num, const char *msg, const char *path)
 
 /* catch any incoming messages and display them. returning 1 means that the
  * message has not been fully handled and the server should try other methods */
-int generic_handler(const char *path, const char *types, lo_arg **argv,
+static inline int generic_handler(const char *path, const char *types, lo_arg **argv,
 		    int argc, void *data, void *user_data)
 {
   if ( (argv[0]->i < _MULTITEMP) && (argv[1]->i < _CHOICEMAX) )
@@ -702,7 +711,7 @@ int generic_handler(const char *path, const char *types, lo_arg **argv,
 }
 
 
-int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
+static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
     /* example showing pulling the argument values out of the argv array */
@@ -797,11 +806,13 @@ int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
    	 
    }
    //float g=parameter[30]*parameter[56]+parameter[33]*(1.0f-parameter[56]);
+#ifdef _DEBUG
    printf("%i %i %f \n",voice,i,argv[2]->f);
+#endif   
     return 0;
 }
 
-int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
+static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
     done = 1;
