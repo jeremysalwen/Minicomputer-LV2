@@ -37,6 +37,7 @@
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Counter.H>
 #include <FL/Fl_Positioner.H>
+#include <FL/Enumerations.H>
 //#include <FL/Fl_Chart.H>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +45,7 @@
 #include <string.h>
 #include <math.h>
 #include <lo/lo.h>
+#include "../common.h"
 extern lo_address t;
 extern Memory Speicher;
 
@@ -56,11 +58,19 @@ class Fl_SteinerKnob:public Fl_Dial
 	private:
 	int altx;
 };
-
+class Fenster:public Fl_Double_Window
+{
+	public:
+	Fenster(int w, int h, const char* t);
+	Fenster(int w, int h);
+    	//~Fenster();
+	int handle (int event);
+	
+};
 
 class UserInterface {
 public:
-  Fl_Double_Window* make_window();
+  Fenster* make_window();
   static Fl_Menu_Item menu_pitch[];
   static Fl_Menu_Item menu_pitch1[];
   Fl_Dial *f1cut1;

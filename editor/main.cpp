@@ -76,7 +76,7 @@ void reloadSoundNames()
 int main(int argc, char **argv)
 {
    t = lo_address_new(NULL, _OSCPORT);
-  Fl_Double_Window* w =Schaltbrett.make_window();
+  Fenster* w =Schaltbrett.make_window();
   //
   for (int i = 0;i<8;++i)
   {

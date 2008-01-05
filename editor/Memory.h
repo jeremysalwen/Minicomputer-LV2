@@ -26,11 +26,12 @@
 //#include <boost/archive/text_iarchive.hpp>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../common.h"
 using namespace std;
 //#include "patch.h"
 typedef struct setting
 {
-	float parameter[139];
+	float parameter[_PARACOUNT];
 	float freq[9][2];
 	int choice[17];
 	char name[128];

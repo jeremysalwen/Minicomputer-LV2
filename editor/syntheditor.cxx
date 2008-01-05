@@ -19,8 +19,9 @@
 #include "syntheditor.h"
 
 // gcc -o synthEditor2 syntheditor.cxx -lfltk -llo
- Fl_Widget* Knob[8][139];
+ Fl_Widget* Knob[8][_PARACOUNT];
  Fl_Widget* tab[8];
+ Fl_Tabs* tabs;
  Fl_Value_Input* Display[8][13];
 
  Fl_Value_Input* paramon;  
@@ -37,56 +38,6 @@ static void choicecallback(Fl_Widget* o, void*)
 	if (transmit) lo_send(t, "/Minicomputer/choice", "iii",currentsound,((Fl_Choice*)o)->argument(),((Fl_Choice*)o)->value());
 }
 
-/*
-static void tab0callback(Fl_Widget* o, void*)
-{
-	currentsound=0;
-	printf("sound0\n");
-	fflush(stdout);
-}
-static void tab1callback(Fl_Widget* o, void*)
-{
-	currentsound=1;
-	printf("sound1\n");
-	fflush(stdout);
-}
-static void tab2callback(Fl_Widget* o, void*)
-{
-	currentsound=2;
-	printf("sound2\n");
-	fflush(stdout);
-}
-static void tab3callback(Fl_Widget* o, void*)
-{
-	currentsound=3;
-	printf("sound3\n");
-	fflush(stdout);
-}
-static void tab4callback(Fl_Widget* o, void*)
-{
-	currentsound=4;
-	printf("sound4\n");
-	fflush(stdout);
-}
-static void tab5callback(Fl_Widget* o, void*)
-{
-	currentsound=5;
-	printf("sound5\n");
-	fflush(stdout);
-}
-static void tab6callback(Fl_Widget* o, void*)
-{
-	currentsound=6;
-	printf("sound6\n");
-	fflush(stdout);
-	
-}
-static void tab7callback(Fl_Widget* o, void*)
-{
-	currentsound=7;
-	printf("sound7\n");
-	fflush(stdout);
-}*/
 static void tabcallback(Fl_Widget* o, void* )
 {
 	//int* g;
@@ -109,10 +60,6 @@ static void tabcallback(Fl_Widget* o, void* )
 }
 static void callback(Fl_Widget* o, void*) {
 	unsigned d;
-//	string monitor;
-//	ostringstream oss(monitor);
-//	oss<<"bb "<<((Fl_Valuator*)o)->value();
-	
 	paramon->value(((Fl_Valuator*)o)->value());
 	//float wert=-1024;
 //(Fl_Valuator*)o)->
@@ -385,10 +332,14 @@ switch (currentParameter)
     
 fflush(stdout);
 }
+
+/**
+ * callback for finetuning the current parameter
+ */
 static void finetune(Fl_Widget* o, void*)
 {
 
-	if (currentParameter<139)
+	if (currentParameter<_PARACOUNT)// range check
 	{
 		switch (currentParameter)
 		{
@@ -452,7 +403,7 @@ static void storesound(Fl_Widget* o, void* e)
 	
 	//Schaltbrett.soundchoice-> add(Speicher.getName(i).c_str());
 	int i;
-	for (i=0;i<139;++i)
+	for (i=0;i<_PARACOUNT;++i)
 	{
 	if (Knob[currentsound][i] != NULL)
 	{
@@ -629,12 +580,14 @@ static void recall(unsigned int preset)
 	printf("choice %i %i\n",currentsound,preset);//((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 	Speicher.setChoice(currentsound,preset);
-	for(i=0;i<139;++i)
+	for(i=0;i<_PARACOUNT;++i)
 	{
 		if (Knob[currentsound][i] != NULL)
 		{
+#ifdef _DEBUG		
 			printf("i == %i \n",i);
-	     fflush(stdout);
+	    		fflush(stdout);
+#endif
 		switch (i)
 		{
 	
@@ -761,24 +714,31 @@ static void recall(unsigned int preset)
 }
 static void loadsound(Fl_Widget* o, void* e)
 {
+#ifdef _DEBUG
 	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
+#endif	
 	Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	recall(Speicher.multis[currentmulti].sound[currentsound]);
 }
+// recall a multitemperal setup
 static void loadmulti(Fl_Widget* o, void* e)
 {
 	currentmulti = (unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
-	for (int i=0;i<8;i++)
+	for (int i=0;i<8;++i)
 	{
 		currentsound = i;
-		recall(Speicher.multis[currentmulti].sound[currentsound]);
-		
+		recall(Speicher.multis[currentmulti].sound[currentsound]);// actual recall
+		schoice[i]->value(Speicher.multis[currentmulti].sound[currentsound]);// set gui
 	}
+#ifdef _DEBUG
 	printf("multi choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
-}static void storemulti(Fl_Widget* o, void* e)
+#endif
+}
+
+static void storemulti(Fl_Widget* o, void* e)
 {
 	/*printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
@@ -923,12 +883,16 @@ int Fl_SteinerKnob::handle(int event) {
 	  return Fl_Dial::handle(event);
 }
 
-Fl_Double_Window* UserInterface::make_window() {
+// ---------------------------------------------------------------
+// 			screen initialization
+// ---------------------------------------------------------------
+
+Fenster* UserInterface::make_window() {
  // Fl_Double_Window* w;
  // {
     currentsound=0;currentmulti=0;
     transmit=true;
-  	Fl_Double_Window* o = new Fl_Double_Window(995, 515);
+  	Fenster* o = new Fenster(995, 515);
    // w = o;
     o->color((Fl_Color)246);
     o->user_data((void*)(this));
@@ -937,13 +901,12 @@ Fl_Double_Window* UserInterface::make_window() {
 		auswahl[currentsound][i]=NULL;
      	fflush(stdout);
     }
-    for (int i=0;i<139;i++) {
+    for (int i=0;i<_PARACOUNT;i++) {
 		Knob[currentsound][i]=NULL;
     }
     // tabs beginning ------------------------------------------------------------
     { Fl_Tabs* o = new Fl_Tabs(0,0,995, 515);
     	 o->callback((Fl_Callback*)tabcallback);
-    	 
     for (int i=0;i<8;i++)
     {
     	{ 
@@ -1886,7 +1849,7 @@ Fl_Double_Window* UserInterface::make_window() {
     }
     
    
-    { Fl_Group* d = new Fl_Group(5, 461, 650, 45, "memory");
+    { Fl_Group* d = new Fl_Group(5, 461, 680, 45, "memory");
       d->box(FL_ROUNDED_FRAME);
       d->color(FL_BACKGROUND2_COLOR);
       d->labelsize(8);
@@ -2041,6 +2004,7 @@ Fl_Double_Window* UserInterface::make_window() {
     
       
     o->end();
+    tabs = o;
     }
 // ---------------------------------------------------------------- end of tabs
     /*{ Fl_Chart * o = new Fl_Chart(600, 300, 70, 70, "eg");
@@ -2100,6 +2064,78 @@ Fl_Double_Window* UserInterface::make_window() {
       o->end();
   return o;
 }
+
+/**
+ * constructor
+ * calling straight the super class constructor
+ */
+Fenster::Fenster(int w, int h, const char* t): Fl_Double_Window(w,h,t)
+{
+}
+/**
+ * constructor
+ * calling straight the super class constructor
+ */
+Fenster::Fenster(int w, int h): Fl_Double_Window(w,h)
+{
+}
+/**
+ * overload the eventhandler for some custom shortcuts
+ * @param event
+ * @return 1 when all is right
+ */
+int Fenster::handle (int event)
+{
+	switch (event)
+        {
+	case FL_KEYBOARD:
+                if (tabs != NULL)
+		{
+		switch (Fl::event_key ())
+                {
+                case FL_F+1:
+			tabs->value(tab[0]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+2:
+			tabs->value(tab[1]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+3:
+			tabs->value(tab[2]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+4:
+			tabs->value(tab[3]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+5:
+			tabs->value(tab[4]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+6:
+			tabs->value(tab[5]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+7:
+			tabs->value(tab[6]);
+			tabcallback(tabs,NULL);
+		break;
+                case FL_F+8:
+			tabs->value(tab[7]);
+			tabcallback(tabs,NULL);
+		break;
+                }// end of switch
+		}// end of if
+                return 1;
+
+        default:
+                // pass other events to the base class...
+                
+		return Fl_Double_Window::handle(event);
+        }
+}
+
 void close_cb( Fl_Widget* o, void*) {
 
    exit(0);

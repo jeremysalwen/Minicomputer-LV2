@@ -73,7 +73,8 @@ void Memory::save()
   //oa << sounds[i];
 	}
   ofs.close();*/
-  FILE *fh; // file handle
+#ifdef _BINFILE
+ FILE *fh; // file handle
   system("mv minicomputerMemory.mcm minicomputerMemory.bak");// make a backup
     if ((fh=fopen("minicomputerMemory.mcm","wb")) ==NULL)
 	{
@@ -93,10 +94,11 @@ void Memory::save()
 	}
 	fclose(fh);
 	}
+#endif	
 // *************************************************************
 // new fileoutput
 
-ofstream File ("minicomputerMemory.txt");
+ofstream File ("minicomputerMemory.temp");
 int p,j;
 for (int i=0;i<512;++i)
 	{
@@ -110,12 +112,14 @@ for (int i=0;i<512;++i)
 	}
 	for (p=0;p<17;++p)
 		File<< "{"<< p << ":"<<sounds[i].choice[p]<<"}"<<endl;
-	for (p=0;p<139;++p)
+	for (p=0;p<_PARACOUNT;++p)
 		File<< "("<< p << ":"<<sounds[i].parameter[p]<<")"<<endl;
 	}
 
 File.close();
 	
+  system("mv minicomputerMemory.txt minicomputerMemory.txt.bak");// make a backup
+  system("mv minicomputerMemory.temp minicomputerMemory.txt");
 }
 void Memory::load()
 {
@@ -132,7 +136,8 @@ void Memory::load()
 	ifs.close();
 	printf("so ...\n");
 	choice=2;*/
-/*
+
+#ifdef _BINFILE
 	FILE *fh; // file handle
     if ((fh=fopen("minicomputerMemory.mcm","rb")) ==NULL)
 	{
@@ -156,7 +161,7 @@ void Memory::load()
 	}
 	fclose(fh);
 	}
-	*/
+#endif
 // *************************************************************
 // new fileinput
 
@@ -243,9 +248,10 @@ File.close();
 void Memory::saveMulti()
 {
       int i;
-		 FILE *fh; // file handle
-  		system("mv minicomputerMulti.mcm minicomputerMulti.bak");
-    if ((fh=fopen("minicomputerMulti.mcm","wb")) ==NULL)
+#ifdef _BINFILE      
+	FILE *fh; // file handle
+  	system("mv minicomputerMulti.mcm minicomputerMulti.bak");
+	if ((fh=fopen("minicomputerMulti.mcm","wb")) ==NULL)
 	{
 		printf("cant open file minicomputerMulti.mcm\n");
 		
@@ -263,11 +269,32 @@ void Memory::saveMulti()
 	}
 	fclose(fh);
 	}
+#endif
+//---------------------- new textformat
+// first write in temporary file, just in case
+ofstream File ("minicomputerMulti.temp");
+int p,j;
+for (i=0;i<128;++i)
+{
+	File<< "["<<i<<"]" <<endl;
+	File<< "'"<<multis[i].name<<"'"<<endl;
+	
+	for (p=0;p<8;++p) // store the sound ids
+	{
+		File<< "("<< p << ":" <<multis[i].sound[p]<<")"<<endl;
+	}
+	}
+
+File.close();
+	
+  system("mv minicomputerMulti.txt minicomputerMulti.txt.bak");// make a backup
+  system("mv minicomputerMulti.temp minicomputerMulti.txt");
 }
 void Memory::loadMulti()
 {
-
-	FILE *fh; // file handle
+int i;
+#ifdef _BINFILE
+FILE *fh; // file handle
     if ((fh=fopen("minicomputerMulti.mcm","rb")) ==NULL)
 	{
 		printf("cant open file minicomputerMulti.mcm\n");
@@ -275,7 +302,7 @@ void Memory::loadMulti()
 	}
 	else
 	{
-	for (int i=0;i<128;i++)
+	for (i=0;i<128;i++)
 	{
 		if ((fread(&multis[i],sizeof(multi),1,fh)) == -1)
 			{
@@ -290,6 +317,52 @@ void Memory::loadMulti()
 	}
 	fclose(fh);
 	}
+#endif
+string str,sValue,sParameter;
+int iParameter,i2Parameter;
+float fValue;
+
+ifstream File ("minicomputerMulti.txt");
+getline(File,str);
+int p,j,current=0;
+while (File)
+{
+	sParameter="";
+	sValue = "";
+	switch (str[0])
+	{
+		case '(':// setting parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				multis[current].sound[iParameter]=(int)fValue;
+			}
+		}
+		break;
+		case '\'': // setting the name
+		{
+			j = 1; // important, otherwise it would bail out at the first '	
+			while ((j<str.length()) && (str[j]!='\'') && (j<128) )
+			{
+				multis[current].name[j-1] = str[j];
+				++j;
+			}
+		}
+		break;
+		case '[':// setting the current sound index
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				current = iParameter;
+			}
+		}
+		break;
+
+	}
+
+	getline(File,str);
+}
+File.close();
 }
 bool Memory::parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fValue)
 {
