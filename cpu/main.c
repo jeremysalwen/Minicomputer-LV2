@@ -67,7 +67,6 @@ int quit_handler(const char *path, const char *types, lo_arg **argv, int argc, v
 
 jack_port_t* inbuf;
 jack_client_t *client;
-#define _PARACOUNT 139
 #define _MODCOUNT 18
 #define _WAVECOUNT 20
 #define _CHOICEMAX 16
@@ -77,30 +76,30 @@ jack_client_t *client;
 #define tabF 4096.f
 
 jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
-float phase[_MULTITEMP][3];//=0.f;
+float phase[_MULTITEMP][4];//=0.f;
 float parameter[_MULTITEMP][_PARACOUNT];
 float modulator[_MULTITEMP][_MODCOUNT];
 unsigned int choice[_MULTITEMP][_CHOICEMAX];
 float midi2freq [128],midif[_MULTITEMP];
 float table [_WAVECOUNT][TableSize];
-float EG[_MULTITEMP][7][8];
-int EGrepeat[_MULTITEMP][7];
-unsigned int EGtrigger[_MULTITEMP][7];
-unsigned int EGstate[_MULTITEMP][7];
+float EG[_MULTITEMP][8][8]; // 7 8
+int EGrepeat[_MULTITEMP][8];
+unsigned int EGtrigger[_MULTITEMP][8];
+unsigned int EGstate[_MULTITEMP][8];
 unsigned int currentvoice = 0;
-float sampleRate=48000.0f;
+float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
 float osc1,osc2;
-float high[_MULTITEMP][3],band[_MULTITEMP][3],low[_MULTITEMP][3],temp=0,f[_MULTITEMP][3],q[_MULTITEMP][3],v[_MULTITEMP][3],lfo,tf,faktor[_MULTITEMP][3];
+float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf,faktor[_MULTITEMP][4];
 int i;
 unsigned int lastnote[_MULTITEMP];
 jack_nframes_t 	bufsize;
 
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
-    int i = (int) *phase;
-	i%=TableSize;
+    int i = (int)lrintf( *phase );
+	i=i&tabM;//i%=TableSize;
 	//if (i>tabM) i=tabM;
 	if (i<0) i=tabM;
     *phase += tabX * frequency;
@@ -108,12 +107,14 @@ static inline float Oscillator(float frequency,int wave,float *phase)
     if(*phase >= tabF)
     {
    		 *phase -= tabF;
+		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
     }
 
 
         if(*phase < 0.f)
                 {
                 	*phase += tabF;
+        	//	if(*phase < 0.f) *phase = tabF-1;
                 }
         return table[wave][i] ;
 }
@@ -449,7 +450,7 @@ for (i=0; i<TableSize; i++)
 			((float)sin(x*15.f+((float)2.0f*(float)PI)))*0.5f
 			) / 8.0f;
 			
-printf("%f ",table[8][i]);
+//printf("%f ",table[8][i]);
 
 }
 table[5][0] = -0.9f;
@@ -506,14 +507,16 @@ if (poll(pfd, npfd, 100000) > 0)
    {
     switch (ev->type) {
       case SND_SEQ_EVENT_CONTROLLER:
-      { 
+      {
+#ifdef _DEBUG      
         fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
                 ev->data.control.channel,  ev->data.control.param,ev->data.control.value);
+#endif		
         if  (ev->data.control.param==1)   
-        	  modulator[ev->data.control.channel][ 16]=(float)ev->data.control.value/127.f;
+        	  modulator[ev->data.control.channel][ 16]=(float)ev->data.control.value*0.007874f; // /127.f;
         	  else 
         	  if  (ev->data.control.param==12)   
-        	  modulator[ev->data.control.channel][ 17]=(float)ev->data.control.value/127.f;
+        	  modulator[ev->data.control.channel][ 17]=(float)ev->data.control.value*0.007874f;// /127.f;
         break;
       }
       case SND_SEQ_EVENT_PITCHBEND:
@@ -521,7 +524,7 @@ if (poll(pfd, npfd, 100000) > 0)
          fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
                 ev->data.control.channel, ev->data.control.value);
                 if (ev->data.control.channel<_MULTITEMP)
-               	 modulator[ev->data.control.channel][2]=(float)ev->data.control.value/8192.f;
+               	 modulator[ev->data.control.channel][2]=(float)ev->data.control.value*0.0001221f; // /8192.f;
         break;
       }   
       case SND_SEQ_EVENT_CHANPRESS:
@@ -529,7 +532,7 @@ if (poll(pfd, npfd, 100000) > 0)
          fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
                 ev->data.control.channel, ev->data.control.value);
                 if (ev->data.control.channel<_MULTITEMP)
-               	 modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value/127.f;
+               	 modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value*0.007874f;
         break;
       }
       case SND_SEQ_EVENT_NOTEON:
@@ -540,8 +543,8 @@ if (poll(pfd, npfd, 100000) > 0)
                 {
                 lastnote[c]=ev->data.note.note;	
                 midif[c]=midi2freq[ev->data.note.note];
-                modulator[c][0]=ev->data.note.note/127.f;
-                modulator[c][1]=(float)ev->data.note.velocity/127.f;
+                modulator[c][0]=ev->data.note.note*0.007874f;
+                modulator[c][1]=(float)ev->data.note.velocity*0.007874f;
                 egStart(c,0);
                 if (EGrepeat[c][1] == 0)egStart(c,1);
                 if (EGrepeat[c][2] == 0)egStart(c,2);
