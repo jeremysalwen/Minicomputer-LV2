@@ -91,7 +91,7 @@ float sampleRate=48000.0f; // only default, going to be overriden by the actual,
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
 float osc1,osc2;
-float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf,faktor[_MULTITEMP][4];
+float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf1,tf2,tf3,faktor[_MULTITEMP][4];
 int i;
 unsigned int lastnote[_MULTITEMP];
 jack_nframes_t 	bufsize;
@@ -317,7 +317,7 @@ mo = parameter[currentvoice][56]*mf;
 if (mo<0.f) mo = 0.f;
 else if (mo>1.f) mo = 1.f;
 morph=(1.0f-mo);
-
+/*
 tf= (srate * (parameter[currentvoice][30]*morph+parameter[currentvoice][33]*mo) );
 f[currentvoice][0] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358;
 
@@ -325,15 +325,44 @@ tf= (srate * (parameter[currentvoice][40]*morph+parameter[currentvoice][43]*mo) 
 f[currentvoice][1] = 2.f * tf - (tf*tf*tf)* 0.1472725f; // / 6.7901358;;
 
 tf = (srate * (parameter[currentvoice][50]*morph+parameter[currentvoice][53]*mo) );
-
 f[currentvoice][2] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358; 
-q[currentvoice][0] = parameter[currentvoice][31]*morph+parameter[currentvoice][34]*mo;
-q[currentvoice][1] = parameter[currentvoice][41]*morph+parameter[currentvoice][44]*mo;
-q[currentvoice][2] = parameter[currentvoice][51]*morph+parameter[currentvoice][54]*mo;
+*/
 
-v[currentvoice][0] = parameter[currentvoice][32]*morph+parameter[currentvoice][35]*mo;
-v[currentvoice][1] = parameter[currentvoice][42]*morph+parameter[currentvoice][45]*mo;
-v[currentvoice][2] = parameter[currentvoice][52]*morph+parameter[currentvoice][55]*mo;
+tf1= parameter[currentvoice][30]*morph;
+q[currentvoice][0] = parameter[currentvoice][31]*morph;
+v[currentvoice][0] = parameter[currentvoice][32]*morph;
+tf2= parameter[currentvoice][40]*morph;
+q[currentvoice][1] = parameter[currentvoice][41]*morph;
+v[currentvoice][1] = parameter[currentvoice][42]*morph;
+tf3 =  parameter[currentvoice][50]*morph;
+q[currentvoice][2] = parameter[currentvoice][51]*morph;
+v[currentvoice][2] = parameter[currentvoice][52]*morph;
+
+tf1+= parameter[currentvoice][33]*mo;
+q[currentvoice][0] += parameter[currentvoice][34]*mo;
+v[currentvoice][0] += parameter[currentvoice][35]*mo;
+tf2+=parameter[currentvoice][43]*mo;
+q[currentvoice][1] += parameter[currentvoice][44]*mo;
+v[currentvoice][1] += parameter[currentvoice][45]*mo;
+tf3 += parameter[currentvoice][53]*mo;
+q[currentvoice][2] += parameter[currentvoice][54]*mo;
+v[currentvoice][2] += parameter[currentvoice][55]*mo;
+
+tf1*=srate;
+tf2*=srate;
+tf3 *= srate;
+
+f[currentvoice][0] = 2.f * tf1;
+f[currentvoice][1] = 2.f * tf2;
+f[currentvoice][2] = 2.f * tf3; 
+
+f[currentvoice][0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
+
+f[currentvoice][1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
+
+f[currentvoice][2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
+
+
 
 low[currentvoice][0] = low[currentvoice][0] + f[currentvoice][0] * band[currentvoice][0];
 high[currentvoice][0] = q[currentvoice][0] * temp - low[currentvoice][0] - q[currentvoice][0]*band[currentvoice][0];
