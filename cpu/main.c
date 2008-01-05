@@ -327,30 +327,42 @@ f[currentvoice][1] = 2.f * tf - (tf*tf*tf)* 0.1472725f; // / 6.7901358;;
 tf = (srate * (parameter[currentvoice][50]*morph+parameter[currentvoice][53]*mo) );
 f[currentvoice][2] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358; 
 */
-
-tf1= parameter[currentvoice][30]*morph;
-q[currentvoice][0] = parameter[currentvoice][31]*morph;
-v[currentvoice][0] = parameter[currentvoice][32]*morph;
-tf2= parameter[currentvoice][40]*morph;
-q[currentvoice][1] = parameter[currentvoice][41]*morph;
-v[currentvoice][1] = parameter[currentvoice][42]*morph;
-tf3 =  parameter[currentvoice][50]*morph;
-q[currentvoice][2] = parameter[currentvoice][51]*morph;
-v[currentvoice][2] = parameter[currentvoice][52]*morph;
+// parallel calculation:
+tf1= parameter[currentvoice][30];
+q[currentvoice][0] = parameter[currentvoice][31];
+v[currentvoice][0] = parameter[currentvoice][32];
+tf2= parameter[currentvoice][40];
+q[currentvoice][1] = parameter[currentvoice][41];
+v[currentvoice][1] = parameter[currentvoice][42];
+tf3 =  parameter[currentvoice][50];
+q[currentvoice][2] = parameter[currentvoice][51];
+v[currentvoice][2] = parameter[currentvoice][52];
+tf1*= morph;
+tf2*= morph;
+tf3 *=  morph;
+q[currentvoice][0] *= morph;
+q[currentvoice][1] *= morph;
+q[currentvoice][2] *= morph;
+v[currentvoice][0] *= morph;
+v[currentvoice][1] *= morph;
+v[currentvoice][2] *= morph;
 
 tf1+= parameter[currentvoice][33]*mo;
-q[currentvoice][0] += parameter[currentvoice][34]*mo;
-v[currentvoice][0] += parameter[currentvoice][35]*mo;
 tf2+=parameter[currentvoice][43]*mo;
-q[currentvoice][1] += parameter[currentvoice][44]*mo;
-v[currentvoice][1] += parameter[currentvoice][45]*mo;
 tf3 += parameter[currentvoice][53]*mo;
-q[currentvoice][2] += parameter[currentvoice][54]*mo;
-v[currentvoice][2] += parameter[currentvoice][55]*mo;
 
 tf1*=srate;
 tf2*=srate;
 tf3 *= srate;
+
+q[currentvoice][0] += parameter[currentvoice][34]*mo;
+q[currentvoice][1] += parameter[currentvoice][44]*mo;
+q[currentvoice][2] += parameter[currentvoice][54]*mo;
+
+
+v[currentvoice][0] += parameter[currentvoice][35]*mo;
+v[currentvoice][1] += parameter[currentvoice][45]*mo;
+v[currentvoice][2] += parameter[currentvoice][55]*mo;
 
 f[currentvoice][0] = 2.f * tf1;
 f[currentvoice][1] = 2.f * tf2;
