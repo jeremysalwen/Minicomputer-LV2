@@ -49,7 +49,7 @@
 extern lo_address t;
 extern Memory Speicher;
 
-
+/*
 class Fl_SteinerKnob:public Fl_Dial
 {
 	public:
@@ -58,6 +58,7 @@ class Fl_SteinerKnob:public Fl_Dial
 	private:
 	int altx;
 };
+*/
 class Fenster:public Fl_Double_Window
 {
 	public:

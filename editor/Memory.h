@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #ifndef MEMORY_H_
 #define MEMORY_H_
 #include <iostream> //iostream
@@ -29,6 +30,9 @@
 #include "../common.h"
 using namespace std;
 //#include "patch.h"
+/**
+ * the struct of an single sound setting
+ */
 typedef struct setting
 {
 	float parameter[_PARACOUNT];
@@ -36,12 +40,19 @@ typedef struct setting
 	int choice[17];
 	char name[128];
 } patch;
-
+/**
+ * the struct of a multitemperal setup
+ */
 typedef struct mode
 {
-	unsigned int sound[8];
-	char name[128];
+	unsigned int sound[8];// sound ids for the 8 voices
+	char name[128];//the name, up to 128 letters
 } multi;
+
+/**
+ * the class for the whole memory
+ * see Memory.cpp for more documentation
+ */
 class Memory
 {
 public:
