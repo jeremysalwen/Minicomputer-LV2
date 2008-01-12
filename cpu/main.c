@@ -90,7 +90,7 @@ unsigned int currentvoice = 0;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
-float osc1,osc2;
+float osc1,osc2,result,clib1,clib2;
 float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf1,tf2,tf3,faktor[_MULTITEMP][4];
 int i;
 unsigned int lastnote[_MULTITEMP];
@@ -257,6 +257,10 @@ int process(jack_nframes_t nframes, void *arg) {
 float tf,ta1,ta2,morph,mo,mf;
 unsigned int index;
 
+	float *bufferMixLeft = (float*) jack_port_get_buffer(port[8], nframes);
+	float *bufferMixRight = (float*) jack_port_get_buffer(port[9], nframes);
+	float *bufferAux1 = (float*) jack_port_get_buffer(port[10], nframes);
+	float *bufferAux2 = (float*) jack_port_get_buffer(port[11], nframes);
 /*jack_midi_port_info_t* info;
 	void* buf;
 	jack_midi_event_t ev;
@@ -278,10 +282,14 @@ unsigned int index;
      * we can write our frames samples */
 
 		
+	bufferMixLeft[index]=0.f;
+	bufferMixRight[index]=0.f;
+	bufferAux1[index]=0.f;
+	bufferAux2[index]=0.f;
 for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice)
 {		
 	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
-		buffer[index]=0.0f;
+//		buffer[index]=0.0f;
 
 // calc the modulators
 modulator [currentvoice][8] =egCalc(currentvoice,1);
@@ -314,8 +322,18 @@ temp=(osc1*(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1)+osc2*(p
 /* filter settings*/
 mf = ( (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]))+(1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]) );
 mo = parameter[currentvoice][56]*mf;
+
+
+clib1 = fabs (mo);
+clib2 = fabs (mo-1.0f);
+mo = clib1 + 1.0f;
+mo -= clib2;
+mo *= 0.5f;
+/*
 if (mo<0.f) mo = 0.f;
 else if (mo>1.f) mo = 1.f;
+*/
+
 morph=(1.0f-mo);
 /*
 tf= (srate * (parameter[currentvoice][30]*morph+parameter[currentvoice][33]*mo) );
@@ -391,8 +409,16 @@ high[currentvoice][2] = q[currentvoice][2] * temp - low[currentvoice][2] - q[cur
 band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
 modulator[currentvoice] [7] = low[currentvoice][0]*v[currentvoice][0]+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
 
-buffer[index] = modulator[currentvoice][7] *egCalc(currentvoice,0)*parameter[currentvoice][101];///_MULTITEMP;
+// amplitude shaping
 
+result = modulator[currentvoice][7] *(1.f-modulator[currentvoice][ choice[currentvoice][13]]*parameter[currentvoice][100] );///_MULTITEMP;
+result *= egCalc(currentvoice,0);// the final shaping envelope
+buffer[index] = result * parameter[currentvoice][101];
+bufferAux1[index] += result * parameter[currentvoice][108];
+bufferAux2[index] += result * parameter[currentvoice][109];
+result *= parameter[currentvoice][106]; // mix volume
+bufferMixLeft[index] += result * (1.f-parameter[currentvoice][107]);
+bufferMixRight[index] += result * parameter[currentvoice][107];
 
 		//buffer[index] = Oscillator(50.2f,&phase1) * 0.5f;
 //Initialization done here is the oscillator loop

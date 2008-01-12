@@ -1903,7 +1903,7 @@ Fenster* UserInterface::make_window() {
         }
         { Fl_Dial* o = new Fl_Dial(648, 330, 25, 25, "D");
           o->labelsize(8);o->argument(86); o->minimum(0.00025);
-          o->maximum(0.00001);
+          o->maximum(0.000001);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 330, 25, 25, "S");
@@ -1912,7 +1912,7 @@ Fenster* UserInterface::make_window() {
         }
         { Fl_Dial* o = new Fl_Dial(708, 330, 25, 25, "R");
           o->labelsize(8);o->argument(88); o->minimum(0.25);
-          o->maximum(0.0001);
+          o->maximum(0.00001);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Light_Button* o = new Fl_Light_Button(744, 335, 55, 15, "repeat");
@@ -2030,10 +2030,10 @@ Fenster* UserInterface::make_window() {
       }*/
       d->end();
     }
-    { Fl_Group* o = new Fl_Group(825, 17, 160, 433);
+    { Fl_Group* o = new Fl_Group(825, 17, 160, 233);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-    { Fl_Group* d = new Fl_Group(825, 446, 160, 435, "amp");
+    { Fl_Group* d = new Fl_Group(825, 110, 160, 135, "amp");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
 	d->end();
@@ -2096,13 +2096,51 @@ Fenster* UserInterface::make_window() {
         o->value(1);
         o->textsize(8);
       }*/
-      { Fl_Dial* o = new Fl_Dial(889, 220, 25, 25, "vol");
+      { Fl_Dial* o = new Fl_Dial(844, 150, 25, 25, "id vol");
         o->labelsize(8); 
         o->argument(101);
         o->minimum(0);
         o->maximum(2);
         o->value(1);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
+      }
+      { Fl_Dial* o = new Fl_Dial(874, 150, 25, 25, "aux 1");
+        o->labelsize(8); 
+        o->argument(108);
+        o->minimum(0);
+        o->maximum(2);
+	o->color(fl_rgb_color(140,140,255));
+        o->value(1);
+		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
+      }
+      { Fl_Dial* o = new Fl_Dial(904, 150, 25, 25, "aux 2");
+        o->labelsize(8); 
+        o->argument(109);
+        o->minimum(0);
+	o->color(fl_rgb_color(140,140,255));
+        o->maximum(2);
+        o->value(1);
+		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
+      }
+      { Fl_Dial* o = new Fl_Dial(934, 150, 25, 25, "mix vol");
+        o->labelsize(8); 
+        o->argument(106);
+        o->minimum(0);
+        o->maximum(2);
+	o->color(fl_rgb_color(170,140,255));
+        o->value(1);
+		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
+      }
+      { Fl_Slider* o = new Fl_Slider(864, 200, 80, 10, "mix pan");
+        o->labelsize(8); 
+        o->box(FL_BORDER_BOX);
+        o->argument(107);
+        o->minimum(0);
+        o->maximum(1);
+	o->color(fl_rgb_color(170,140,255));
+        o->value(0.5);
+	o->type(FL_HORIZONTAL);
+	o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       o->end();
     }

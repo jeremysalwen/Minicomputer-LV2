@@ -34,10 +34,12 @@
 #include <FL/Fl_Tabs.H>
 
 #include <FL/Fl_Choice.H>
+#include <FL/Fl_Slider.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Counter.H>
 #include <FL/Fl_Positioner.H>
 #include <FL/Enumerations.H>
+#include <FL/fl_draw.H>
 //#include <FL/Fl_Chart.H>
 #include <stdio.h>
 #include <stdlib.h>
