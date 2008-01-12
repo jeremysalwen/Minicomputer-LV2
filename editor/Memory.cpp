@@ -106,7 +106,7 @@ void Memory::save()
   ofs.close();*/
   //................................binary format, depricated! ............................
 #ifdef _BINFILE
- FILE *fh; // file handle
+FILE *fh; // file handle
   system("mv minicomputerMemory.mcm minicomputerMemory.bak");// make a backup
     if ((fh=fopen("minicomputerMemory.mcm","wb")) ==NULL)
 	{

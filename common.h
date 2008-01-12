@@ -9,7 +9,7 @@
 #define _DEBUG
 
 // 'old' binary fileformat, switched off per default
-#define _BINFILE
+#undef _BINFILE
 
 // not customizable options
 // amount of parameters per patch

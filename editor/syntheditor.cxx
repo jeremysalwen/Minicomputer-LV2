@@ -481,6 +481,14 @@ static void storesound(Fl_Widget* o, void* e)
 	case 4: // boost button
 	case 15:
 	case 17:
+		// the repeat buttons of the mod egs
+	case 64:
+	case 69:
+	case 74:
+	case 79:
+	case 84:
+	case 89:
+
 	{
 		if (((Fl_Light_Button *)Knob[currentsound][i])->value()==0)
 		{
@@ -547,7 +555,7 @@ static void storesound(Fl_Widget* o, void* e)
 		Speicher.sounds[Speicher.getChoice(currentsound)].freq[8][1]=((Fl_Positioner*)Knob[currentsound][i])->yvalue();
 	break;
 	}
-	
+		
 	
 //	{
 //		if (((Fl_Light_Button *)Knob[i])->value()==0)
@@ -666,6 +674,14 @@ static void recall(unsigned int preset)
 	case 4: // boost button
 	case 15:
 	case 17:
+		// the repeat buttons of the mod egs
+	case 64:
+	case 69:
+	case 74:
+	case 79:
+	case 84:
+	case 89:
+
 	{
 		if (Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]==0.0f)
 		{
