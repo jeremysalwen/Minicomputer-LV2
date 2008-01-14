@@ -67,8 +67,8 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 
 jack_port_t* inbuf;
 jack_client_t *client;
-#define _MODCOUNT 18
-#define _WAVECOUNT 20
+#define _MODCOUNT 32
+#define _WAVECOUNT 32
 #define _CHOICEMAX 16
 #define _MULTITEMP 8
 #define TableSize 4096
@@ -301,20 +301,24 @@ modulator [currentvoice][12]=egCalc(currentvoice,5);
 modulator [currentvoice][13]=egCalc(currentvoice,6);
 modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
 
-tf = parameter[currentvoice][1]*parameter[currentvoice][2]+(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3])+
-		parameter[currentvoice][4]*parameter[currentvoice][5]*modulator[currentvoice][choice[currentvoice][0]]+
-		parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
+tf = parameter[currentvoice][1]*parameter[currentvoice][2];
+ta1 = parameter[currentvoice][9]*modulator[currentvoice][choice[currentvoice][3]];
+tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3]);
+ta1+= parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][2]];
+tf+=parameter[currentvoice][4]*parameter[currentvoice][5]*modulator[currentvoice][choice[currentvoice][0]];
+tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
 //tf/=3.f;		
-ta1 = parameter[currentvoice][9]*modulator[currentvoice][choice[currentvoice][3]]+parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][2]];
 //ta/=2.f;
 osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
 modulator[currentvoice][3]=osc1*(parameter[currentvoice][13]+parameter[currentvoice][13]*ta1);
 
-tf = parameter[currentvoice][16]*parameter[currentvoice][17]+(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18])+
-	parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]]+
-	parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
+tf = parameter[currentvoice][16]*parameter[currentvoice][17];
+ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]]; 
+tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
+ta2 += parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];
+tf+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
+tf+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
-ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]] + parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];
 //ta/=2.f;
 osc2 = Oscillator(tf,choice[currentvoice][5],&phase[currentvoice][2]);
 modulator[currentvoice][4] = osc2 * (parameter[currentvoice][28]+parameter[currentvoice][28]*ta2);
