@@ -897,6 +897,7 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 
@@ -919,6 +920,7 @@ Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 /**
@@ -2030,10 +2032,10 @@ Fenster* UserInterface::make_window() {
       }*/
       d->end();
     }
-    { Fl_Group* o = new Fl_Group(825, 17, 160, 233);
+    { Fl_Group* o = new Fl_Group(825, 17, 160, 223);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-    { Fl_Group* d = new Fl_Group(825, 110, 160, 135, "amp");
+    { Fl_Group* d = new Fl_Group(825, 235, 160, 135, "amp");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
 	d->end();
@@ -2059,7 +2061,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.0001);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
-      { Fl_Dial* o = new Fl_Dial(950, 58, 25, 25, "amount");
+      { Fl_Dial* o = new Fl_Dial(930, 58, 25, 25, "mod amount");
         o->labelsize(8);
         o->argument(100);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
@@ -2144,17 +2146,68 @@ Fenster* UserInterface::make_window() {
       }
       o->end();
     }
+    { Fl_Group* o = new Fl_Group(825, 250, 160, 140);
+      o->box(FL_ROUNDED_FRAME);
+      o->color(FL_BACKGROUND2_COLOR);
+    { Fl_Group* d = new Fl_Group(825, 385, 160, 135, "delay");
+      d->labelsize(8);
+      d->labelcolor(FL_BACKGROUND2_COLOR);
+	d->end();
+    }
+      { Fl_Dial* o = new Fl_Dial(930, 288, 25, 25, "mod amount");
+        o->labelsize(8);
+        o->argument(110);
+	o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
+      }
+      { Fl_Choice* o = new Fl_Choice(844, 265, 120, 15, "time modulator");
+        o->box(FL_BORDER_BOX);
+        o->down_box(FL_BORDER_BOX);
+        o->labelsize(8);
+        o->textsize(8);
+        o->align(FL_ALIGN_TOP_LEFT);
+        o->menu(menu_amod);
+        o->argument(14);
+	o->callback((Fl_Callback*)choicecallback);
+	auswahl[i][o->argument()]=o;
+      }
+      { Fl_Dial* o = new Fl_Dial(844, 288, 25, 25, "delay time");
+        o->labelsize(8);
+        o->argument(111);
+	o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
+      }
+      { Fl_Dial* o = new Fl_Dial(874, 330, 25, 25, "feedback");
+        o->labelsize(8);
+        o->argument(112);
+	o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
+      }
+      { Fl_Dial* o = new Fl_Dial(950, 330, 25, 25, "volume");
+        o->labelsize(8);
+        o->argument(113);
+	o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
+      }
+      o->end();
+    }
         { Fl_Dial* o = new Fl_Dial(295, 191, 25, 25, "osc1  vol");
       o->labelsize(8);
       o->align(FL_ALIGN_TOP);
         o->argument(14);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
-       { Fl_Dial* o = new Fl_Dial(295, 262, 25, 25, "osc2  vol");
+       { Fl_Dial* o = new Fl_Dial(295, 252, 25, 25, "osc2  vol");
       o->labelsize(8);
        o->argument(29);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
     }
+      { Fl_Dial* o = new Fl_Dial(950, 228, 25, 25, "to delay");
+        o->labelsize(8);
+        o->argument(114);
+	o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
+      }
     o->end(); 
     tab[i]=o;
     } // ==================================== end tab 2

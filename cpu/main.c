@@ -86,13 +86,12 @@ float EG[_MULTITEMP][8][8]; // 7 8
 int EGrepeat[_MULTITEMP][8];
 unsigned int EGtrigger[_MULTITEMP][8];
 unsigned int EGstate[_MULTITEMP][8];
-unsigned int currentvoice = 0;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
-float osc1,osc2,result,clib1,clib2;
 float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf1,tf2,tf3,faktor[_MULTITEMP][4];
-int i;
+int i,delayI[_MULTITEMP],delayJ[_MULTITEMP],delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
+float delayBuffer[_MULTITEMP][96000];
 unsigned int lastnote[_MULTITEMP];
 jack_nframes_t 	bufsize;
 
@@ -254,7 +253,9 @@ static inline float egCalc (unsigned int voice, unsigned int number)
  * which we can happily write into. inthis case we just 
  * fill it with 0's to produce.... silence! not to bad, eh? */
 int process(jack_nframes_t nframes, void *arg) {
-float tf,ta1,ta2,morph,mo,mf;
+float tf,ta1,ta2,morph,mo,mf,result,tdelay,clib1,clib2;
+float osc1,osc2,delayMod;
+unsigned int currentvoice = 0;
 unsigned int index;
 
 	float *bufferMixLeft = (float*) jack_port_get_buffer(port[8], nframes);
@@ -318,7 +319,11 @@ ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8
 osc2 = Oscillator(tf,choice[currentvoice][5],&phase[currentvoice][2]);
 modulator[currentvoice][4] = osc2 * (parameter[currentvoice][28]+parameter[currentvoice][28]*ta2);
 
-temp=(osc1*(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1)+osc2*(parameter[currentvoice][29]+parameter[currentvoice][29]*ta2))*0.5f;	
+// mix pre filter
+temp=osc1*(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1);
+temp+=osc2*(parameter[currentvoice][29]+parameter[currentvoice][29]*ta2);
+temp*=0.5f;// get the volume of the sum into a normal range	
+
 /* filter settings*/
 mf = ( (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]))+(1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]) );
 mo = parameter[currentvoice][56]*mf;
@@ -409,10 +414,49 @@ high[currentvoice][2] = q[currentvoice][2] * temp - low[currentvoice][2] - q[cur
 band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
 modulator[currentvoice] [7] = low[currentvoice][0]*v[currentvoice][0]+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
 
-// amplitude shaping
+//---------------------------------- amplitude shaping
 
 result = modulator[currentvoice][7] *(1.f-modulator[currentvoice][ choice[currentvoice][13]]*parameter[currentvoice][100] );///_MULTITEMP;
 result *= egCalc(currentvoice,0);// the final shaping envelope
+
+// --------------------------------- delay unit
+if( delayI[currentvoice] >= delayBufferSize )
+{
+    delayI[currentvoice] = 0;
+    
+//printf("clear %d : %d : %d\n",currentvoice,delayI[currentvoice],delayJ[currentvoice]);
+}
+delayMod = 1.f-(parameter[currentvoice][110]* modulator[currentvoice][choice[currentvoice][14]]);
+
+delayJ[currentvoice] = delayI[currentvoice] - ((parameter[currentvoice][111]* maxDelayTime)*delayMod);
+
+if( delayJ[currentvoice]  < 0 )
+{
+    delayJ[currentvoice]  += delayBufferSize;
+}
+else if (delayJ[currentvoice]>delayBufferSize)
+{
+	delayJ[currentvoice] = 0;
+}
+
+//if (delayI[currentvoice]>95000)
+//printf("jab\n");
+
+tdelay = result * parameter[currentvoice][114] + (delayBuffer[currentvoice] [ delayJ[currentvoice] ] * parameter[currentvoice][112] );
+
+delayBuffer[currentvoice] [delayI[currentvoice] ] = tdelay;
+/*
+if (delayI[currentvoice]>95000)
+{
+printf("lll %d : %d : %d\n",currentvoice,delayI[currentvoice],delayJ[currentvoice]);
+    fflush(stdout);
+}
+*/
+modulator[currentvoice][18]= tdelay;
+result += tdelay * parameter[currentvoice][113];
+delayI[currentvoice]=delayI[currentvoice]+1;
+
+// --------------------------------- output
 buffer[index] = result * parameter[currentvoice][101];
 bufferAux1[index] += result * parameter[currentvoice][108];
 bufferAux2[index] += result * parameter[currentvoice][109];
@@ -729,7 +773,20 @@ int main() {
 	sampleRate = (float) jack_get_sample_rate (client); 
 	tabX = 4096.f / sampleRate;
 	srate = 3.145f/ sampleRate;
-
+	
+	// depending on it the delaybuffer
+	maxDelayTime = (int)sampleRate;
+	delayBufferSize = maxDelayTime*2;
+	// generate the delaybuffers for each voice
+	int k;
+	for (k=0; k<_MULTITEMP;++k)
+	{
+		//float dbuffer[delayBufferSize];
+		//delayBuffer[k]=dbuffer;
+		delayI[k]=0;
+		delayJ[k]=0;
+	}
+	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
 	/* tell jack that we are ready to do our thing */
 	jack_activate(client);
 	
@@ -804,6 +861,7 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
    	 	phase[voice][1] = 0.f;
    	 	phase[voice][2] = 0.f;
    	 	phase[voice][3] = 0.f;
+		memset(delayBuffer[voice],0,sizeof(delayBuffer[voice]));
    	 break;}
    	 
    	 case 60:EG[voice][1][1]=argv[2]->f;break;
