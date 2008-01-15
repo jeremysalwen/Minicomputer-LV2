@@ -8,6 +8,9 @@
 // debug output
 #define _DEBUG
 
+// vectorize calculations
+//#define _VECTOR
+
 // 'old' binary fileformat, switched off per default
 #undef _BINFILE
 

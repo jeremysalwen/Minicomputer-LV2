@@ -18,20 +18,24 @@
 
 #include "syntheditor.h"
 
+static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
 // gcc -o synthEditor2 syntheditor.cxx -lfltk -llo
  Fl_Widget* Knob[8][_PARACOUNT];
- Fl_Widget* tab[8];
- Fl_Tabs* tabs;
+ Fl_Choice* auswahl[8][17];
  Fl_Value_Input* Display[8][13];
+ Fl_Widget* tab[9];
+ Fl_Input_Choice* schoice[8];
+ Fl_Tabs* tabs;
 
  Fl_Value_Input* paramon;  
+ Fl_Input_Choice*  Multichoice;
+ 
  int currentParameter=0;
+
  unsigned int currentsound=0,currentmulti=0;
 // unsigned int multi[128][8];
 // string multiname[128];
  bool transmit;
- Fl_Choice* auswahl[8][17];
- Fl_Input_Choice* schoice[8];
 //Fl_Chart * EG[7];
 static void choicecallback(Fl_Widget* o, void*)
 {
@@ -52,18 +56,41 @@ static void tabcallback(Fl_Widget* o, void* )
 	//printf("sound %i value  xtab %i\n",(int)((Fl_Group*)o)->argument(),*g);//currentsound);
 	//fflush(stdout);
 	Fl_Widget* e =((Fl_Tabs*)o)->value();
-	for (int i=0; i<8;++i)
+	if (e==tab[8])
 	{
-		if (e==tab[i]){ 
-			currentsound=i;
-			break;
-		}
-	}	
+		if (Multichoice != NULL)
+			Multichoice->hide();
+		else
+			printf("there seems to be something wrong with multichoice widget");
+
+		if (paramon != NULL)
+			paramon->hide();
+		else
+			printf("there seems to be something wrong with paramon widget");
+	}
+	else
+	{
+		if (Multichoice != NULL)
+			Multichoice->show();
+		else
+			printf("there seems to be something wrong with multichoice widget");
+		if (paramon != NULL)
+			paramon->show();
+		else
+			printf("there seems to be something wrong with paramon widget");
+		for (int i=0; i<8;++i)
+		{
+			if (e==tab[i]){ 
+				currentsound=i;
+				break;
+			}
+		}	
 	//else currentsound=1;
 #ifdef _DEBUG
 	printf("sound %i\n", currentsound );
 	fflush(stdout);
 #endif
+ 	} // end of else
 }
 /**
  * main callback, called whenever a parameter has changed
@@ -937,6 +964,14 @@ Fl_Menu_Item UserInterface::menu_wave[] = {
  {"comb", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0}, 
  {"add Saw", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"add Square", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 1", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 8", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 9", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 10", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 11", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 13", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"Microcomp 14", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 
@@ -1027,10 +1062,12 @@ Fenster* UserInterface::make_window() {
     for (int i=0;i<_PARACOUNT;++i) {
 		Knob[currentsound][i]=NULL;
     }
-    // tabs beginning ------------------------------------------------------------
+
+// tabs beginning ------------------------------------------------------------
     { Fl_Tabs* o = new Fl_Tabs(0,0,995, 515);
     	 o->callback((Fl_Callback*)tabcallback);
-    for (int i=0;i<8;++i)
+	 int i;
+    for (i=0;i<8;++i)
     {
     	{ 
     	ostringstream oss;
@@ -1045,14 +1082,17 @@ Fenster* UserInterface::make_window() {
      // o->callback((Fl_Callback*)tabcallback,&xtab);
       
     o->box(FL_BORDER_FRAME);
+    // draw logo
+    { Fl_Box* o = new Fl_Box(855, 450, 25, 25);
+      o->image(image_miniMini);
+    }
      { Fl_Group* o = new Fl_Group(5, 17, 300, 212);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
       {
-      Fl_Group* d = new Fl_Group(145, 225, 30, 22,"oscillator 1");
+      Fl_Box* d = new Fl_Box(145, 210, 30, 22,"oscillator 1");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
       }
       { Fl_Dial* o= new Fl_Dial(21, 20, 34, 34, "frequency");
         o->labelsize(8);
@@ -1222,10 +1262,9 @@ Fenster* UserInterface::make_window() {
    { Fl_Group* o = new Fl_Group(5, 238, 300, 212);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-      {Fl_Group* d = new Fl_Group(145, 446, 30, 22, "oscillator 2");
+      {Fl_Box* d = new Fl_Box(145, 431, 30, 22, "oscillator 2");
       	d->labelsize(8);
       	d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
       }
       { Fl_Dial* o = new Fl_Dial(21, 244, 34, 34, "frequency");
         o->labelsize(8); 
@@ -1376,10 +1415,9 @@ Fenster* UserInterface::make_window() {
   { Fl_Group* o = new Fl_Group(312, 17, 277, 433);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-  	{ Fl_Group* d = new Fl_Group(312, 446, 277, 435, "filters");
+  	{ Fl_Box* d = new Fl_Box(312, 225, 277, 435, "filters");
       	d->labelsize(8);
       	d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
 	}
       { Fl_Group* o = new Fl_Group(330, 28, 239, 92, "filter 1");
         o->box(FL_ROUNDED_FRAME);
@@ -1718,10 +1756,9 @@ Fenster* UserInterface::make_window() {
     { Fl_Group* o = new Fl_Group(595, 17, 225, 433);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-    { Fl_Group* d = new Fl_Group(595, 446, 225, 432, "modulators");
+    { Fl_Box* d = new Fl_Box(595, 225, 210, 432, "modulators");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
       }
       { Fl_Group* o = new Fl_Group(608, 31, 200, 45, "EG 1");
         o->box(FL_ROUNDED_FRAME);
@@ -2008,6 +2045,19 @@ Fenster* UserInterface::make_window() {
         schoice[i] = o;
 	d->add(o);
       }
+      { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
+        o->tooltip("overwrite this multi");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);o->labelcolor((Fl_Color)1);
+        o->callback((Fl_Callback*)storemulti,multichoice);
+      }
+      { Fl_Button* o = new Fl_Button(126, 473, 70, 19, "load multi");
+        o->tooltip("load current multi");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);
+        o->labelcolor((Fl_Color)186);
+         o->callback((Fl_Callback*)loadmulti,multichoice);
+      }
       { Fl_Button* o = new Fl_Button(606, 473, 55, 19, "store sound");
         o->tooltip("store this sound on current entry");
         o->box(FL_BORDER_BOX);
@@ -2035,10 +2085,9 @@ Fenster* UserInterface::make_window() {
     { Fl_Group* o = new Fl_Group(825, 17, 160, 223);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-    { Fl_Group* d = new Fl_Group(825, 235, 160, 135, "amp");
+    { Fl_Box* d = new Fl_Box(825, 164, 160, 135, "amp");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
     }
     { Fl_Dial* o = new Fl_Dial(844, 103, 25, 25, "A");
         o->labelsize(8);o->argument(102); 
@@ -2149,10 +2198,9 @@ Fenster* UserInterface::make_window() {
     { Fl_Group* o = new Fl_Group(825, 250, 160, 140);
       o->box(FL_ROUNDED_FRAME);
       o->color(FL_BACKGROUND2_COLOR);
-    { Fl_Group* d = new Fl_Group(825, 385, 160, 135, "delay");
+    { Fl_Box* d = new Fl_Box(825, 313, 160, 135, "delay");
       d->labelsize(8);
       d->labelcolor(FL_BACKGROUND2_COLOR);
-	d->end();
     }
       { Fl_Dial* o = new Fl_Dial(930, 288, 25, 25, "mod amount");
         o->labelsize(8);
@@ -2210,10 +2258,38 @@ Fenster* UserInterface::make_window() {
       }
     o->end(); 
     tab[i]=o;
-    } // ==================================== end tab 2
+    } // ==================================== end single tab 
     } // end of for
-    
-    
+    	{ 
+    	//ostringstream oss;
+	//oss<<"about";
+	tablabel[i]="about";//oss.str();
+	Fl_Group* o = new Fl_Group(1, 10, 995, 515, tablabel[i].c_str());
+    	 o->color((Fl_Color)246);
+    	 o->labelsize(8);
+    	 //o->argument(2);
+    	// int xtab=1;
+      //o->labelcolor(FL_BACKGROUND2_COLOR); 
+     // o->callback((Fl_Callback*)tabcallback,&xtab);
+      
+    o->box(FL_BORDER_FRAME);
+    // draw logo
+    { Fl_Box* o = new Fl_Box(855, 450, 25, 25);
+      o->image(image_miniMini);
+    }
+    {
+    	Fl_Help_View* o=new Fl_Help_View(200, 50, 600, 300, "About Minicomputer");
+          o->box(FL_ROUNDED_BOX);
+        o->labelsize(8);
+    	 o->color((Fl_Color)246);
+      //o->textcolor(FL_BACKGROUND2_COLOR); 
+      o->textfont(FL_HELVETICA_BOLD );
+      o->labelcolor(FL_BACKGROUND2_COLOR);
+    	o->value("<html><body><i><center>version 0.9</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com</center></body></html>");
+    }	
+    o->end(); 
+    tab[i]=o;
+    } // ==================================== end about tab 
       
     o->end();
     tabs = o;
@@ -2230,10 +2306,8 @@ Fenster* UserInterface::make_window() {
     	
     }*/
 
-
-
 // ----------------------------------------- Multi
-      { Fl_Input_Choice* o = new Fl_Input_Choice(10, 480, 106, 14, "Multi");
+      { Fl_Input_Choice* o = new Fl_Input_Choice(10, 476, 106, 14, "Multi");
         o->box(FL_BORDER_FRAME);
         o->down_box(FL_BORDER_FRAME);
         o->color(FL_FOREGROUND_COLOR);
@@ -2243,23 +2317,11 @@ Fenster* UserInterface::make_window() {
         o->menubutton()->textsize(8);
         o->align(FL_ALIGN_TOP_LEFT);
         multichoice = o;
+        Multichoice = o;
        
       }
-      { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
-        o->tooltip("overwrite this multi");
-        o->box(FL_BORDER_BOX);
-        o->labelsize(8);o->labelcolor((Fl_Color)1);
-        o->callback((Fl_Callback*)storemulti,multichoice);
-      }
-      { Fl_Button* o = new Fl_Button(126, 473, 70, 19, "load multi");
-        o->tooltip("load current multi");
-        o->box(FL_BORDER_BOX);
-        o->labelsize(8);
-        o->labelcolor((Fl_Color)186);
-         o->callback((Fl_Callback*)loadmulti,multichoice);
-      }
       // parameter tuning
-      { Fl_Value_Input* o = new Fl_Value_Input(710, 480, 106, 14, "current parameter");
+      { Fl_Value_Input* o = new Fl_Value_Input(710, 470, 106, 14, "current parameter");
         //o->box(FL_BORDER_FRAME);
           o->box(FL_ROUNDED_BOX);
         //o->color(FL_FOREGROUND_COLOR);
@@ -2273,6 +2335,8 @@ Fenster* UserInterface::make_window() {
 	o->callback((Fl_Callback*)finetune);
 	paramon = o;
       }
+
+
       o->end();
   return o;
 }

@@ -13,7 +13,7 @@ if ARGUMENTS.get('k8', 0):
 	env.Append(CCFLAGS = ' -march=k8 -mtune=k8')
 	guienv.Append(CPPFLAGS = ' -march=k8 -mtune=k8')
 
-env.Append(CCFLAGS = '  -O3 -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -c -fmessage-length=0')
+env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -c -fmessage-length=0')
 
 conf = Configure(env)
 if not conf.CheckLibWithHeader('jack', 'jack/jack.h','c'):

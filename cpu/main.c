@@ -28,10 +28,28 @@
 #include <pthread.h>
 // some common definitions
 #include "../common.h" 
+
+#define _MODCOUNT 32
+#define _WAVECOUNT 32
+#define _CHOICEMAX 16
+#define _MULTITEMP 8
+#define TableSize 4096
+#define tabM 4095
+#define tabF 4096.f
+float delayBuffer[_MULTITEMP][96000];
 snd_seq_t *open_seq();
  snd_seq_t *seq_handle;
   int npfd;
   struct pollfd *pfd;
+#ifdef _VECTOR  
+  typedef float v4sf __attribute__ ((vector_size(16)));((mode(V4SF))); // vector of four single floats
+
+union f4vector 
+{
+  v4sf v __attribute__((aligned (16)));
+  float f[4] __attribute__((aligned (16)));
+};
+#endif
 //void midi_action(snd_seq_t *seq_handle);
 
 
@@ -67,13 +85,6 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 
 jack_port_t* inbuf;
 jack_client_t *client;
-#define _MODCOUNT 32
-#define _WAVECOUNT 32
-#define _CHOICEMAX 16
-#define _MULTITEMP 8
-#define TableSize 4096
-#define tabM 4095
-#define tabF 4096.f
 
 jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
 float phase[_MULTITEMP][4];//=0.f;
@@ -91,7 +102,6 @@ float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
 float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf1,tf2,tf3,faktor[_MULTITEMP][4];
 int i,delayI[_MULTITEMP],delayJ[_MULTITEMP],delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
-float delayBuffer[_MULTITEMP][96000];
 unsigned int lastnote[_MULTITEMP];
 jack_nframes_t 	bufsize;
 
@@ -355,23 +365,55 @@ tf = (srate * (parameter[currentvoice][50]*morph+parameter[currentvoice][53]*mo)
 f[currentvoice][2] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358; 
 */
 // parallel calculation:
+#ifdef _VECTOR
+ union f4vector a __attribute__((aligned (16))), b __attribute__((aligned (16))), c __attribute__((aligned (16)));
+
+  a.f[0] = parameter[currentvoice][30]; a.f[1] =parameter[currentvoice][31]; a.f[2] = parameter[currentvoice][32]; a.f[3] = parameter[currentvoice][40];
+  b.f[0] = morph; b.f[1] = morph; b.f[2] = morph; b.f[3] = morph;
+
+  //c.v = a.v * b.v;
+c.v = __builtin_ia32_mulps (a.v, b.v);
+  tf1 = c.f[0];
+  q[currentvoice][0]=c.f[1];
+  v[currentvoice][0]=c.f[2];
+  tf2 = c.f[3];
+
+
+  a.f[0] = parameter[currentvoice][41]; a.f[1] =parameter[currentvoice][42]; a.f[2] = parameter[currentvoice][50]; a.f[3] = parameter[currentvoice][51];
+ // c.v = a.v * b.v;
+c.v = __builtin_ia32_mulps (a.v, b.v);
+
+q[currentvoice][1] = c.f[0];
+v[currentvoice][1] = c.f[1];
+tf3 =  c.f[2];
+q[currentvoice][2] = c.f[3];
+
+#else
 tf1= parameter[currentvoice][30];
 q[currentvoice][0] = parameter[currentvoice][31];
 v[currentvoice][0] = parameter[currentvoice][32];
 tf2= parameter[currentvoice][40];
+
 q[currentvoice][1] = parameter[currentvoice][41];
 v[currentvoice][1] = parameter[currentvoice][42];
 tf3 =  parameter[currentvoice][50];
 q[currentvoice][2] = parameter[currentvoice][51];
+#endif
+
 v[currentvoice][2] = parameter[currentvoice][52];
+
+#ifndef _VECTOR
 tf1*= morph;
 tf2*= morph;
-tf3 *=  morph;
 q[currentvoice][0] *= morph;
+v[currentvoice][0] *= morph;
+
+tf3 *=  morph;
+v[currentvoice][1] *= morph;
 q[currentvoice][1] *= morph;
 q[currentvoice][2] *= morph;
-v[currentvoice][0] *= morph;
-v[currentvoice][1] *= morph;
+#endif
+
 v[currentvoice][2] *= morph;
 
 tf1+= parameter[currentvoice][33]*mo;
@@ -565,8 +607,16 @@ for (i=0; i<TableSize; i++)
 			((float)sin(x*13.f+((float)2.0f*(float)PI)))*0.6f+
 			((float)sin(x*15.f+((float)2.0f*(float)PI)))*0.5f
 			) / 8.0f;
+			table[10][i]=(float)(sin((double)i/(double)TableSize+(sin((double)i*4))/2))*0.5;
+			table[11][i]=(float)(sin((double)i/(double)TableSize*(sin((double)i*6)/4)))*2.;
+			table[12][i]=(float)(sin((double)i*(sin((double)i*1.3)/50)));
+			table[13][i]=(float)(sin((double)i*(sin((double)i*1.3)/5)));
+			table[14][i]=(float)sin((double)i*0.5*(cos((double)i*4)/50));
+			table[15][i]=(float)sin((double)i*0.5+(sin((double)i*14)/2));
+			table[16][i]=(float)cos((double)i*2*(sin((double)i*34)/400));
+			table[17][i]=(float)cos((double)i*4*((double)table[7][i]/150));
 			
-//printf("%f ",table[8][i]);
+printf("%f ",table[17][i]);
 
 }
 table[5][0] = -0.9f;
