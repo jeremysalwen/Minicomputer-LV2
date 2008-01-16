@@ -26,7 +26,7 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
  Fl_Widget* tab[9];
  Fl_Input_Choice* schoice[8];
  Fl_Tabs* tabs;
-
+ Fl_Button* lm,*sm;
  Fl_Value_Input* paramon;  
  Fl_Input_Choice*  Multichoice;
  
@@ -62,6 +62,16 @@ static void tabcallback(Fl_Widget* o, void* )
 			Multichoice->hide();
 		else
 			printf("there seems to be something wrong with multichoice widget");
+		if (sm != NULL)
+			lm->hide();
+		else
+			printf("there seems to be something wrong with storemultibutton widget");
+
+		if (lm != NULL)
+			lm->hide();
+		else
+			printf("there seems to be something wrong with loadmultibutton widget");
+
 
 		if (paramon != NULL)
 			paramon->hide();
@@ -74,6 +84,16 @@ static void tabcallback(Fl_Widget* o, void* )
 			Multichoice->show();
 		else
 			printf("there seems to be something wrong with multichoice widget");
+		if (sm != NULL)
+			lm->show();
+		else
+			printf("there seems to be something wrong with storemultibutton widget");
+
+		if (lm != NULL)
+			lm->show();
+		else
+			printf("there seems to be something wrong with loadmultibutton widget");
+
 		if (paramon != NULL)
 			paramon->show();
 		else
@@ -408,6 +428,7 @@ fflush(stdout);
  * @param Fl_Widget the calling widget
  * @param defined by FLTK but not used
  */
+/*
 static void copycallback(Fl_Widget* o, void*) {
 
 	int filter = ((Fl_Valuator*)o)->argument();// what to copy there
@@ -425,7 +446,7 @@ static void copycallback(Fl_Widget* o, void*) {
 	}
 	break;
 	}
-}
+}*/
 /**
  * callback for finetuning the current parameter
  * @param Fl_Widget the calling widget
@@ -1446,11 +1467,11 @@ Fenster* UserInterface::make_window() {
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        {Fl_Positioner* o = new Fl_Positioner(340,31,38,79,"cut");
+        {Fl_Positioner* o = new Fl_Positioner(340,31,70,79,"cut");
     	o->xbounds(0,9000);
-    	o->ybounds(1000,0); o->selection_color(0);
+    	o->ybounds(499,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000);
+    	o->xstep(500);
     	o->labelsize(8);
     	o->argument(30);
     	o->callback((Fl_Callback*)callback);
@@ -1464,7 +1485,7 @@ Fenster* UserInterface::make_window() {
 		o->callback((Fl_Callback*)callback);
 		*/
         }
-        { Fl_Dial* o = f1q1 = new Fl_Dial(382, 33, 25, 25, "q");
+        { Fl_Dial* o = f1q1 = new Fl_Dial(415, 33, 25, 25, "q");
           o->labelsize(8);
           o->argument(31);
           o->minimum(0.9);
@@ -1472,7 +1493,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 70, 20, 20, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(425, 70, 20, 20, "vol");
           o->labelsize(8);
            o->argument(32);
 		o->callback((Fl_Callback*)callback);o->minimum(-1);
@@ -1481,11 +1502,11 @@ Fenster* UserInterface::make_window() {
         }
         
         
-        { Fl_Positioner* o = new Fl_Positioner(475,31,38,79,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(456,31,70,79,"cut");
     	o->xbounds(0,9000);
-    	o->ybounds(1000,0);
+    	o->ybounds(499,0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000); o->selection_color(0);
+    	o->xstep(500); o->selection_color(0);
     	o->labelsize(8);
     	o->callback((Fl_Callback*)callback);
        /* Fl_Dial* o = f1cut2 = new Fl_SteinerKnob(481, 50, 34, 34, "cut");
@@ -1497,7 +1518,7 @@ Fenster* UserInterface::make_window() {
 	  Knob[i][o->argument()] = o;
 		
         }
-        { Fl_Dial* o = f1q2 = new Fl_Dial(517, 32, 25, 25, "q");
+        { Fl_Dial* o = f1q2 = new Fl_Dial(531, 32, 25, 25, "q");
           o->labelsize(8); 
           
           o->argument(34);
@@ -1506,7 +1527,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 70, 20, 20, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(541, 70, 20, 20, "vol");
           o->labelsize(8); 
           o->labelsize(8);
           o->minimum(-1);
@@ -1516,7 +1537,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)callback);
 	   Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(385, 100, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(412, 100, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->textsize(8);
@@ -1526,7 +1547,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           Display[i][4]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(520, 100, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(528, 100, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->textsize(8);
@@ -1536,6 +1557,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
            Display[i][5]=o;
         }
+	/*
         { Fl_Button* o = new Fl_Button(426, 35, 45, 15, "copy ->");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
@@ -1543,7 +1565,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Button* o = new Fl_Button(426, 59, 45, 15, "<- copy");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
-        }
+        }*/
         o->end();
       }
       { Fl_Dial* o = new Fl_Dial(418, 360, 60, 57, "morph");
@@ -1586,11 +1608,11 @@ Fenster* UserInterface::make_window() {
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        { Fl_Positioner* o = new Fl_Positioner(340,135,38,79,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(340,135,70,79,"cut");
     	o->xbounds(0,7000);
-    	o->ybounds(1000,0); o->selection_color(0);
+    	o->ybounds(499,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000);
+    	o->xstep(500);
     	o->labelsize(8);
     	/*Fl_Dial* o = f1cut1 = new Fl_SteinerKnob(344, 155, 34, 34, "cut");
           o->labelsize(8);
@@ -1600,7 +1622,7 @@ Fenster* UserInterface::make_window() {
           o->argument(40);Knob[i][o->argument()] = o;
 		o->callback((Fl_Callback*)callback);
         }
-        { Fl_Dial* o = f1q1 = new Fl_Dial(382, 137, 25, 25, "q");
+        { Fl_Dial* o = f1q1 = new Fl_Dial(415, 137, 25, 25, "q");
           o->labelsize(8);
            o->argument(41);
           o->minimum(0.9);
@@ -1608,18 +1630,18 @@ Fenster* UserInterface::make_window() {
           o->value(0.5);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 174, 20, 20, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(425, 174, 20, 20, "vol");
           o->labelsize(8);
            o->argument(42);o->maximum(2);
 		o->callback((Fl_Callback*)callback);o->minimum(-2);
           o->value(0);
           o->maximum(2);Knob[i][o->argument()] = o;
         }
-        { Fl_Positioner* o = new Fl_Positioner(475,135,38,79,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(456,135,70,79,"cut");
     	o->xbounds(0,7000);
-    	o->ybounds(1000,0); o->selection_color(0);
+    	o->ybounds(499,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000);
+    	o->xstep(500);
     	o->labelsize(8);
     	
     	/*Fl_Dial* o = f1cut2 = new Fl_SteinerKnob(481, 154, 34, 34, "cut");
@@ -1630,7 +1652,7 @@ Fenster* UserInterface::make_window() {
           o->argument(43);Knob[i][o->argument()] = o;
 		o->callback((Fl_Callback*)callback);
         }
-        { Fl_Dial* o = f1q2 = new Fl_Dial(517, 136, 25, 25, "q");
+        { Fl_Dial* o = f1q2 = new Fl_Dial(531, 136, 25, 25, "q");
           o->labelsize(8);
            o->labelsize(8);
           o->argument(44);
@@ -1639,7 +1661,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.001);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 174, 20, 20, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(541, 174, 20, 20, "vol");
           o->labelsize(8);
            o->labelsize(8);
           o->argument(45);o->maximum(2);
@@ -1648,7 +1670,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(2);
           Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(385, 204, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(412, 204, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -1657,7 +1679,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][6]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(520, 204, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(528, 204, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->argument(43);
@@ -1666,29 +1688,30 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][7]=o;
         }
+	/*
         { Fl_Button* o = new Fl_Button(426, 139, 45, 15, "copy ->");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
           o->argument(21);
-		o->callback((Fl_Callback*)copycallback);
+		//o->callback((Fl_Callback*)copycallback);
         }
         { Fl_Button* o = new Fl_Button(426, 163, 45, 15, "<- copy");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
           o->argument(22);
-	  o->callback((Fl_Callback*)copycallback);
-        }
+	  //o->callback((Fl_Callback*)copycallback);
+        }*/
         o->end();
       }
       { Fl_Group* o = new Fl_Group(330, 238, 239, 92, "filter 3");
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        {Fl_Positioner* o = new Fl_Positioner(340,241,38,79,"cut");
+        {Fl_Positioner* o = new Fl_Positioner(340,241,70,79,"cut");
     	o->xbounds(0,7000);
-    	o->ybounds(1000,0); o->selection_color(0);
+    	o->ybounds(499,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000);
+    	o->xstep(500);
     	o->labelsize(8);
     	/* Fl_Dial* o = f1cut1 = new Fl_SteinerKnob(344, 261, 34, 34, "cut");
           o->labelsize(8); 
@@ -1698,7 +1721,7 @@ Fenster* UserInterface::make_window() {
 		o->callback((Fl_Callback*)callback);
 		Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1q1 = new Fl_Dial(382, 243, 25, 25, "q");
+        { Fl_Dial* o = f1q1 = new Fl_Dial(415, 243, 25, 25, "q");
           o->labelsize(8); 
            o->argument(51);
           o->minimum(0.9);
@@ -1706,18 +1729,18 @@ Fenster* UserInterface::make_window() {
           o->value(0.5);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 280, 20, 20, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(425, 280, 20, 20, "vol");
           o->labelsize(8);
            o->argument(52);
            o->maximum(2);o->minimum(-2);
           o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Positioner* o = new Fl_Positioner(475,241,38,79,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(456,241,70,79,"cut");
     	o->xbounds(0,7000);
-    	o->ybounds(1000,0); o->selection_color(0);
+    	o->ybounds(499,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
-    	o->xstep(1000);
+    	o->xstep(500);
     	o->labelsize(8);
     	/*Fl_Dial* o = f1cut2 = new Fl_SteinerKnob(481, 260, 34, 34, "cut");
           o->labelsize(8);
@@ -1727,7 +1750,7 @@ Fenster* UserInterface::make_window() {
            Knob[i][o->argument()] = o;
 		o->callback((Fl_Callback*)callback);
         }
-        { Fl_Dial* o = f1q2 = new Fl_Dial(517, 242, 25, 25, "q");
+        { Fl_Dial* o = f1q2 = new Fl_Dial(531, 242, 25, 25, "q");
           o->labelsize(8);
           o->argument(54);
           o->minimum(0.9);
@@ -1735,14 +1758,14 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.001);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 280, 20, 20, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(541, 280, 20, 20, "vol");
           o->labelsize(8); 
           o->labelsize(8);
           o->argument(55);o->maximum(2);o->minimum(-2);
           o->value(0);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(385, 310, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(412, 310, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -1751,7 +1774,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][8]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(520, 310, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(528, 310, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -1760,6 +1783,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][9]=o;
         }
+	/*
         { Fl_Button* o = new Fl_Button(426, 245, 45, 15, "copy ->");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
@@ -1767,7 +1791,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Button* o = new Fl_Button(426, 269, 45, 15, "<- copy");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
-        }
+        }*/
         o->end();
       } 
       { Fl_Button* o = new Fl_Button(486, 430, 50, 15, "clear filter");
@@ -2059,7 +2083,7 @@ Fenster* UserInterface::make_window() {
         o->labelsize(8);
         o->labelcolor((Fl_Color)1);
       }*/
-      { Fl_Input_Choice* o = new Fl_Input_Choice(274, 476, 206, 14, "sound");
+      { Fl_Input_Choice* o = new Fl_Input_Choice(274, 476, 150, 14, "sound");
         o->box(FL_BORDER_FRAME);
         o->down_box(FL_BORDER_FRAME);
         o->color(FL_FOREGROUND_COLOR);
@@ -2072,32 +2096,34 @@ Fenster* UserInterface::make_window() {
         schoice[i] = o;
 	d->add(o);
       }
-      { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
-        o->tooltip("overwrite this multi");
-        o->box(FL_BORDER_BOX);
-        o->labelsize(8);o->labelcolor((Fl_Color)1);
-        o->callback((Fl_Callback*)storemulti,multichoice);
-      }
-      { Fl_Button* o = new Fl_Button(126, 473, 70, 19, "load multi");
-        o->tooltip("load current multi");
-        o->box(FL_BORDER_BOX);
-        o->labelsize(8);
-        o->labelcolor((Fl_Color)186);
-         o->callback((Fl_Callback*)loadmulti,multichoice);
-      }
-      { Fl_Button* o = new Fl_Button(606, 473, 55, 19, "store sound");
+      { Fl_Button* o = new Fl_Button(516, 473, 55, 19, "store sound");
         o->tooltip("store this sound on current entry");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);o->labelcolor((Fl_Color)1);
         o->callback((Fl_Callback*)storesound,soundchoice[i]);
       }
-      { Fl_Button* o = new Fl_Button(526, 473, 70, 19, "load sound");
+      { Fl_Button* o = new Fl_Button(436, 473, 70, 19, "load sound");
         o->tooltip("actually load the chosen sound");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
         o->labelcolor((Fl_Color)186);
          o->callback((Fl_Callback*)loadsound,soundchoice[i]);
       }
+      /* soon to come...
+      { Fl_Button* o = new Fl_Button(600, 469, 70, 12, "import sound");
+        o->tooltip("import single sound to this voice");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);
+	//o->labelcolor((Fl_Color)1);
+        o->callback((Fl_Callback*)importsound,soundchoice[i]);
+      }
+      { Fl_Button* o = new Fl_Button(600, 485, 70, 12, "export sound");
+        o->tooltip("export sound data of this voice");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);
+        //o->labelcolor((Fl_Color)186);
+         o->callback((Fl_Callback*)exportsound,soundchoice[i]);
+      }*/
       /*{ Fl_Input_Choice* o = new Fl_Input_Choice(83, 476, 105, 14, "bank");
         o->box(FL_BORDER_FRAME);
         o->down_box(FL_BORDER_FRAME);
@@ -2346,6 +2372,21 @@ Fenster* UserInterface::make_window() {
         multichoice = o;
         Multichoice = o;
        
+      }
+      { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
+        o->tooltip("overwrite this multi");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);o->labelcolor((Fl_Color)1);
+        o->callback((Fl_Callback*)storemulti,multichoice);
+	sm = o;
+      }
+      { Fl_Button* o = new Fl_Button(126, 473, 70, 19, "load multi");
+        o->tooltip("load current multi");
+        o->box(FL_BORDER_BOX);
+        o->labelsize(8);
+        o->labelcolor((Fl_Color)186);
+         o->callback((Fl_Callback*)loadmulti,multichoice);
+	 lm = o;
       }
       // parameter tuning
       { Fl_Value_Input* o = new Fl_Value_Input(710, 470, 106, 14, "current parameter");

@@ -316,7 +316,7 @@ unsigned int index;
 	bufferMixRight[index]=0.f;
 	bufferAux1[index]=0.f;
 	bufferAux2[index]=0.f;
-for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice)
+for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 {		
 	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 //		buffer[index]=0.0f;
@@ -331,9 +331,9 @@ modulator [currentvoice][13]=egCalc(currentvoice,6);
 modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
 
 tf = parameter[currentvoice][1]*parameter[currentvoice][2];
-ta1 = parameter[currentvoice][9]*modulator[currentvoice][choice[currentvoice][3]];
+ta1 = parameter[currentvoice][9]*modulator[currentvoice][choice[currentvoice][3]]; // osc1 first ampmod
 tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3]);
-ta1+= parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][2]];
+ta1+= parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][2]];// osc1 second ampmod
 tf+=parameter[currentvoice][4]*parameter[currentvoice][5]*modulator[currentvoice][choice[currentvoice][0]];
 tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
 //tf/=3.f;		
@@ -342,9 +342,9 @@ osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
 modulator[currentvoice][3]=osc1*(parameter[currentvoice][13]+parameter[currentvoice][13]*ta1);
 
 tf = parameter[currentvoice][16]*parameter[currentvoice][17];
-ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]]; 
+ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
 tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
-ta2 += parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];
+ta2 += parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
 tf+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
 tf+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
@@ -356,7 +356,7 @@ modulator[currentvoice][4] *= osc2;
 // mix pre filter
 temp=(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1);
 temp*=osc1;
-temp+=osc2*(parameter[currentvoice][29]+parameter[currentvoice][29]*ta2);
+temp+=osc2*(parameter[currentvoice][29]*(1.f-ta2));
 temp*=0.5f;// get the volume of the sum into a normal range	
 
 /* filter settings*/
