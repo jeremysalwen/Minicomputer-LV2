@@ -63,7 +63,7 @@ static void tabcallback(Fl_Widget* o, void* )
 		else
 			printf("there seems to be something wrong with multichoice widget");
 		if (sm != NULL)
-			lm->hide();
+			sm->hide();
 		else
 			printf("there seems to be something wrong with storemultibutton widget");
 
@@ -85,7 +85,7 @@ static void tabcallback(Fl_Widget* o, void* )
 		else
 			printf("there seems to be something wrong with multichoice widget");
 		if (sm != NULL)
-			lm->show();
+			sm->show();
 		else
 			printf("there seems to be something wrong with storemultibutton widget");
 
