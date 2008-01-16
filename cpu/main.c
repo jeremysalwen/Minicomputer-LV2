@@ -160,9 +160,10 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 	 * 5 = target
 	 * 6 = state
 	 */
+	int i = EGstate[voice][number]; 
 	if (EGtrigger[voice][number] != 1)
 	{
-		if (EGstate[voice][number] == 1){ // attack
+		if (i == 1){ // attack
 			 EG[voice][number][6] += EG[voice][number][1];
 			 if (EG[voice][number][6]>=1.0f)
 			 {
@@ -170,7 +171,8 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 			 	EGstate[voice][number]=2;
 			 }
 		}
-		else if (EGstate[voice][number] == 2){ // decay
+		else if (i == 2)
+		{ // decay
 			if (EG[voice][number][6]>EG[voice][number][3])
 			{
 				EG[voice][number][6] -= EG[voice][number][2];
@@ -179,15 +181,29 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 			{
 				if (EGrepeat[voice][number]==0)
 				{
-					EGstate[voice][number]=3;
+					EGstate[voice][number]=3; // stay on sustain
 				}
 				else
 				{
-					egStop(voice,number);
+					egStop(voice,number);// continue to release
 				}
 			}
-		}
-		else if ((EGstate[voice][number] == 0) && (EG[voice][number][6]>0.0f))
+			// what happens if sustain = 0? envelope should go in stop mode when decay reached ground
+			if (EG[voice][number][6]<0.0f) 
+		    	{	
+		    		EG[voice][number][6]=0.0f;
+		    		if (EGrepeat[voice][number]==0)
+				{
+					EGstate[voice][number]=4; // released
+				}
+				else
+				{
+					egStart(voice,number);// repeat
+				}
+		    	}
+
+		} // end of decay
+		else if ((i == 0) && (EG[voice][number][6]>0.0f))
 		{
 		    /* release */
 		    
@@ -201,7 +217,7 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 				}
 				else
 				{
-					egStart(voice,number);
+					egStart(voice,number);// repeat
 				}
 		    }
 		}
@@ -616,7 +632,7 @@ for (i=0; i<TableSize; i++)
 			table[16][i]=(float)cos((double)i*2*(sin((double)i*34)/400));
 			table[17][i]=(float)cos((double)i*4*((double)table[7][i]/150));
 			
-printf("%f ",table[17][i]);
+//printf("%f ",table[17][i]);
 
 }
 table[5][0] = -0.9f;
@@ -714,7 +730,7 @@ if (poll(pfd, npfd, 100000) > 0)
                 lastnote[c]=ev->data.note.note;	
                 midif[c]=midi2freq[ev->data.note.note];
                 modulator[c][0]=ev->data.note.note*0.007874f;
-                modulator[c][1]=(float)ev->data.note.velocity*0.007874f;
+                modulator[c][1]=(float)1-(ev->data.note.velocity*0.007874f);
                 egStart(c,0);
                 if (EGrepeat[c][1] == 0)egStart(c,1);
                 if (EGrepeat[c][2] == 0)egStart(c,2);

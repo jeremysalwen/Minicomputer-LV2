@@ -1424,7 +1424,7 @@ Fenster* UserInterface::make_window() {
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
         {Fl_Positioner* o = new Fl_Positioner(340,35,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,9000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000);
@@ -1459,7 +1459,7 @@ Fenster* UserInterface::make_window() {
         
         
         { Fl_Positioner* o = new Fl_Positioner(475,35,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,9000);
     	o->ybounds(1000,0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000); o->selection_color(0);
@@ -1564,7 +1564,7 @@ Fenster* UserInterface::make_window() {
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
         { Fl_Positioner* o = new Fl_Positioner(340,139,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000);
@@ -1593,7 +1593,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(2);Knob[i][o->argument()] = o;
         }
         { Fl_Positioner* o = new Fl_Positioner(475,139,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000);
@@ -1658,7 +1658,7 @@ Fenster* UserInterface::make_window() {
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
         {Fl_Positioner* o = new Fl_Positioner(340,245,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000);
@@ -1687,7 +1687,7 @@ Fenster* UserInterface::make_window() {
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Positioner* o = new Fl_Positioner(475,245,40,55,"cut");
-    	o->xbounds(0,10000);
+    	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
     	o->xstep(1000);
