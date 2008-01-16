@@ -404,6 +404,29 @@ fflush(stdout);
 }
 
 /**
+ * copybutton callback, called whenever the user wants to copy filterparameters
+ * @param Fl_Widget the calling widget
+ * @param defined by FLTK but not used
+ */
+static void copycallback(Fl_Widget* o, void*) {
+
+	int filter = ((Fl_Valuator*)o)->argument();// what to copy there
+	switch (filter)
+	{
+	case 21:
+	{
+		
+		((Fl_Valuator* )Knob[currentsound][33])->value(	((Fl_Valuator* )Knob[currentsound][30])->value());
+		callback(Knob[currentsound][33],NULL);
+		((Fl_Valuator* )Knob[currentsound][34])->value(	((Fl_Valuator* )Knob[currentsound][31])->value());
+		callback(Knob[currentsound][34],NULL);
+		((Fl_Valuator* )Knob[currentsound][35])->value(	((Fl_Valuator* )Knob[currentsound][32])->value());
+		callback(Knob[currentsound][35],NULL);
+	}
+	break;
+	}
+}
+/**
  * callback for finetuning the current parameter
  * @param Fl_Widget the calling widget
  * @param defined by FLTK but not used
@@ -1423,7 +1446,7 @@ Fenster* UserInterface::make_window() {
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        {Fl_Positioner* o = new Fl_Positioner(340,35,40,55,"cut");
+        {Fl_Positioner* o = new Fl_Positioner(340,31,38,79,"cut");
     	o->xbounds(0,9000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
@@ -1449,7 +1472,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 72, 25, 25, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 70, 20, 20, "vol");
           o->labelsize(8);
            o->argument(32);
 		o->callback((Fl_Callback*)callback);o->minimum(-1);
@@ -1458,7 +1481,7 @@ Fenster* UserInterface::make_window() {
         }
         
         
-        { Fl_Positioner* o = new Fl_Positioner(475,35,40,55,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(475,31,38,79,"cut");
     	o->xbounds(0,9000);
     	o->ybounds(1000,0);
     	o->box(FL_BORDER_BOX);
@@ -1483,7 +1506,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 71, 25, 25, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 70, 20, 20, "vol");
           o->labelsize(8); 
           o->labelsize(8);
           o->minimum(-1);
@@ -1493,7 +1516,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)callback);
 	   Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(342, 100, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(385, 100, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->textsize(8);
@@ -1503,7 +1526,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           Display[i][4]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(479, 100, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(520, 100, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->textsize(8);
@@ -1563,7 +1586,7 @@ Fenster* UserInterface::make_window() {
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        { Fl_Positioner* o = new Fl_Positioner(340,139,40,55,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(340,135,38,79,"cut");
     	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
@@ -1585,14 +1608,14 @@ Fenster* UserInterface::make_window() {
           o->value(0.5);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 176, 25, 25, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 174, 20, 20, "vol");
           o->labelsize(8);
            o->argument(42);o->maximum(2);
 		o->callback((Fl_Callback*)callback);o->minimum(-2);
           o->value(0);
           o->maximum(2);Knob[i][o->argument()] = o;
         }
-        { Fl_Positioner* o = new Fl_Positioner(475,139,40,55,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(475,135,38,79,"cut");
     	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
@@ -1616,7 +1639,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.001);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 175, 25, 25, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 174, 20, 20, "vol");
           o->labelsize(8);
            o->labelsize(8);
           o->argument(45);o->maximum(2);
@@ -1625,7 +1648,7 @@ Fenster* UserInterface::make_window() {
           o->maximum(2);
           Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(342, 204, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(385, 204, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -1634,7 +1657,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][6]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(479, 204, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(520, 204, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
           o->argument(43);
@@ -1646,10 +1669,14 @@ Fenster* UserInterface::make_window() {
         { Fl_Button* o = new Fl_Button(426, 139, 45, 15, "copy ->");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
+          o->argument(21);
+		o->callback((Fl_Callback*)copycallback);
         }
         { Fl_Button* o = new Fl_Button(426, 163, 45, 15, "<- copy");
           o->box(FL_BORDER_BOX);
           o->labelsize(8);
+          o->argument(22);
+	  o->callback((Fl_Callback*)copycallback);
         }
         o->end();
       }
@@ -1657,7 +1684,7 @@ Fenster* UserInterface::make_window() {
         o->box(FL_ROUNDED_FRAME);
         o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
-        {Fl_Positioner* o = new Fl_Positioner(340,245,40,55,"cut");
+        {Fl_Positioner* o = new Fl_Positioner(340,241,38,79,"cut");
     	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
@@ -1679,14 +1706,14 @@ Fenster* UserInterface::make_window() {
           o->value(0.5);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 282, 25, 25, "vol");
+        { Fl_Dial* o = f1vol1 = new Fl_Dial(396, 280, 20, 20, "vol");
           o->labelsize(8);
            o->argument(52);
            o->maximum(2);o->minimum(-2);
           o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Positioner* o = new Fl_Positioner(475,245,40,55,"cut");
+        { Fl_Positioner* o = new Fl_Positioner(475,241,38,79,"cut");
     	o->xbounds(0,7000);
     	o->ybounds(1000,0); o->selection_color(0);
     	o->box(FL_BORDER_BOX);
@@ -1708,14 +1735,14 @@ Fenster* UserInterface::make_window() {
           o->maximum(0.001);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 281, 25, 25, "vol");
+        { Fl_Dial* o = f1vol2 = new Fl_Dial(536, 280, 20, 20, "vol");
           o->labelsize(8); 
           o->labelsize(8);
           o->argument(55);o->maximum(2);o->minimum(-2);
           o->value(0);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(342, 310, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(385, 310, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -1724,7 +1751,7 @@ Fenster* UserInterface::make_window() {
 	   o->callback((Fl_Callback*)cutoffCallback);
           o->textsize(8);Display[i][8]=o;
         }
-        { Fl_Value_Input* o = new Fl_Value_Input(479, 310, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(520, 310, 38, 15);
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);

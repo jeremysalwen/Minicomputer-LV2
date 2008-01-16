@@ -37,6 +37,21 @@
 #define tabM 4095
 #define tabF 4096.f
 float delayBuffer[_MULTITEMP][96000];
+float table [_WAVECOUNT][TableSize];
+float parameter[_MULTITEMP][_PARACOUNT];
+float modulator[_MULTITEMP][_MODCOUNT];
+float midi2freq [128],midif[_MULTITEMP];
+float EG[_MULTITEMP][8][8]; // 7 8
+float phase[_MULTITEMP][4];//=0.f;
+unsigned int choice[_MULTITEMP][_CHOICEMAX];
+int EGrepeat[_MULTITEMP][8];
+unsigned int EGtrigger[_MULTITEMP][8];
+unsigned int EGstate[_MULTITEMP][8];
+float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],faktor[_MULTITEMP][4];
+jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
+unsigned int lastnote[_MULTITEMP];
+int delayI[_MULTITEMP],delayJ[_MULTITEMP];
+
 snd_seq_t *open_seq();
  snd_seq_t *seq_handle;
   int npfd;
@@ -74,7 +89,6 @@ snd_seq_t *open_seq() {
 
 
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
-int done = 0;
 static inline void error(int num, const char *m, const char *path); 
 static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
 static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
@@ -86,28 +100,17 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 jack_port_t* inbuf;
 jack_client_t *client;
 
-jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
-float phase[_MULTITEMP][4];//=0.f;
-float parameter[_MULTITEMP][_PARACOUNT];
-float modulator[_MULTITEMP][_MODCOUNT];
-unsigned int choice[_MULTITEMP][_CHOICEMAX];
-float midi2freq [128],midif[_MULTITEMP];
-float table [_WAVECOUNT][TableSize];
-float EG[_MULTITEMP][8][8]; // 7 8
-int EGrepeat[_MULTITEMP][8];
-unsigned int EGtrigger[_MULTITEMP][8];
-unsigned int EGstate[_MULTITEMP][8];
+float temp=0.f,lfo,tf1,tf2,tf3;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
-float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],temp=0,f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],lfo,tf1,tf2,tf3,faktor[_MULTITEMP][4];
-int i,delayI[_MULTITEMP],delayJ[_MULTITEMP],delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
-unsigned int lastnote[_MULTITEMP];
+int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
+int done = 0;
 
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
-    int i = (int)( *phase );
+    int i = (int) *phase ;// float to int, cost some cycles
 
 	i=i&tabM;//i%=TableSize;
 	//if (i>tabM) i=tabM;
@@ -346,11 +349,13 @@ tf+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoi
 tf+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
 //ta/=2.f;
+modulator[currentvoice][4] = (parameter[currentvoice][28]+parameter[currentvoice][28]*ta2);
 osc2 = Oscillator(tf,choice[currentvoice][5],&phase[currentvoice][2]);
-modulator[currentvoice][4] = osc2 * (parameter[currentvoice][28]+parameter[currentvoice][28]*ta2);
+modulator[currentvoice][4] *= osc2;
 
 // mix pre filter
-temp=osc1*(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1);
+temp=(parameter[currentvoice][14]+parameter[currentvoice][14]*ta1);
+temp*=osc1;
 temp+=osc2*(parameter[currentvoice][29]+parameter[currentvoice][29]*ta2);
 temp*=0.5f;// get the volume of the sum into a normal range	
 
