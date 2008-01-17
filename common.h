@@ -12,7 +12,7 @@
 //#define _VECTOR
 
 // 'old' binary fileformat, switched off per default
-#undef _BINFILE
+//#define _BINFILE
 
 // not customizable options
 // amount of parameters per patch

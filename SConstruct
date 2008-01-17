@@ -10,12 +10,17 @@ else:
 	guienv = Environment(CPPFLAGS = '')
 
 if ARGUMENTS.get('k8', 0):
-	env.Append(CCFLAGS = ' -march=k8 -mtune=k8')
-	guienv.Append(CPPFLAGS = ' -march=k8 -mtune=k8')
+	env.Append(CCFLAGS = ['-march=k8','-mtune=k8'])
+	guienv.Append(CPPFLAGS = ['-march=k8','-mtune=k8'])
+if ARGUMENTS.get('k7', 0):
+	env.Append(CCFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
+	guienv.Append(CPPFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
 
-env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -c -fmessage-length=0')
+# env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -c -fmessage-length=0')
 
+env.Append(CCFLAGS = ['-O3','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer', '-funswitch-loops', '-Wall','-c','-fmessage-length=0'])
 conf = Configure(env)
+
 if not conf.CheckLibWithHeader('jack', 'jack/jack.h','c'):
 	print 'Did not find jack, exiting!'
 	Exit(1)
@@ -40,7 +45,7 @@ if not guiconf.CheckLibWithHeader('fltk', 'FL/Fl.H','c++'):
 	print 'Did not find FLTK for the gui, exiting!'
 	Exit(1)
 guienv = guiconf.Finish()
-guienv.Append(CPPFLAGS = '  -O3 -Wall -c -fmessage-length=0')
+guienv.Append(CPPFLAGS = ['-O3','-Wall','-c','-fmessage-length=0'])
 
 print"-                     2/2:compiling"
 print"-                     building the engine:"
