@@ -100,7 +100,7 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 jack_port_t* inbuf;
 jack_client_t *client;
 
-float temp=0.f,lfo,tf1,tf2,tf3;
+float temp=0.f,lfo;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
@@ -131,6 +131,7 @@ static inline float Oscillator(float frequency,int wave,float *phase)
                 }
         return table[wave][i] ;
 }
+
 //inline float filter (float input,float f, float q)
 //{
 //
@@ -282,7 +283,7 @@ static inline float egCalc (unsigned int voice, unsigned int number)
  * which we can happily write into. inthis case we just 
  * fill it with 0's to produce.... silence! not to bad, eh? */
 int process(jack_nframes_t nframes, void *arg) {
-float tf,ta1,ta2,morph,mo,mf,result,tdelay,clib1,clib2;
+float tf,tf1,tf2,tf3,ta1,ta2,morph,mo,mf,result,tdelay,clib1,clib2;
 float osc1,osc2,delayMod;
 unsigned int currentvoice = 0;
 unsigned int index;
@@ -341,16 +342,16 @@ tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
 osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
 modulator[currentvoice][3]=osc1*(parameter[currentvoice][13]+parameter[currentvoice][13]*ta1);
 
-tf = parameter[currentvoice][16]*parameter[currentvoice][17];
+tf2 = parameter[currentvoice][16]*parameter[currentvoice][17];
 ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
-tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
+tf2+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
 ta2 += parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
-tf+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
-tf+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
+tf2+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
+tf2+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
 //ta/=2.f;
 modulator[currentvoice][4] = (parameter[currentvoice][28]+parameter[currentvoice][28]*ta2);
-osc2 = Oscillator(tf,choice[currentvoice][5],&phase[currentvoice][2]);
+osc2 = Oscillator(tf2,choice[currentvoice][5],&phase[currentvoice][2]);
 modulator[currentvoice][4] *= osc2;
 
 // mix pre filter
