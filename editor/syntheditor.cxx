@@ -942,6 +942,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
 	{
+		currentsound = i;
 		recall(Speicher.multis[currentmulti].sound[i]);// actual recall
 		schoice[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
 		// set the knobs of the mix
@@ -971,6 +972,11 @@ static void loadmulti(Fl_Widget* o, void* e)
 			}
 		}
 	}
+currentsound = 0;
+// we should go to a defined state, means tab
+	tabs->value(tab[0]);
+	tabcallback(tabs,NULL);
+
 #ifdef _DEBUG
 	printf("multi choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
@@ -992,6 +998,9 @@ static void storemulti(Fl_Widget* o, void* e)
 	if (Multichoice != NULL)
 	{
 		int t = Multichoice->menubutton()->value();
+#ifdef _DEBUG
+		printf("was:%d is:%d\n",currentmulti,t);
+#endif
 		if ((t!=currentmulti) && (t>-1) && (t<128))
 		{
 			currentmulti = t;
@@ -1011,7 +1020,9 @@ static void storemulti(Fl_Widget* o, void* e)
 	for (i=0;i<8;++i)
 	{
 		Speicher.multis[currentmulti].sound[i]=Speicher.getChoice(i);
-		
+#ifdef _DEBUG
+		printf("sound slot: %d = %d\n",i,Speicher.getChoice(i));
+#endif
 		Speicher.multis[currentmulti].settings[i][0]=((Fl_Valuator*)Knob[i][101])->value();
 		Speicher.multis[currentmulti].settings[i][1]=((Fl_Valuator*)Knob[i][106])->value();
 		Speicher.multis[currentmulti].settings[i][2]=((Fl_Valuator*)Knob[i][107])->value();
