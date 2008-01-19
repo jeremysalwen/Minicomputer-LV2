@@ -6,7 +6,7 @@
 #define _OSCPORT "7770"
 
 // debug output
-#define _DEBUG
+//#define _DEBUG
 
 // vectorize calculations
 //#define _VECTOR
@@ -17,5 +17,8 @@
 // not customizable options
 // amount of parameters per patch
 #define _PARACOUNT 139
+
+// how many additional settings per sound in multi to store
+#define _MULTISETTINGS 6
 
 #endif

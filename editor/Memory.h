@@ -47,6 +47,7 @@ typedef struct mode
 {
 	unsigned int sound[8];// sound ids for the 8 voices
 	char name[128];//the name, up to 128 letters
+	float settings[8][_MULTISETTINGS];// additional settings for volumes
 } multi;
 
 /**

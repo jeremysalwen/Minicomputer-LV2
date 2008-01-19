@@ -327,8 +327,10 @@ for (i=0;i<128;++i)// write the whole 128 multis
 	for (p=0;p<8;++p) // store the sound ids of all 8 voices
 	{
 		File<< "("<< p << ":" <<multis[i].sound[p]<<")"<<endl;
+	for (j=0;j<_MULTISETTINGS;++j)
+		File<< "{"<< p << ";"<< j << ":" <<multis[i].settings[p][j]<<"}"<<endl;
 	}
-	}
+}
 
 File.close();// done
 	
@@ -410,6 +412,14 @@ while (File)// as long there is anything in the file
 			if (parseNumbers(str,iParameter,i2Parameter,fValue))
 			{
 				current = iParameter;
+			}
+		}
+		break;
+		case '{':// setting additional parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				multis[current].settings[iParameter][i2Parameter]=fValue;
 			}
 		}
 		break;

@@ -41,7 +41,26 @@ static void choicecallback(Fl_Widget* o, void*)
 {
 	if (transmit) lo_send(t, "/Minicomputer/choice", "iii",currentsound,((Fl_Choice*)o)->argument(),((Fl_Choice*)o)->value());
 }
-
+/* // not good:
+static void changemulti(Fl_Widget* o, void*)
+{
+	if (Multichoice != NULL)
+	{
+		int t = Multichoice->menubutton()->value();
+		if ((t!=currentmulti) && (t>-1) && (t<128))
+		{
+			// ok, we are on somewhere other multi so we need to copy the settings
+		//	for (int i=0;i<8;++i)
+		//	{
+		//		Speicher.multis[t].sound[i] = Speicher.multis[currentmulti].sound[i];
+		//	}
+			currentmulti = t;
+		}
+	}
+	else
+		printf("problems with the multichoice widgets!\n");
+}
+*/
 /**
  * callback when another tab is chosen
  * @param Fl_Widget the calling widget
@@ -626,7 +645,16 @@ static void storesound(Fl_Widget* o, void* e)
 		Speicher.sounds[Speicher.getChoice(currentsound)].freq[8][1]=((Fl_Positioner*)Knob[currentsound][i])->yvalue();
 	break;
 	}
-		
+	// special treatment for the mix knobs, they are saved in the multisetting
+	case 101:
+	case 106:
+	case 107:
+	case 108:
+	case 109:
+	{
+		// do nothing
+	}
+	break;
 	
 //	{
 //		if (((Fl_Light_Button *)Knob[i])->value()==0)
@@ -843,6 +871,16 @@ static void recall(unsigned int preset)
 	break;
 	}
 	
+	// special treatment for the mix knobs, they are saved in the multisetting
+	case 101:
+	case 106:
+	case 107:
+	case 108:
+	case 109:
+	{
+		// do nothing
+	}
+	break;
 	default:
 	{
 		((Fl_Valuator*)Knob[currentsound][i])->value(Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]);
@@ -904,9 +942,34 @@ static void loadmulti(Fl_Widget* o, void* e)
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
 	{
-		currentsound = i;
-		recall(Speicher.multis[currentmulti].sound[currentsound]);// actual recall
-		schoice[i]->value(Speicher.multis[currentmulti].sound[currentsound]);// set gui
+		recall(Speicher.multis[currentmulti].sound[i]);// actual recall
+		schoice[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
+		// set the knobs of the mix
+		for (int j=0;j<_MULTISETTINGS;++j)
+		{
+			int actualknob;
+			// a little unelegant translating of the array pos to the actual knob number, got to rethink this part
+			switch (j)
+			{
+				case 0:// knob 101
+					((Fl_Valuator*)Knob[i][101])->value(Speicher.multis[currentmulti].settings[i][j]);
+					callback(Knob[i][101],NULL);
+				break;
+				case 1:// knob 106
+				case 2:// knob 107
+				case 3:// knob 108
+				case 4:// knob 109
+				{
+					actualknob = j+105;
+					((Fl_Valuator*)Knob[i][actualknob])->value(Speicher.multis[currentmulti].settings[i][j]);
+					callback(Knob[i][actualknob],NULL);
+				}
+				break;
+				default:
+					// do nothing
+				break;
+			}
+		}
 	}
 #ifdef _DEBUG
 	printf("multi choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
@@ -916,24 +979,45 @@ static void loadmulti(Fl_Widget* o, void* e)
 
 /**
  * callback when the store multi button is pressed
- * recall a multitemperal setup
+ * store a multitemperal setup
  * @param pointer to the calling widget
- * @param optional data, this time the entry id under which the sound 
- * should be stored
  */
 static void storemulti(Fl_Widget* o, void* e)
 {
 	/*printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
-	Speicher.setChoice(currentsound,((Fl_Input_Choice*)e)->menubutton()->value());
 	*/
+	int i;
+
+	if (Multichoice != NULL)
+	{
+		int t = Multichoice->menubutton()->value();
+		if ((t!=currentmulti) && (t>-1) && (t<128))
+		{
+			currentmulti = t;
+		}
+	}
+	else
+		printf("problems with the multichoice widgets!\n");
+
 	strcpy(Speicher.multis[currentmulti].name,((Fl_Input_Choice*)e)->value());
 	//printf("input choice %s\n",((Fl_Input_Choice*)e)->value());
 	
 	((Fl_Input_Choice*)e)->menubutton()->replace(currentmulti,((Fl_Input_Choice*)e)->value());
 	
 	//Schaltbrett.soundchoice-> add(Speicher.getName(i).c_str());
+	// get the knobs of the mix
 	
+	for (i=0;i<8;++i)
+	{
+		Speicher.multis[currentmulti].sound[i]=Speicher.getChoice(i);
+		
+		Speicher.multis[currentmulti].settings[i][0]=((Fl_Valuator*)Knob[i][101])->value();
+		Speicher.multis[currentmulti].settings[i][1]=((Fl_Valuator*)Knob[i][106])->value();
+		Speicher.multis[currentmulti].settings[i][2]=((Fl_Valuator*)Knob[i][107])->value();
+		Speicher.multis[currentmulti].settings[i][3]=((Fl_Valuator*)Knob[i][108])->value();
+		Speicher.multis[currentmulti].settings[i][4]=((Fl_Valuator*)Knob[i][109])->value();
+	}
 	// write to disk
 	Speicher.saveMulti();
 	
@@ -2205,6 +2289,7 @@ Fenster* UserInterface::make_window() {
         o->argument(101);
         o->minimum(0);
         o->maximum(2);
+	o->color(fl_rgb_color(190,160,255));
         o->value(1);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
@@ -2369,6 +2454,8 @@ Fenster* UserInterface::make_window() {
         o->textsize(8);
         o->menubutton()->textsize(8);
         o->align(FL_ALIGN_TOP_LEFT);
+        //o->callback((Fl_Callback*)changemulti,NULL);
+        o->tooltip("choose multi, press load button to actually load it");
         multichoice = o;
         Multichoice = o;
        
