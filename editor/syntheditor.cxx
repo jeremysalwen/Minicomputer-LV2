@@ -277,13 +277,14 @@ switch (currentParameter)
 #endif
 	break;	
 	}
-	// the repeat buttons of the mod egs
+	// the repeat buttons of the mod egs + sync button
 	case 64:
 	case 69:
 	case 74:
 	case 79:
 	case 84:
 	case 89:
+	case 115:
 	{
 		if (((Fl_Light_Button *)o)->value()==0)
 		{
@@ -578,6 +579,7 @@ static void storesound(Fl_Widget* o, void* e)
 	case 79:
 	case 84:
 	case 89:
+	case 115:
 
 	{
 		if (((Fl_Light_Button *)Knob[currentsound][i])->value()==0)
@@ -780,6 +782,7 @@ static void recall(unsigned int preset)
 	case 79:
 	case 84:
 	case 89:
+	case 115:
 
 	{
 		if (Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]==0.0f)
@@ -1548,6 +1551,14 @@ Fenster* UserInterface::make_window() {
         o->callback((Fl_Callback*)choicecallback);
         o->menu(menu_wave);auswahl[i][o->argument()]=o;
       }
+        { Fl_Light_Button* o = new Fl_Light_Button(220, 430, 65, 15, "sync to osc1");
+          o->box(FL_BORDER_BOX);
+          o->selection_color((Fl_Color)89);
+          o->labelsize(8);
+	  o->argument(115);
+		  o->callback((Fl_Callback*)callback);
+		  Knob[i][o->argument()] = o;
+        }
       o->end();
     }
    

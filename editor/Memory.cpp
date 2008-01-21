@@ -295,7 +295,7 @@ void Memory::saveMulti()
       //************* the binary depricated fileformat
 #ifdef _BINFILE      
 	FILE *fh; // file handle
-  	system("mv minicomputerMulti.mcm minicomputerMulti.bak");
+  	system("minicomputerMulti.mcm minicomputerMulti.bak");
 	if ((fh=fopen("minicomputerMulti.mcm","wb")) ==NULL)
 	{
 		printf("cant open file minicomputerMulti.mcm\n");
