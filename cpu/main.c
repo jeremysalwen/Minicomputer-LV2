@@ -615,7 +615,7 @@ for (k=0;k<_MULTITEMP;k++)
 	parameter[k][51]=0.5f;
 	parameter[k][53]=100.f; 
 	parameter[k][54]=0.5f;
-	
+	modulator[k][0] =0.f;// the none modulator	
 	for (i=0;i<3;++i) 
 	{
 		low[k][i]=0;
@@ -779,7 +779,7 @@ if (poll(pfd, npfd, 100000) > 0)
                 {
                 lastnote[c]=ev->data.note.note;	
                 midif[c]=midi2freq[ev->data.note.note];
-                modulator[c][0]=ev->data.note.note*0.007874f;
+                modulator[c][19]=ev->data.note.note*0.007874f;
                 modulator[c][1]=(float)1-(ev->data.note.velocity*0.007874f);
                 egStart(c,0);
                 if (EGrepeat[c][1] == 0)egStart(c,1);

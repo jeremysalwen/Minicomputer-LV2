@@ -590,6 +590,9 @@ static void storesound(Fl_Widget* o, void* e)
 		{
 			Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]=1;
 		}
+		#ifdef _DEBUG
+		printf("button %d = %d\n",i,Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]);
+		#endif
 	break;	
 	}
 	case 3:
@@ -785,6 +788,9 @@ static void recall(unsigned int preset)
 	case 115:
 
 	{
+		#ifdef _DEBUG
+		printf("handle: %d\n",i);
+		#endif
 		if (Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]==0.0f)
 		{
 			((Fl_Light_Button*)Knob[currentsound][i])->value(0);
@@ -1048,7 +1054,7 @@ static void voicecallback(Fl_Widget* o, void* e)
  * predefined menue with all modulation sources
  */
 Fl_Menu_Item UserInterface::menu_amod[] = {
- {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"none", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"velocity", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"pitch bend", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"osc 1 fm out", 0,  0, 0,0 , FL_NORMAL_LABEL , 0, 8, 0},
@@ -1067,11 +1073,12 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 
 Fl_Menu_Item UserInterface::menu_fmod[] = {
- {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"none", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"velocity", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"pitch bend", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"osc 1 fm out", 0,  0, 0,0 , FL_NORMAL_LABEL , 0, 8, 0},
@@ -1090,6 +1097,7 @@ Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 /**
@@ -1430,7 +1438,8 @@ Fenster* UserInterface::make_window() {
         o->selection_color((Fl_Color)89);
         o->labelsize(8); 
         o->argument(17);
-        o->callback((Fl_Callback*)callback);Knob[1][o->argument()] = o;
+        o->callback((Fl_Callback*)callback);
+	Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(79, 403, 25, 25, "fm output  vol");
         o->labelsize(8); 
@@ -1479,7 +1488,7 @@ Fenster* UserInterface::make_window() {
         o->maximum(1);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
-      { Fl_Choice* o = new Fl_Choice(134, 326, 120, 15, "amp modulator 1");
+      { Fl_Choice* o = new Fl_Choice(134, 326, 120, 15, "amp modulator");
         o->box(FL_BORDER_BOX);
         o->down_box(FL_BORDER_BOX);
         o->labelsize(8);
@@ -1496,7 +1505,7 @@ Fenster* UserInterface::make_window() {
         o->maximum(1);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
-      { Fl_Choice* o = new Fl_Choice(134, 362, 120, 15, "amp modulator 2");
+      { Fl_Choice* o = new Fl_Choice(134, 362, 120, 15, "fm out amp modulator");
           o->box(FL_BORDER_BOX);
         o->down_box(FL_BORDER_BOX);
         o->labelsize(8);
@@ -1677,6 +1686,7 @@ Fenster* UserInterface::make_window() {
       { Fl_Dial* o = new Fl_Dial(418, 360, 60, 57, "morph");
         o->type(1);
         o->labelsize(8);
+        o->maximum(0.5f);
         o->argument(56);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
