@@ -25,10 +25,12 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Dial.H>
+#include <FL/Fl_Roller.H>
 #include <FL/Fl_Value_Output.H>
 #include <FL/Fl_Value_Input.H>
 #include <FL/Fl_Input_Choice.H>
 #include <FL/Fl_Light_Button.H>
+#include <FL/Fl_Menu_Button.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Tabs.H>

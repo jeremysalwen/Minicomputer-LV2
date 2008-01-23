@@ -25,6 +25,7 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
  Fl_Value_Input* Display[8][13];
  Fl_Widget* tab[9];
  Fl_Input_Choice* schoice[8];
+ Fl_Roller* Rollers[8];
  Fl_Tabs* tabs;
  Fl_Button* lm,*sm;
  Fl_Value_Input* paramon;  
@@ -169,10 +170,11 @@ switch (currentParameter)
 	case 256:
 	{
 		lo_send(t, "/Minicomputer", "iif",currentsound,0,0);
+		break;
 	}
 	case 1:
 	{
-		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)Knob[1])->value());
+		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 		Display[currentsound][0]->value( ((Fl_Valuator* )Knob[currentsound][1])->value() );
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
@@ -539,6 +541,17 @@ static void tuneCallback(Fl_Widget* o, void*)
 	((Fl_Positioner* )Knob[currentsound][Argument])->yvalue(Rem);
 	callback(Knob[currentsound][Argument],NULL);
 }
+
+static void rollerCallback(Fl_Widget* o, void*)
+{
+	int Faktor = (int)((Fl_Valuator* )o)->value();
+	schoice[currentsound]->value(Faktor);//Speicher.multis[currentmulti].sound[currentsound]);// set gui
+}
+static void chooseCallback(Fl_Widget* o, void*)
+{
+//	int Faktor = (int)((Fl_Valuator* )o)->value();
+	Rollers[currentsound]->value(schoice[currentsound]->menubutton()->value());// set gui
+}
 /** callback when the storebutton is pressed
  * @param Fl_Widget the calling widget
  * @param defined by FLTK but not used
@@ -591,7 +604,7 @@ static void storesound(Fl_Widget* o, void* e)
 			Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]=1;
 		}
 		#ifdef _DEBUG
-		printf("button %d = %d\n",i,Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]);
+		printf("button %d = %f\n",i,Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]);
 		#endif
 	break;	
 	}
@@ -954,6 +967,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 		currentsound = i;
 		recall(Speicher.multis[currentmulti].sound[i]);// actual recall
 		schoice[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
+		Rollers[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
 		// set the knobs of the mix
 		for (int j=0;j<_MULTISETTINGS;++j)
 		{
@@ -2199,7 +2213,7 @@ Fenster* UserInterface::make_window() {
         o->labelsize(8);
         o->labelcolor((Fl_Color)1);
       }*/
-      { Fl_Input_Choice* o = new Fl_Input_Choice(274, 476, 150, 14, "sound");
+      { Fl_Input_Choice* o = new Fl_Input_Choice(274, 471, 150, 14, "sound");
         o->box(FL_BORDER_FRAME);
         o->down_box(FL_BORDER_FRAME);
         o->color(FL_FOREGROUND_COLOR);
@@ -2207,11 +2221,25 @@ Fenster* UserInterface::make_window() {
         o->labelsize(8);
         o->textsize(8);
         o->menubutton()->textsize(8);
+        o->menubutton()->type(Fl_Menu_Button::POPUP1);
         o->align(FL_ALIGN_TOP_LEFT);
         soundchoice[i] = o;
         schoice[i] = o;
 	d->add(o);
+        o->callback((Fl_Callback*)chooseCallback,NULL);
       }
+      { Fl_Roller* o = new Fl_Roller(274, 487, 150, 14);
+      	o->type(FL_HORIZONTAL);
+        o->tooltip("roll the list of sounds");
+        o->minimum(0);
+	o->maximum(511);
+	o->step(1);
+	//o->slider_size(0.04);
+	o->box(FL_BORDER_FRAME);
+	Rollers[i]=o;
+        o->callback((Fl_Callback*)rollerCallback,NULL);
+      }
+
       { Fl_Button* o = new Fl_Button(516, 473, 55, 19, "store sound");
         o->tooltip("store this sound on current entry");
         o->box(FL_BORDER_BOX);
@@ -2485,6 +2513,7 @@ Fenster* UserInterface::make_window() {
         o->labelsize(8);
         o->textsize(8);
         o->menubutton()->textsize(8);
+        o->menubutton()->type(Fl_Menu_Button::POPUP1);
         o->align(FL_ALIGN_TOP_LEFT);
         //o->callback((Fl_Callback*)changemulti,NULL);
         o->tooltip("choose multi, press load button to actually load it");
