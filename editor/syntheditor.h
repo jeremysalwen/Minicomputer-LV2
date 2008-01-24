@@ -78,6 +78,8 @@ class Fenster:public Fl_Double_Window
 class UserInterface {
 public:
   Fenster* make_window();
+  void changeMulti(int pgm);
+  void changeSound(int channel,int pgm);
   static Fl_Menu_Item menu_pitch[];
   static Fl_Menu_Item menu_pitch1[];
   Fl_Dial *f1cut1;

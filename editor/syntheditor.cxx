@@ -568,6 +568,8 @@ static void chooseMultiCallback(Fl_Widget* o, void*)
  */
 static void storesound(Fl_Widget* o, void* e)
 {
+	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+	Fl::check();
 #ifdef _DEBUG
 	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
@@ -773,6 +775,8 @@ static void storesound(Fl_Widget* o, void* e)
   		schoice[7]->add(Speicher.getName(0,i).c_str());
   	}
 	
+	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	Fl::check();
 }
 /**
  *
@@ -954,12 +958,16 @@ static void recall(unsigned int preset)
  */
 static void loadsound(Fl_Widget* o, void* e)
 {
+	fl_cursor(FL_CURSOR_WAIT,FL_WHITE, FL_BLACK);
+	Fl::check();
 #ifdef _DEBUG
 	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 #endif	
 	Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	recall(Speicher.multis[currentmulti].sound[currentsound]);
+	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	Fl::check();
 }
 /**
  * callback when the load multi button is pressed
@@ -970,6 +978,8 @@ static void loadsound(Fl_Widget* o, void* e)
  */
 static void loadmulti(Fl_Widget* o, void* e)
 {
+	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+	Fl::check();
 	currentmulti = (unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
@@ -1014,6 +1024,8 @@ currentsound = 0;
 	printf("multi choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 #endif
+	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	Fl::check();
 }
 
 /**
@@ -1023,6 +1035,8 @@ currentsound = 0;
  */
 static void storemulti(Fl_Widget* o, void* e)
 {
+	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+	Fl::check();
 	/*printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 	*/
@@ -1065,6 +1079,8 @@ static void storemulti(Fl_Widget* o, void* e)
 	// write to disk
 	Speicher.saveMulti();
 	
+	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	Fl::check();
 }
 /*
 static void voicecallback(Fl_Widget* o, void* e)
@@ -1074,6 +1090,34 @@ static void voicecallback(Fl_Widget* o, void* e)
 	recall(multi[currentmulti][currentsound]);
 	transmit=true;
 }*/
+void UserInterface::changeMulti(int pgm)
+{
+	multichoice->value(pgm);
+	multichoice->damage(FL_DAMAGE_ALL);
+	multichoice->redraw();
+	multiRoller->value(pgm);// set gui
+	multiRoller->redraw();
+	loadmulti(NULL,multichoice);
+	Fl::redraw();
+	Fl::flush();
+}
+void UserInterface::changeSound(int channel,int pgm)
+{
+	if ((channel >-1) && (channel < 8) && (pgm>-1) && (pgm<128))
+	{
+		int t = currentsound;
+		currentsound = channel;
+		schoice[channel]->value(pgm);
+		schoice[channel]->damage(FL_DAMAGE_ALL);
+		schoice[channel]->redraw();
+		Rollers[channel]->value(pgm);// set gui
+		Rollers[channel]->redraw();
+		loadsound(NULL,soundchoice[channel]);
+		Fl::redraw();
+		Fl::flush();
+		currentsound = t;
+	}
+}
 /**
  * predefined menue with all modulation sources
  */

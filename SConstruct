@@ -44,6 +44,12 @@ if not guiconf.CheckLibWithHeader('lo', 'lo/lo.h','c'):
 if not guiconf.CheckLibWithHeader('fltk', 'FL/Fl.H','c++'):
 	print 'Did not find FLTK for the gui, exiting!'
 	Exit(1)
+if not guiconf.CheckLibWithHeader('asound', 'alsa/asoundlib.h','c'):
+	print 'Did not find alsa, exiting!'
+	Exit(1)
+if not guiconf.CheckLibWithHeader('pthread', 'pthread.h','c'):
+	print 'Did not find pthread library, exiting!'
+	Exit(1)
 guienv = guiconf.Finish()
 guienv.Append(CPPFLAGS = ['-O3','-Wall','-c','-fmessage-length=0'])
 
