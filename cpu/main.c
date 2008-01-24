@@ -107,7 +107,7 @@ float srate = 3.145f/ 48000.f;
 int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 int done = 0;
-
+static const float anti_denormal = 1e-20;
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
     int i = (int) *phase ;// float to int, cost some cycles
@@ -402,7 +402,7 @@ temp=(parameter[currentvoice][14]*(1-ta1));
 temp*=osc1;
 temp+=osc2*(parameter[currentvoice][29]*(1.f-ta2));
 temp*=0.5f;// get the volume of the sum into a normal range	
-
+temp+=anti_denormal;
 /* filter settings*/
 mf = ( (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]))+(1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]) );
 mo = parameter[currentvoice][56]*mf;
@@ -555,7 +555,8 @@ else if (delayJ[currentvoice]>delayBufferSize)
 //printf("jab\n");
 
 tdelay = result * parameter[currentvoice][114] + (delayBuffer[currentvoice] [ delayJ[currentvoice] ] * parameter[currentvoice][112] );
-
+tdelay += anti_denormal;
+//tdelay -= anti_denormal;
 delayBuffer[currentvoice] [delayI[currentvoice] ] = tdelay;
 /*
 if (delayI[currentvoice]>95000)
@@ -592,6 +593,8 @@ int quit = 0;
 void signalled(int signal) {
 	quit = 1;
 }
+/** initialization, preparing for instance the waveforms
+ */
 void init ()
 {
 unsigned int i,k;
@@ -615,7 +618,7 @@ for (k=0;k<_MULTITEMP;k++)
 	parameter[k][51]=0.5f;
 	parameter[k][53]=100.f; 
 	parameter[k][54]=0.5f;
-	modulator[k][0] =0.f;// the none modulator	
+	modulator[k][0] =0.f;// the none modulator, doing nothing
 	for (i=0;i<3;++i) 
 	{
 		low[k][i]=0;
@@ -714,7 +717,8 @@ d2 = 0;*/
 for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 
 } // end of initialization
-
+/** handling the midi messages in an extra thread
+ */
 static void *midiprocessor(void *handle) {
 	struct sched_param param;
 	int policy;
@@ -738,6 +742,51 @@ if (poll(pfd, npfd, 100000) > 0)
    while (snd_seq_event_input(seq_handle, &ev))
    {
     switch (ev->type) {
+      case SND_SEQ_EVENT_NOTEON:
+      {   
+      	unsigned int c = ev->data.note.channel;
+      	if (c <_MULTITEMP)
+                if (ev->data.note.velocity>0)
+                {
+                lastnote[c]=ev->data.note.note;	
+                midif[c]=midi2freq[ev->data.note.note];// lookup the frequency
+                modulator[c][19]=ev->data.note.note*0.007874f;// fill the value in as normalized modulator
+                modulator[c][1]=(float)1-(ev->data.note.velocity*0.007874f);// fill in the velocity as modulator
+                egStart(c,0);// start the engines!
+                if (EGrepeat[c][1] == 0)egStart(c,1);
+                if (EGrepeat[c][2] == 0)egStart(c,2);
+                if (EGrepeat[c][3] == 0)egStart(c,3);
+               	if (EGrepeat[c][4] == 0) egStart(c,4);
+               	if (EGrepeat[c][5] == 0) egStart(c,5);
+               	if (EGrepeat[c][6] == 0) egStart(c,6);
+               
+#ifdef _DEBUG      
+        fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
+                c, ev->data.note.note);
+#endif		
+                }
+	break;  
+      }      
+      case SND_SEQ_EVENT_NOTEOFF: 
+      {
+      	unsigned int c = ev->data.note.channel;
+#ifdef _DEBUG      
+        fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
+                c, ev->data.note.note);
+#endif		
+               if  (c <_MULTITEMP)
+               if (lastnote[c]==ev->data.note.note)
+               {
+                egStop(c,0);  
+               	if (EGrepeat[c][1] == 0) egStop(c,1);  
+                if (EGrepeat[c][2] == 0) egStop(c,2); 
+               	if (EGrepeat[c][3] == 0) egStop(c,3); 
+               	if (EGrepeat[c][4] == 0) egStop(c,4);  
+                if (EGrepeat[c][5] == 0) egStop(c,5);  
+               	if (EGrepeat[c][6] == 0) egStop(c,6);
+               }    
+        break;       
+    } 
       case SND_SEQ_EVENT_CONTROLLER:
       {
 #ifdef _DEBUG      
@@ -771,55 +820,10 @@ if (poll(pfd, npfd, 100000) > 0)
                	 modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value*0.007874f;
         break;
       }
-      case SND_SEQ_EVENT_NOTEON:
-      {   
-      	unsigned int c = ev->data.note.channel;
-      	if (c <_MULTITEMP)
-                if (ev->data.note.velocity>0)
-                {
-                lastnote[c]=ev->data.note.note;	
-                midif[c]=midi2freq[ev->data.note.note];
-                modulator[c][19]=ev->data.note.note*0.007874f;
-                modulator[c][1]=(float)1-(ev->data.note.velocity*0.007874f);
-                egStart(c,0);
-                if (EGrepeat[c][1] == 0)egStart(c,1);
-                if (EGrepeat[c][2] == 0)egStart(c,2);
-                if (EGrepeat[c][3] == 0)egStart(c,3);
-               	if (EGrepeat[c][4] == 0) egStart(c,4);
-               	if (EGrepeat[c][5] == 0) egStart(c,5);
-               	if (EGrepeat[c][6] == 0) egStart(c,6);
-               
-#ifdef _DEBUG      
-        fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
-                c, ev->data.note.note);
-#endif		
-		        break;  
-                }
-      }      
-      case SND_SEQ_EVENT_NOTEOFF: 
-      {
-      	unsigned int c = ev->data.note.channel;
-#ifdef _DEBUG      
-        fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
-                c, ev->data.note.note);
-#endif		
-               if  (c <_MULTITEMP)
-               if (lastnote[c]==ev->data.note.note)
-               {
-                egStop(c,0);  
-               	if (EGrepeat[c][1] == 0) egStop(c,1);  
-                if (EGrepeat[c][2] == 0) egStop(c,2); 
-               	if (EGrepeat[c][3] == 0) egStop(c,3); 
-               	if (EGrepeat[c][4] == 0) egStop(c,4);  
-                if (EGrepeat[c][5] == 0) egStop(c,5);  
-               	if (EGrepeat[c][6] == 0) egStop(c,6);
-               }    
-        break;       
-    } 
-    }
+    }// end of switch
     snd_seq_free_event(ev);
-   }
-  } while (1==1);//(snd_seq_event_input_pending(seq_handle, 0) > 0);
+   }// end of first while, emptying the seqdata queue
+  } while (1==1);// doing forever, was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
   return 0;
 }
 int main() {
@@ -865,8 +869,8 @@ int main() {
 		exit(1);
 	}
 
-	/* we register an output port and tell jack it's a 
-	 * terminal port which means we don't 
+	/* we register the output ports and tell jack these are 
+	 * terminal ports which means we don't 
 	 * have any input ports from which we could somhow 
 	 * feed our output */
 	port[0] = jack_port_register(client, "output1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
@@ -906,7 +910,9 @@ int main() {
 		delayI[k]=0;
 		delayJ[k]=0;
 	}
+	#ifdef _DEBUG
 	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
+	#endif
 	/* tell jack that we are ready to do our thing */
 	jack_activate(client);
 	
@@ -1061,7 +1067,7 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 		 void *data, void *user_data)
 {
     done = 1;
-    printf("quiting\n\n");
+    printf("quitting\n\n");
     fflush(stdout);
 
     return 0;

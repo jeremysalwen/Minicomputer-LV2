@@ -26,6 +26,7 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
  Fl_Widget* tab[9];
  Fl_Input_Choice* schoice[8];
  Fl_Roller* Rollers[8];
+ Fl_Roller* multiRoller;
  Fl_Tabs* tabs;
  Fl_Button* lm,*sm;
  Fl_Value_Input* paramon;  
@@ -551,6 +552,15 @@ static void chooseCallback(Fl_Widget* o, void*)
 {
 //	int Faktor = (int)((Fl_Valuator* )o)->value();
 	Rollers[currentsound]->value(schoice[currentsound]->menubutton()->value());// set gui
+}
+static void multiRollerCallback(Fl_Widget* o, void*)
+{
+	int Faktor = (int)((Fl_Valuator* )o)->value();
+	Multichoice->value(Faktor);// set gui
+}
+static void chooseMultiCallback(Fl_Widget* o, void*)
+{
+	multiRoller->value(Multichoice->menubutton()->value());// set gui
 }
 /** callback when the storebutton is pressed
  * @param Fl_Widget the calling widget
@@ -2516,10 +2526,22 @@ Fenster* UserInterface::make_window() {
         o->menubutton()->type(Fl_Menu_Button::POPUP1);
         o->align(FL_ALIGN_TOP_LEFT);
         //o->callback((Fl_Callback*)changemulti,NULL);
+        o->callback((Fl_Callback*)chooseMultiCallback,NULL); // for the roller
         o->tooltip("choose multi, press load button to actually load it");
         multichoice = o;
         Multichoice = o;
        
+      }
+      // roller for the multis:
+      { Fl_Roller* o = new Fl_Roller(20, 492, 80, 10);
+      	o->type(FL_HORIZONTAL);
+        o->tooltip("roll the list of multis");
+        o->minimum(0);
+	o->maximum(127);
+	o->step(1);
+	o->box(FL_BORDER_FRAME);
+        o->callback((Fl_Callback*)multiRollerCallback,NULL);
+	multiRoller=o;
       }
       { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
         o->tooltip("overwrite this multi");

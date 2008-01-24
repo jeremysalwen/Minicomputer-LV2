@@ -6,7 +6,7 @@
 #define _OSCPORT "7770"
 
 // debug output
-#define _DEBUG
+//#define _DEBUG
 
 // vectorize calculations
 //#define _VECTOR
