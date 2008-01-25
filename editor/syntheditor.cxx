@@ -562,6 +562,56 @@ static void chooseMultiCallback(Fl_Widget* o, void*)
 {
 	multiRoller->value(Multichoice->menubutton()->value());// set gui
 }
+/**
+ * callback from the export filedialog
+ * do the actual export of current single sound
+ */
+/*
+static void exportSound(Fl_File_Chooser *w, void *userdata)
+{
+		printf("to %d\n",w->shown());
+		fflush(stdout);
+	if ((w->shown() !=1) && (w->value() != NULL))
+	{
+		printf("export to %s\n",w->value());
+		fflush(stdout);
+	}
+}*/
+/** callback when export button was pressed, shows a filedialog
+ */
+static void exportPressed(Fl_Widget* o, void*)
+{
+Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::CREATE,"export to ...");
+    //fc->callback(exportSound); // not practical, is called to often
+    fc->textsize(9);
+    fc->show();
+    while(fc->shown()) Fl::wait(); // block until choice is done
+	if ((fc->value() != NULL))
+	{
+	#ifdef _DEBUG
+		printf("export to %s\n",fc->value());
+		fflush(stdout);
+	#endif
+	}
+
+}
+/** callback when import button was pressed, shows a filedialog
+ */
+static void importPressed(Fl_Widget* o, void*)
+{
+Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::SINGLE,"import file ...");
+    fc->textsize(9);
+    fc->show();
+    while(fc->shown()) Fl::wait(); // block until choice is done
+	if ((fc->value() != NULL))
+	{
+	#ifdef _DEBUG
+		printf("import to %s\n",fc->value());
+		fflush(stdout);
+	#endif
+	}
+
+}
 /** callback when the storebutton is pressed
  * @param Fl_Widget the calling widget
  * @param defined by FLTK but not used
@@ -2307,21 +2357,21 @@ Fenster* UserInterface::make_window() {
         o->labelcolor((Fl_Color)186);
          o->callback((Fl_Callback*)loadsound,soundchoice[i]);
       }
-      /* soon to come...
       { Fl_Button* o = new Fl_Button(600, 469, 70, 12, "import sound");
         o->tooltip("import single sound to this voice");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
 	//o->labelcolor((Fl_Color)1);
-        o->callback((Fl_Callback*)importsound,soundchoice[i]);
+        o->callback((Fl_Callback*)importPressed,soundchoice[i]);
       }
+
       { Fl_Button* o = new Fl_Button(600, 485, 70, 12, "export sound");
         o->tooltip("export sound data of this voice");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
         //o->labelcolor((Fl_Color)186);
-         o->callback((Fl_Callback*)exportsound,soundchoice[i]);
-      }*/
+         o->callback((Fl_Callback*)exportPressed,soundchoice[i]);
+      }
       /*{ Fl_Input_Choice* o = new Fl_Input_Choice(83, 476, 105, 14, "bank");
         o->box(FL_BORDER_FRAME);
         o->down_box(FL_BORDER_FRAME);

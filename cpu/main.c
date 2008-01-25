@@ -57,7 +57,7 @@ snd_seq_t *open_seq();
   int npfd;
   struct pollfd *pfd;
 #ifdef _VECTOR  
-  typedef float v4sf __attribute__ ((vector_size(16)));((mode(V4SF))); // vector of four single floats
+  typedef float v4sf __attribute__ ((vector_size(16)));//((mode(V4SF))); // vector of four single floats
 
 union f4vector 
 {
@@ -108,6 +108,7 @@ int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 int done = 0;
 static const float anti_denormal = 1e-20;
+/* inlined manually
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
     int i = (int) *phase ;// float to int, cost some cycles
@@ -131,7 +132,7 @@ static inline float Oscillator(float frequency,int wave,float *phase)
                 }
         return table[wave][i] ;
 }
-
+*/
 //inline float filter (float input,float f, float q)
 //{
 //
@@ -245,10 +246,10 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 	}
 	else
 	{
-		if (EGtrigger[voice][number] == 1) // declick ramp down processing
-		{
+	//	if (EGtrigger[voice][number] == 1) // declick ramp down processing
+	//	{
 			
-			EG[voice][number][6] -= 0.005f;
+		/*	EG[voice][number][6] -= 0.005f;
 			if (EG[voice][number][6]<0.0f) 
 			{  
 				if  (EG[voice][number][7]< EG[voice][number][6])
@@ -256,21 +257,21 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 			   	 EG[voice][number][7] += EG[voice][number][1]*(1.0f - EG[voice][number][7]);
 				}
 			    else
-			    {
+			    {*/
 					EGtrigger[voice][number] = 0;
 					EGstate[voice][number] = 1;
-			    }
+		/*	    }
 				
-			}
-		}
-		else if (EG[voice][number][0] == 2.f) // actual start
-		{
-			EG[voice][number][0] = 0.f;
+			}*/
+	//	}
+	//	else if (EG[voice][number][0] == 2.f) // actual start
+	//	{
+	//		EG[voice][number][0] = 0.f;
 			
 			EG[voice][number][0] = 1.f; // triggerd
 		    EGstate[voice][number] = 1; // target
-            EG[voice][number][6] = 0.0f;// state
-		}
+            //EG[voice][number][6] = 0.0f;// state
+	//	}
 		
 	}
 	return EG[voice][number][6];
@@ -329,28 +330,56 @@ modulator [currentvoice][10]=egCalc(currentvoice,3);
 modulator [currentvoice][11]=egCalc(currentvoice,4);
 modulator [currentvoice][12]=egCalc(currentvoice,5);
 modulator [currentvoice][13]=egCalc(currentvoice,6);
-modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
+int iP1 = (int) phase[currentvoice][1];// float to int, cost some cycles
+int iP2 = (int) phase[currentvoice][2];// hopefully this got optimized by compiler
+int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compiler
 
-tf = parameter[currentvoice][1]*parameter[currentvoice][2];
-ta1 = parameter[currentvoice][9]*modulator[currentvoice][choice[currentvoice][2]]; // osc1 first ampmod
+	iP1=iP1&tabM;//i%=TableSize;
+	iP2=iP2&tabM;//i%=TableSize;
+	iP3=iP3&tabM;//i%=TableSize;
+	//if (i>tabM) i=tabM;
+	
+	if (iP1<0) iP1=tabM;
+	if (iP2<0) iP2=tabM;
+	if (iP3<0) iP3=tabM;
+
+    phase[currentvoice][3]+= tabX * parameter[currentvoice][90];
+    if(phase[currentvoice][3]  >= tabF)
+    {
+   		  phase[currentvoice][3]-= tabF;
+		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
+    }
+    if(phase[currentvoice][3]< 0.f)
+                {
+                	phase[currentvoice][3]+= tabF;
+        	//	if(*phase < 0.f) *phase = tabF-1;
+                }
+//modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
+modulator [currentvoice][14] = table[choice[currentvoice][12]][iP3] ;
+
+tf = parameter[currentvoice][1];
+tf *=parameter[currentvoice][2];
+ta1 = parameter[currentvoice][9];
+ta1 *= modulator[currentvoice][choice[currentvoice][2]]; // osc1 first ampmod
+
 tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3]);
 ta1+= parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][3]];// osc1 second ampmod
-tf+=parameter[currentvoice][4]*parameter[currentvoice][5]*modulator[currentvoice][choice[currentvoice][0]];
+tf+=(parameter[currentvoice][4]*parameter[currentvoice][5])*modulator[currentvoice][choice[currentvoice][0]];
 tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
 //tf/=3.f;		
 //ta/=2.f;
 //static inline float Oscillator(float frequency,int wave,float *phase)
 //{
-    int iP1 = (int) phase[currentvoice][1];// float to int, cost some cycles
+ /*   int iP1 = (int) phase[currentvoice][1];// float to int, cost some cycles
     int iP2 = (int) phase[currentvoice][2];// hopefully this got optimized by compiler
 
 	iP1=iP1&tabM;//i%=TableSize;
-	iP2=iP2&tabM;//i%=TableSize;
+	iP2=iP2&tabM;//i%=TableSize;*/
 	//if (i>tabM) i=tabM;
     phase[currentvoice][1]+= tabX * tf;
 	
-	if (iP1<0) iP1=tabM;
-	if (iP2<0) iP2=tabM;
+//	if (iP1<0) iP1=tabM;
+//	if (iP2<0) iP2=tabM;
 
     if(phase[currentvoice][1]  >= tabF)
     {
@@ -368,12 +397,15 @@ tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
         osc1 = table[choice[currentvoice][4]][iP1] ;
 //}
 //osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
-modulator[currentvoice][3]=osc1*(parameter[currentvoice][13]+parameter[currentvoice][13]*ta1);
+modulator[currentvoice][3]=osc1*(parameter[currentvoice][13]*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
-tf2 = parameter[currentvoice][16]*parameter[currentvoice][17];
-ta2 = parameter[currentvoice][23]*modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
+tf2 = parameter[currentvoice][16];
+tf2 *=parameter[currentvoice][17];
+ta2 = parameter[currentvoice][23];
+ta2 *=modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
 tf2+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
-ta3 = parameter[currentvoice][25]*modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
+ta3 = parameter[currentvoice][25];
+ta3 *=modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
 tf2+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
 tf2+=parameter[currentvoice][21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
@@ -398,13 +430,14 @@ modulator[currentvoice][4] *= osc2;
 
 // mix pre filter
 //temp=(parameter[currentvoice][14]-parameter[currentvoice][14]*ta1);
-temp=(parameter[currentvoice][14]*(1-ta1));
+temp=(parameter[currentvoice][14]*(1.f-ta1));
 temp*=osc1;
 temp+=osc2*(parameter[currentvoice][29]*(1.f-ta2));
 temp*=0.5f;// get the volume of the sum into a normal range	
 temp+=anti_denormal;
 /* filter settings*/
-mf = ( (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]))+(1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]) );
+mf =  (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]));
+mf+= (1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]);
 mo = parameter[currentvoice][56]*mf;
 
 
@@ -437,9 +470,9 @@ f[currentvoice][2] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358;
   d.f[0] = parameter[currentvoice][41]; d.f[1] =parameter[currentvoice][42]; d.f[2] = parameter[currentvoice][50]; d.f[3] = parameter[currentvoice][51];
   b.f[0] = morph; b.f[1] = morph; b.f[2] = morph; b.f[3] = morph;
 
-  //c.v = a.v * b.v;
+//  c.v = a.v * b.v;
 c.v = __builtin_ia32_mulps (a.v, b.v);
- // c.v = a.v * b.v;
+//  e.v = d.v * b.v;
 e.v = __builtin_ia32_mulps (d.v, b.v);
 
   tf1 = c.f[0];
@@ -482,26 +515,63 @@ q[currentvoice][2] *= morph;
 
 v[currentvoice][2] *= morph;
 
+#ifdef _VECTOR
+  a.f[0] = parameter[currentvoice][33]; a.f[1] =parameter[currentvoice][34]; a.f[2] = parameter[currentvoice][35]; a.f[3] = parameter[currentvoice][43];
+  d.f[0] = parameter[currentvoice][44]; d.f[1] =parameter[currentvoice][45]; d.f[2] = parameter[currentvoice][53]; d.f[3] = parameter[currentvoice][54];
+  b.f[0] = mo; b.f[1] = mo; b.f[2] = mo; b.f[3] = mo;
+//  c.v = a.v * b.v;
+c.v = __builtin_ia32_mulps (a.v, b.v);
+//  e.v = d.v * b.v;
+e.v = __builtin_ia32_mulps (d.v, b.v);
+
+tf1+= c.f[0];
+tf2+=c.f[3];
+tf3 += e.f[2];
+q[currentvoice][0] += c.f[1];//parameter[currentvoice][34]*mo;
+q[currentvoice][1] += e.f[0];//parameter[currentvoice][44]*mo;
+q[currentvoice][2] += e.f[3];//parameter[currentvoice][54]*mo;
+v[currentvoice][0] += c.f[2];//parameter[currentvoice][35]*mo;
+v[currentvoice][1] += e.f[1];//parameter[currentvoice][45]*mo;
+
+#else
 tf1+= parameter[currentvoice][33]*mo;
 tf2+=parameter[currentvoice][43]*mo;
 tf3 += parameter[currentvoice][53]*mo;
+#endif
 
 tf1*=srate;
 tf2*=srate;
 tf3 *= srate;
 
+#ifndef _VECTOR
 q[currentvoice][0] += parameter[currentvoice][34]*mo;
 q[currentvoice][1] += parameter[currentvoice][44]*mo;
 q[currentvoice][2] += parameter[currentvoice][54]*mo;
 
-
 v[currentvoice][0] += parameter[currentvoice][35]*mo;
 v[currentvoice][1] += parameter[currentvoice][45]*mo;
+#endif
+
+#ifdef _VECTOR
+// prepare next calculations
+
+  a.f[0] = parameter[currentvoice][55]; a.f[1] =tf1; a.f[2] = tf2; a.f[3] = tf3;
+  b.f[0] = mo; b.f[1] = 2.f; b.f[2] = 2.f; b.f[3] = 2.f;
+//  c.v = a.v * b.v;
+c.v = __builtin_ia32_mulps (a.v, b.v);
+
+v[currentvoice][2] += c.f[0];//parameter[currentvoice][55]*mo;
+
+f[currentvoice][0] = c.f[1];//2.f * tf1;
+f[currentvoice][1] = c.f[2];//2.f * tf2;
+f[currentvoice][2] = c.f[3];//2.f * tf3; 
+#else
 v[currentvoice][2] += parameter[currentvoice][55]*mo;
 
 f[currentvoice][0] = 2.f * tf1;
 f[currentvoice][1] = 2.f * tf2;
 f[currentvoice][2] = 2.f * tf3; 
+#endif
 
 f[currentvoice][0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
 
@@ -512,23 +582,24 @@ f[currentvoice][2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358;
 
 
 low[currentvoice][0] = low[currentvoice][0] + f[currentvoice][0] * band[currentvoice][0];
-high[currentvoice][0] = q[currentvoice][0] * temp - low[currentvoice][0] - q[currentvoice][0]*band[currentvoice][0];
+high[currentvoice][0] = (q[currentvoice][0] * temp) - low[currentvoice][0] - (q[currentvoice][0]*band[currentvoice][0]);
 band[currentvoice][0]= f[currentvoice][0] * high[currentvoice][0] + band[currentvoice][0];
 
 
 low[currentvoice][1] = low[currentvoice][1] + f[currentvoice][1] * band[currentvoice][1];
-high[currentvoice][1] = q[currentvoice][1] * temp - low[currentvoice][1] - q[currentvoice][1]*band[currentvoice][1];
+high[currentvoice][1] = (q[currentvoice][1] * temp) - low[currentvoice][1] - (q[currentvoice][1]*band[currentvoice][1]);
 band[currentvoice][1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
 
 
 low[currentvoice][2] = low[currentvoice][2] + f[currentvoice][2] * band[currentvoice][2];
-high[currentvoice][2] = q[currentvoice][2] * temp - low[currentvoice][2] - q[currentvoice][2]*band[currentvoice][2];
+high[currentvoice][2] = (q[currentvoice][2] * temp) - low[currentvoice][2] - (q[currentvoice][2]*band[currentvoice][2]);
 band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
-modulator[currentvoice] [7] = low[currentvoice][0]*v[currentvoice][0]+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
+modulator[currentvoice] [7] = (low[currentvoice][0]*v[currentvoice][0])+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
 
 //---------------------------------- amplitude shaping
 
-result = modulator[currentvoice][7] *(1.f-modulator[currentvoice][ choice[currentvoice][13]]*parameter[currentvoice][100] );///_MULTITEMP;
+result = (1.f-modulator[currentvoice][ choice[currentvoice][13]]*parameter[currentvoice][100] );///_MULTITEMP;
+result *= modulator[currentvoice][7];
 result *= egCalc(currentvoice,0);// the final shaping envelope
 
 // --------------------------------- delay unit
@@ -745,13 +816,18 @@ if (poll(pfd, npfd, 100000) > 0)
       case SND_SEQ_EVENT_NOTEON:
       {   
       	unsigned int c = ev->data.note.channel;
+#ifdef _DEBUG      
+        fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
+                c, ev->data.note.note);
+#endif		
       	if (c <_MULTITEMP)
+	{
                 if (ev->data.note.velocity>0)
                 {
                 lastnote[c]=ev->data.note.note;	
                 midif[c]=midi2freq[ev->data.note.note];// lookup the frequency
                 modulator[c][19]=ev->data.note.note*0.007874f;// fill the value in as normalized modulator
-                modulator[c][1]=(float)1-(ev->data.note.velocity*0.007874f);// fill in the velocity as modulator
+                modulator[c][1]=(float)1.f-(ev->data.note.velocity*0.007874f);// fill in the velocity as modulator
                 egStart(c,0);// start the engines!
                 if (EGrepeat[c][1] == 0)egStart(c,1);
                 if (EGrepeat[c][2] == 0)egStart(c,2);
@@ -760,13 +836,11 @@ if (poll(pfd, npfd, 100000) > 0)
                	if (EGrepeat[c][5] == 0) egStart(c,5);
                	if (EGrepeat[c][6] == 0) egStart(c,6);
                
-#ifdef _DEBUG      
-        fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
-                c, ev->data.note.note);
-#endif		
-                }
-	break;  
+		break;// not the best method but it breaks only when a note on is
+                }// if velo == 0 it should be handled as noteoff...
+	}
       }      
+      // ...so its necessary that here follow the noteoff routine
       case SND_SEQ_EVENT_NOTEOFF: 
       {
       	unsigned int c = ev->data.note.channel;
@@ -820,6 +894,14 @@ if (poll(pfd, npfd, 100000) > 0)
                	 modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value*0.007874f;
         break;
       }
+#ifdef _DEBUG      
+      default:
+      {
+      	
+         fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
+                ev->data.control.channel, ev->data.control.value);
+      }
+#endif		
     }// end of switch
     snd_seq_free_event(ev);
    }// end of first while, emptying the seqdata queue

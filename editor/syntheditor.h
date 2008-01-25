@@ -35,6 +35,7 @@
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Tabs.H>
 
+#include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Slider.H>
 #include <FL/Fl_Input_Choice.H>

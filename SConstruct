@@ -16,9 +16,9 @@ if ARGUMENTS.get('k7', 0):
 	env.Append(CCFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
 	guienv.Append(CPPFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
 
-# env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -c -fmessage-length=0')
+# env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -fmessage-length=0')
 
-env.Append(CCFLAGS = ['-O3','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer', '-funswitch-loops', '-Wall','-c','-fmessage-length=0'])
+env.Append(CCFLAGS = ['-O3','-msse2','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops', '-mfpmath=sse'])
 conf = Configure(env)
 
 if not conf.CheckLibWithHeader('jack', 'jack/jack.h','c'):
@@ -51,7 +51,7 @@ if not guiconf.CheckLibWithHeader('pthread', 'pthread.h','c'):
 	print 'Did not find pthread library, exiting!'
 	Exit(1)
 guienv = guiconf.Finish()
-guienv.Append(CPPFLAGS = ['-O3','-Wall','-c','-fmessage-length=0'])
+guienv.Append(CPPFLAGS = ['-O3','-Wall','-fmessage-length=0'])
 
 print"-                     2/2:compiling"
 print"-                     building the engine:"
