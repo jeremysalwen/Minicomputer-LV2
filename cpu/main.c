@@ -138,6 +138,13 @@ static inline float Oscillator(float frequency,int wave,float *phase)
 //
 //
 //}
+/**
+ * start the envelope generator
+ * called by a note on event for that voice
+ * @param the voice number
+ * @param the number of envelope generator
+ */
+
 static inline void egStart (unsigned int voice,unsigned int number)
 {
 	     EGtrigger[voice][number]=1;
@@ -147,6 +154,12 @@ static inline void egStart (unsigned int voice,unsigned int number)
          EGstate[voice][number] = 0;// state
 		 //printf("start %i", voice);
 }
+/**
+ * set the envelope to release mode
+ * should be called by a related noteoff event
+ * @param the voice number
+ * @param the number of envelope generator
+ */
 static inline void egStop (unsigned int voice,unsigned int number)
 {
 	    // if (EGrepeat[voice][number] == 0) 
@@ -154,6 +167,11 @@ static inline void egStop (unsigned int voice,unsigned int number)
 		 EGstate[voice][number] = 0; // target
 		// printf("stop %i", voice);
 }
+/**
+ * calculate the envelope, done in audiorate to avoide zippernoise
+ * @param the voice number
+ * @param the number of envelope generator
+*/
 static inline float egCalc (unsigned int voice, unsigned int number)
 {
 	/* EG[x] x:
