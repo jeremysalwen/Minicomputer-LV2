@@ -36,17 +36,17 @@
 #define TableSize 4096
 #define tabM 4095
 #define tabF 4096.f
-float delayBuffer[_MULTITEMP][96000];
-float table [_WAVECOUNT][TableSize];
-float parameter[_MULTITEMP][_PARACOUNT];
-float modulator[_MULTITEMP][_MODCOUNT];
-float midi2freq [128],midif[_MULTITEMP];
-float EG[_MULTITEMP][8][8]; // 7 8
-float phase[_MULTITEMP][4];//=0.f;
-unsigned int choice[_MULTITEMP][_CHOICEMAX];
-int EGrepeat[_MULTITEMP][8];
-unsigned int EGtrigger[_MULTITEMP][8];
-unsigned int EGstate[_MULTITEMP][8];
+float delayBuffer[_MULTITEMP][96000] __attribute__((aligned (16)));
+float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
+float parameter[_MULTITEMP][_PARACOUNT] __attribute__((aligned (16)));
+float modulator[_MULTITEMP][_MODCOUNT] __attribute__((aligned (16)));
+float midi2freq [128],midif[_MULTITEMP] __attribute__((aligned (16)));
+float EG[_MULTITEMP][8][8] __attribute__((aligned (16))); // 7 8
+float phase[_MULTITEMP][4] __attribute__((aligned (16)));//=0.f;
+unsigned int choice[_MULTITEMP][_CHOICEMAX] __attribute__((aligned (16)));
+int EGrepeat[_MULTITEMP][8] __attribute__((aligned (16)));
+unsigned int EGtrigger[_MULTITEMP][8] __attribute__((aligned (16)));
+unsigned int EGstate[_MULTITEMP][8] __attribute__((aligned (16)));
 float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],faktor[_MULTITEMP][4];
 jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
 unsigned int lastnote[_MULTITEMP];
@@ -293,15 +293,22 @@ typedef union
 	int i;
 	float f;
 } INTORFLOAT;
-INTORFLOAT P1;
-INTORFLOAT P2;
-INTORFLOAT P3;
+INTORFLOAT P1 __attribute__((aligned (16)));
+INTORFLOAT P2 __attribute__((aligned (16)));
+INTORFLOAT P3 __attribute__((aligned (16)));
 INTORFLOAT bias;
 bias.i = (23 +127) << 23;
 int iP1=0,iP2=0,iP3=0;
 #ifdef _VECTOR
 	union f4vector g __attribute__((aligned (16)));
+	union f4vector h __attribute__((aligned (16)));
+	union f4vector i __attribute__((aligned (16)));
+	union f4vector j __attribute__((aligned (16)));
 	g.f[1] = 2.f; g.f[2] = 2.f; g.f[3] = 2.f; // first entry differs always
+	//g.f[1] = 2.f*srate; g.f[2] = 2.f*srate; g.f[3] = 2.f*srate; // first entry differs always
+	i.f[0]=1.f; i.f[1] = srate; i.f[2] = srate; i.f[3] = srate; 
+	h.f[0]=1.f; h.f[1] = 0.1472725f; h.f[2] = 0.1472725f; h.f[3] = 0.1472725f;
+
 #endif
 	float *bufferMixLeft = (float*) jack_port_get_buffer(port[8], nframes);
 	float *bufferMixRight = (float*) jack_port_get_buffer(port[9], nframes);
@@ -334,7 +341,7 @@ int iP1=0,iP2=0,iP3=0;
 	bufferAux2[index]=0.f;
 for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 {		
-	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
+//	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 //		buffer[index]=0.0f;
 
 // calc the modulators
@@ -344,7 +351,9 @@ modulator [currentvoice][10]=egCalc(currentvoice,3);
 modulator [currentvoice][11]=egCalc(currentvoice,4);
 modulator [currentvoice][12]=egCalc(currentvoice,5);
 modulator [currentvoice][13]=egCalc(currentvoice,6);
-
+}
+for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
+{		
 P1.f =  phase[currentvoice][1];
 P2.f =  phase[currentvoice][2];
 P3.f =  phase[currentvoice][3];
@@ -354,14 +363,18 @@ P3.f += bias.f;
 P1.i -= bias.i;
 P2.i -= bias.i;
 P3.i -= bias.i;
+	iP1=P1.i&tabM;//i%=TableSize;
+	iP2=P2.i&tabM;//i%=TableSize;
+	iP3=P3.i&tabM;//i%=TableSize;
 /*
 int iP1 = (int) phase[currentvoice][1];// float to int, cost some cycles
 int iP2 = (int) phase[currentvoice][2];// hopefully this got optimized by compiler
 int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compiler
-*/
-	iP1=P1.i&tabM;//i%=TableSize;
-	iP2=P2.i&tabM;//i%=TableSize;
-	iP3=P3.i&tabM;//i%=TableSize;
+
+	iP1=iP1&tabM;//i%=TableSize;
+	iP2=iP2&tabM;//i%=TableSize;
+	iP3=iP3&tabM;//i%=TableSize;
+	*/
 	//if (i>tabM) i=tabM;
 	
 	if (iP1<0) iP1=tabM;
@@ -387,8 +400,8 @@ tf *=parameter[currentvoice][2];
 ta1 = parameter[currentvoice][9];
 ta1 *= modulator[currentvoice][choice[currentvoice][2]]; // osc1 first ampmod
 
-tf+=(midif[currentvoice]*parameter[currentvoice][2]*parameter[currentvoice][3]);
-//tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3]);
+//tf+=(midif[currentvoice]*parameter[currentvoice][2]*parameter[currentvoice][3]);
+tf+=(midif[currentvoice]*(1.0f-parameter[currentvoice][2])*parameter[currentvoice][3]);
 ta1+= parameter[currentvoice][11]*modulator[currentvoice][choice[currentvoice][3]];// osc1 second ampmod
 tf+=(parameter[currentvoice][4]*parameter[currentvoice][5])*modulator[currentvoice][choice[currentvoice][0]];
 tf+=parameter[currentvoice][7]*modulator[currentvoice][choice[currentvoice][1]];
@@ -429,8 +442,8 @@ tf2 = parameter[currentvoice][16];
 tf2 *=parameter[currentvoice][17];
 ta2 = parameter[currentvoice][23];
 ta2 *=modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
-tf2+=(midif[currentvoice]*parameter[currentvoice][17]*parameter[currentvoice][18]);
-//tf2+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
+//tf2+=(midif[currentvoice]*parameter[currentvoice][17]*parameter[currentvoice][18]);
+tf2+=(midif[currentvoice]*(1.0f-parameter[currentvoice][17])*parameter[currentvoice][18]);
 ta3 = parameter[currentvoice][25];
 ta3 *=modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
 tf2+=parameter[currentvoice][15]*parameter[currentvoice][19]*modulator[currentvoice][choice[currentvoice][6]];
@@ -464,7 +477,7 @@ temp*=0.5f;// get the volume of the sum into a normal range
 temp+=anti_denormal;
 /* filter settings*/
 mf =  (1.f-(parameter[currentvoice][38]*modulator[currentvoice][ choice[currentvoice][10]]));
-mf+= (1.f-parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]);
+mf+= (1.f-(parameter[currentvoice][48]*modulator[currentvoice][ choice[currentvoice][11]]));
 mo = parameter[currentvoice][56]*mf;
 
 
@@ -493,9 +506,9 @@ f[currentvoice][2] = 2.f * tf - (tf*tf*tf) * 0.1472725f;// / 6.7901358;
 #ifdef _VECTOR
  union f4vector a __attribute__((aligned (16))), b __attribute__((aligned (16))),  c __attribute__((aligned (16))), d __attribute__((aligned (16))),e __attribute__((aligned (16)));
 
+  b.f[0] = morph; b.f[1] = morph; b.f[2] = morph; b.f[3] = morph;
   a.f[0] = parameter[currentvoice][30]; a.f[1] =parameter[currentvoice][31]; a.f[2] = parameter[currentvoice][32]; a.f[3] = parameter[currentvoice][40];
   d.f[0] = parameter[currentvoice][41]; d.f[1] =parameter[currentvoice][42]; d.f[2] = parameter[currentvoice][50]; d.f[3] = parameter[currentvoice][51];
-  b.f[0] = morph; b.f[1] = morph; b.f[2] = morph; b.f[3] = morph;
 
   c.v = a.v * b.v;
 //c.v = __builtin_ia32_mulps (a.v, b.v);
@@ -566,9 +579,6 @@ tf2+=parameter[currentvoice][43]*mo;
 tf3 += parameter[currentvoice][53]*mo;
 #endif
 
-tf1*=srate;
-tf2*=srate;
-tf3 *= srate;
 
 #ifndef _VECTOR
 q[currentvoice][0] += parameter[currentvoice][34]*mo;
@@ -577,6 +587,10 @@ q[currentvoice][2] += parameter[currentvoice][54]*mo;
 
 v[currentvoice][0] += parameter[currentvoice][35]*mo;
 v[currentvoice][1] += parameter[currentvoice][45]*mo;
+
+tf1*=srate;
+tf2*=srate;
+tf3 *= srate;
 #endif
 
 #ifdef _VECTOR
@@ -584,28 +598,36 @@ v[currentvoice][1] += parameter[currentvoice][45]*mo;
 
   a.f[0] = parameter[currentvoice][55]; a.f[1] =tf1; a.f[2] = tf2; a.f[3] = tf3;
   g.f[0] = mo;// b.f[1] = 2.f; b.f[2] = 2.f; b.f[3] = 2.f;
-  c.v = a.v * g.v;
+  j.v = a.v * i.v; // tf * srate
+  c.v = j.v * g.v; // tf * 2
 //c.v = __builtin_ia32_mulps (a.v, g.v);
 
 v[currentvoice][2] += c.f[0];//parameter[currentvoice][55]*mo;
 
-f[currentvoice][0] = c.f[1];//2.f * tf1;
-f[currentvoice][1] = c.f[2];//2.f * tf2;
-f[currentvoice][2] = c.f[3];//2.f * tf3;
+//f[currentvoice][0] = c.f[1];//2.f * tf1;
+//f[currentvoice][1] = c.f[2];//2.f * tf2;
+//f[currentvoice][2] = c.f[3];//2.f * tf3;
 //pow(c.v,3);
+d.v = c.v - ((j.v * j.v * j.v) * h.v);
+
+f[currentvoice][0] = d.f[1];//(tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
+
+f[currentvoice][1] = d.f[2];//(tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
+
+f[currentvoice][2] = d.f[3];//(tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
 #else
 v[currentvoice][2] += parameter[currentvoice][55]*mo;
 
 f[currentvoice][0] = 2.f * tf1;
 f[currentvoice][1] = 2.f * tf2;
 f[currentvoice][2] = 2.f * tf3; 
-#endif
 
 f[currentvoice][0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
 
 f[currentvoice][1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
 
 f[currentvoice][2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
+#endif
 
 
 
@@ -669,6 +691,7 @@ result += tdelay * parameter[currentvoice][113];
 delayI[currentvoice]=delayI[currentvoice]+1;
 
 // --------------------------------- output
+float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 buffer[index] = result * parameter[currentvoice][101];
 bufferAux1[index] += result * parameter[currentvoice][108];
 bufferAux2[index] += result * parameter[currentvoice][109];
@@ -1080,8 +1103,8 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
    if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT)) 
    {
    	parameter[voice][i]=argv[2]->f;
-   	if ((i==2)||(i==17))
-   		parameter[voice][i]=1.f-argv[2]->f;
+   	//if ((i==2)||(i==17))
+   	//	parameter[voice][i]=1.f-argv[2]->f;
    }
    //if ((i==10) && (parameter[10]!=0)) parameter[10]=1000.f;
    // printf("%s <- f:%f, i:%d\n\n", path, argv[0]->f, argv[1]->i);

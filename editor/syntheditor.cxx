@@ -829,7 +829,7 @@ static void storesound(Fl_Widget* o, void* e)
 	Fl::check();
 }
 /**
- *
+ * recall a single sound
  */
 static void recall(unsigned int preset)
 {
@@ -1035,7 +1035,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 	for (int i=0;i<8;++i)
 	{
 		currentsound = i;
-		recall(Speicher.multis[currentmulti].sound[i]);// actual recall
+		recall(Speicher.multis[currentmulti].sound[i]);// actual recall Bug
 		schoice[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
 		Rollers[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
 		// set the knobs of the mix
