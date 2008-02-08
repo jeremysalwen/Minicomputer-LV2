@@ -1014,8 +1014,9 @@ static void loadsound(Fl_Widget* o, void* e)
 	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 #endif	
-	Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
-	recall(Speicher.multis[currentmulti].sound[currentsound]);
+	//Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
+	//recall(Speicher.multis[currentmulti].sound[currentsound]);
+	recall((unsigned int)((Fl_Input_Choice*)e)->menubutton()->value());
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 	Fl::check();
 }

@@ -23,8 +23,9 @@ Memory::Memory()
 {
 	int i;
 	for (i=0;i<8;++i)
+	{
 		choice[i] = 0;
-		
+	}	
 	char zeichenkette[128];
 	for ( i = 0;i<512;++i)
 	{
@@ -338,7 +339,7 @@ File.close();// done
   system("mv minicomputerMulti.temp minicomputerMulti.txt");// commit the file
 }
 /**
- * load the multitemporal setups which are stored in an extrafile
+ * load the multitemperal setups which are stored in an extrafile
  * supports the depricated binary format, enabled via _BINFILE in common.h
  * and the new textformat
  * @see Memory::load
