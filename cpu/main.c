@@ -363,12 +363,12 @@ for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 //		buffer[index]=0.0f;
 
 // calc the modulators
-modulator [currentvoice][8] =egCalc(currentvoice,1);
-modulator [currentvoice][9] =egCalc(currentvoice,2);
-modulator [currentvoice][10]=egCalc(currentvoice,3);
-modulator [currentvoice][11]=egCalc(currentvoice,4);
-modulator [currentvoice][12]=egCalc(currentvoice,5);
-modulator [currentvoice][13]=egCalc(currentvoice,6);
+modulator [currentvoice][8] =1.f-egCalc(currentvoice,1);
+modulator [currentvoice][9] =1.f-egCalc(currentvoice,2);
+modulator [currentvoice][10]=1.f-egCalc(currentvoice,3);
+modulator [currentvoice][11]=1.f-egCalc(currentvoice,4);
+modulator [currentvoice][12]=1.f-egCalc(currentvoice,5);
+modulator [currentvoice][13]=1.f-egCalc(currentvoice,6);
 }
 for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 {
@@ -473,7 +473,7 @@ tf2+=param[15]*param[19]*modulator[currentvoice][choice[currentvoice][6]];
 tf2+=param[21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
 //ta/=2.f;
-modulator[currentvoice][4] = (param[28]+param[28]*ta3);// osc2 fm out
+modulator[currentvoice][4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
     phase[currentvoice][2]+= tabX * tf2;
     if(phase[currentvoice][2]  >= tabF)
     {
@@ -489,7 +489,7 @@ modulator[currentvoice][4] = (param[28]+param[28]*ta3);// osc2 fm out
                 }
         osc2 = table[choice[currentvoice][5]][iP2] ;
 //osc2 = Oscillator(tf2,choice[currentvoice][5],&phase[currentvoice][2]);
-modulator[currentvoice][4] *= osc2;
+modulator[currentvoice][4] *= osc2;// osc2 fm out
 
 // mix pre filter
 //temp=(parameter[currentvoice][14]-parameter[currentvoice][14]*ta1);

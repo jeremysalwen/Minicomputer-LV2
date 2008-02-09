@@ -273,7 +273,7 @@ switch (currentParameter)
 		}
 		else
 		{
-			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1000.f);
+			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),100.f);
 		}
 #ifdef _DEBUG
 		printf("%li : %i     \r", ((Fl_Light_Button*)o)->argument(),((Fl_Light_Button*)o)->value());

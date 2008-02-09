@@ -18,7 +18,7 @@ if ARGUMENTS.get('k7', 0):
 
 # env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -fmessage-length=0')
 
-env.Append(CCFLAGS = ['-O3','-msse','-msse2','-fwhole-program','-fverbose-asm','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops', '-mfpmath=sse'])
+env.Append(CCFLAGS = ['-O3','-msse','-fwhole-program','-fverbose-asm','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops', '-mfpmath=sse'])
 conf = Configure(env)
 
 if not conf.CheckLibWithHeader('jack', 'jack/jack.h','c'):
