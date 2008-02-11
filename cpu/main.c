@@ -651,22 +651,30 @@ f[currentvoice][1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
 
 f[currentvoice][2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
 #endif
-
-
-
+//----------------------- actual filter calculation -------------------------
+// first filter
+float reso = q[currentvoice][0]; // for better scaling the volume with rising q
 low[currentvoice][0] = low[currentvoice][0] + f[currentvoice][0] * band[currentvoice][0];
-high[currentvoice][0] = (q[currentvoice][0] * temp) - low[currentvoice][0] - (q[currentvoice][0]*band[currentvoice][0]);
+high[currentvoice][0] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][0] - (reso*band[currentvoice][0]);
+//high[currentvoice][0] = (reso *temp) - low[currentvoice][0] - (q[currentvoice][0]*band[currentvoice][0]);
 band[currentvoice][0]= f[currentvoice][0] * high[currentvoice][0] + band[currentvoice][0];
 
-
+reso = q[currentvoice][1];
+// second filter
 low[currentvoice][1] = low[currentvoice][1] + f[currentvoice][1] * band[currentvoice][1];
-high[currentvoice][1] = (q[currentvoice][1] * temp) - low[currentvoice][1] - (q[currentvoice][1]*band[currentvoice][1]);
+high[currentvoice][1] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][1] - (reso*band[currentvoice][1]);
 band[currentvoice][1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
-
-
+/*
+low[currentvoice][1] = low[currentvoice][1] + f[currentvoice][1] * band[currentvoice][1];
+high[currentvoice][1] = (q[currentvoice][1] * band[currentvoice][1]) - low[currentvoice][1] - (q[currentvoice][1]*band[currentvoice][1]);
+band[currentvoice][1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
+*/
+// third filter
+reso = q[currentvoice][2];
 low[currentvoice][2] = low[currentvoice][2] + f[currentvoice][2] * band[currentvoice][2];
-high[currentvoice][2] = (q[currentvoice][2] * temp) - low[currentvoice][2] - (q[currentvoice][2]*band[currentvoice][2]);
+high[currentvoice][2] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][2] - (reso*band[currentvoice][2]);
 band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
+
 modulator[currentvoice] [7] = (low[currentvoice][0]*v[currentvoice][0])+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
 
 //---------------------------------- amplitude shaping
