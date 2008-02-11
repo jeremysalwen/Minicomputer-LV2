@@ -1191,8 +1191,8 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"eg 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"global osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"mod wheel", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
@@ -1215,8 +1215,8 @@ Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"eg 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"global osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"mod", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"regler", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"mod wheel", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
