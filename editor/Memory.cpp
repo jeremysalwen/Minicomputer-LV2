@@ -71,7 +71,6 @@ void Memory::setChoice(unsigned int voice,unsigned int i)
 	{
 		printf("illegal sound choice\n");
 		fflush(stdout);
-		
 	}
 }
 /**
@@ -291,6 +290,108 @@ for (int i=0;i<512;++i)
 */
 }
 File.close();
+}
+
+/** export a single sound to a textfile
+ * @param the filename
+ * @param the sound memory location which is exported
+ */
+void Memory::exportSound(string filename,unsigned int current)
+{
+ofstream File (filename.c_str()); // temporary file
+int p,j;
+	//File<< "["<<i<<"]" <<endl;// write the soundnumber
+	File<< "'"<<sounds[current].name<<"'"<<endl;// write the name
+	
+	for (p=0;p<9;++p)
+	{
+		for (j=0;j<2;++j)
+			File<< "<"<< p << ";" << j << ":" <<sounds[current].freq[p][j]<<">"<<endl;
+	}
+	for (p=0;p<17;++p)
+		File<< "{"<< p << ":"<<sounds[current].choice[p]<<"}"<<endl;
+	for (p=0;p<_PARACOUNT;++p)// write the remaining parameters
+		File<< "("<< p << ":"<<sounds[current].parameter[p]<<")"<<endl;
+
+File.close();
+}
+/** import a single sound from a textfile
+ * and write it to the given memory location
+ * @param the filename
+ * @param the sound memory location whose parameters are about to be overwritten
+ */
+void Memory::importSound(string filename,unsigned int current)
+{
+ifstream File (filename.c_str());
+string str,sParameter,sValue;
+float fValue;
+int iParameter,i2Parameter;
+unsigned int j;
+getline(File,str);
+while (File)
+{
+	sParameter="";
+	sValue = "";
+	switch (str[0])
+	{
+		case '(':// setting parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].parameter[iParameter]=fValue;
+			}
+		}
+		break;
+		case '{':// setting additional parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].choice[iParameter]=(int)fValue;
+			}
+		}
+		break;
+		case '<':// setting additional parameter
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				sounds[current].freq[iParameter][i2Parameter]=fValue;
+			}
+		}
+		break;
+		case '\'': // setting the name
+		{
+			j = 1; // important, otherwise it would bail out at the first '	
+			while ((j<str.length()) && (str[j]!='\'') && (j<128) )
+			{
+				sounds[current].name[j-1] = str[j];
+				++j;
+			}
+			if (j<128) // fill the rest with blanks to clear the string
+			{
+				while (j<128)
+				{
+					sounds[current].name[j-1]=' ';
+					++j;
+				}
+			}
+		}
+		break;
+		/*case '[':// setting the current sound index
+		{
+			if (parseNumbers(str,iParameter,i2Parameter,fValue))
+			{
+				current = iParameter;
+			}
+		}
+		break;*/
+
+	}
+
+	getline(File,str);// get the next line of the file
+}
+File.close();
+// now the new sound is in RAM but need to be saved to the main file
+save();
 }
 /**
  * the multitemperal setup, the choice of sounds and some settings

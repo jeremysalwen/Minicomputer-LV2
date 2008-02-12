@@ -64,6 +64,9 @@ public:
 	void loadMulti();
 	void store(patch Sound);
 	void overwrite(patch Sound);
+	void importSound(string filename,unsigned int current);// import a single sound
+	void exportSound(string filename,unsigned int current);// export a single sound
+
 	patch temp;
 	string getName(unsigned int voice,unsigned int Eintrag);
 	virtual ~Memory();

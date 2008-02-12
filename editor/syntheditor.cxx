@@ -585,7 +585,9 @@ static void exportSound(Fl_File_Chooser *w, void *userdata)
  */
 static void exportPressed(Fl_Widget* o, void*)
 {
-Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::CREATE,"export to ...");
+char warn[256];
+sprintf (warn,"export %s:",schoice[currentsound]->value());
+Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::CREATE,warn);
     //fc->callback(exportSound); // not practical, is called to often
     fc->textsize(9);
     fc->show();
@@ -596,6 +598,11 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 		printf("export to %s\n",fc->value());
 		fflush(stdout);
 	#endif
+		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+		Fl::check();
+		Speicher.exportSound(fc->value(),schoice[currentsound]->menubutton()->value());
+		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+		Fl::check();
 	}
 
 }
@@ -603,16 +610,49 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
  */
 static void importPressed(Fl_Widget* o, void*)
 {
-Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::SINGLE,"import file ...");
+char warn[256];
+sprintf (warn,"overwrite %s:",schoice[currentsound]->value());
+Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Chooser::SINGLE,warn);
     fc->textsize(9);
     fc->show();
     while(fc->shown()) Fl::wait(); // block until choice is done
 	if ((fc->value() != NULL))
 	{
 	#ifdef _DEBUG
-		printf("import to %s\n",fc->value());
+		printf("import to %i : %s\n",schoice[currentsound]->menubutton()->value(),fc->value());
 		fflush(stdout);
 	#endif
+		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+		Fl::check();
+  		
+		Speicher.importSound(fc->value(),schoice[currentsound]->menubutton()->value());	
+		// ok, now we have a new sound saved but we should update the userinterface
+	  	int i;
+		for (i = 0;i<8;++i)
+	  	{
+  			schoice[i]->clear();
+	  	} 
+  
+	  	for (i=0;i<512;++i) 
+  		{
+		     if (i==230)
+		     {
+		     	printf("%s\n",Speicher.getName(0,229).c_str());
+		     	printf("%s\n",Speicher.getName(0,230).c_str());
+		     	printf("%s\n",Speicher.getName(0,231).c_str());
+		     }
+  			schoice[0]->add(Speicher.getName(0,i).c_str());
+		  	schoice[1]->add(Speicher.getName(0,i).c_str());
+		  	schoice[2]->add(Speicher.getName(0,i).c_str());
+	  		schoice[3]->add(Speicher.getName(0,i).c_str());
+		  	schoice[4]->add(Speicher.getName(0,i).c_str());
+		  	schoice[5]->add(Speicher.getName(0,i).c_str());
+  			schoice[6]->add(Speicher.getName(0,i).c_str());
+  			schoice[7]->add(Speicher.getName(0,i).c_str());
+	  	}
+	
+		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+		Fl::check();
 	}
 
 }
@@ -2386,7 +2426,7 @@ Fenster* UserInterface::make_window() {
          o->callback((Fl_Callback*)loadsound,soundchoice[i]);
       }
       { Fl_Button* o = new Fl_Button(600, 469, 70, 12, "import sound");
-        o->tooltip("import single sound to this voice");
+        o->tooltip("import single sound current memory slot, you need to load it for playing");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
 	//o->labelcolor((Fl_Color)1);
@@ -2394,7 +2434,7 @@ Fenster* UserInterface::make_window() {
       }
 
       { Fl_Button* o = new Fl_Button(600, 485, 70, 12, "export sound");
-        o->tooltip("export sound data of this voice");
+        o->tooltip("export sound data of current memory slot");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
         //o->labelcolor((Fl_Color)186);

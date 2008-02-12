@@ -374,7 +374,7 @@ modulator [currentvoice][13]=1.f-egCalc(currentvoice,6);
 for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 {
 // get the parameter settings
-   float * param = parameter[currentvoice];
+float * param = parameter[currentvoice];
 // casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
 P1.f =  phase[currentvoice][1];
 P2.f =  phase[currentvoice][2];
@@ -404,6 +404,14 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 	if (iP3<0) iP3=tabM;
 // create the next oscillator phase step for osc 3
     phase[currentvoice][3]+= tabX * param[90];
+__builtin_prefetch(&param[1],0,0);
+__builtin_prefetch(&param[2],0,1);
+__builtin_prefetch(&param[3],0,0);
+__builtin_prefetch(&param[4],0,0);
+__builtin_prefetch(&param[5],0,0);
+__builtin_prefetch(&param[7],0,0);
+__builtin_prefetch(&param[11],0,0);
+
     if(phase[currentvoice][3]  >= tabF)
     {
    		  phase[currentvoice][3]-= tabF;
@@ -423,6 +431,9 @@ tf = param[1];
 tf *=param[2];
 ta1 = param[9];
 ta1 *= modulator[currentvoice][choice[currentvoice][2]]; // osc1 first ampmod
+
+__builtin_prefetch(&phase[currentvoice][1],0,2);
+__builtin_prefetch(&phase[currentvoice][2],0,2);
 
 //tf+=(midif[currentvoice]*parameter[currentvoice][2]*parameter[currentvoice][3]);
 tf+=(midif[currentvoice]*(1.0f-param[2])*param[3]);
@@ -456,6 +467,17 @@ tf+=param[7]*modulator[currentvoice][choice[currentvoice][1]];
 		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
     }
 
+__builtin_prefetch(&param[15],0,0);
+__builtin_prefetch(&param[16],0,0);
+__builtin_prefetch(&param[17],0,0);
+__builtin_prefetch(&param[18],0,0);
+__builtin_prefetch(&param[19],0,0);
+__builtin_prefetch(&param[23],0,0);
+__builtin_prefetch(&param[25],0,0);
+__builtin_prefetch(&choice[currentvoice][6],0,0);
+__builtin_prefetch(&choice[currentvoice][7],0,0);
+__builtin_prefetch(&choice[currentvoice][8],0,0);
+__builtin_prefetch(&choice[currentvoice][9],0,0);
 
         if(phase[currentvoice][1]< 0.f)
                 {
@@ -490,6 +512,11 @@ modulator[currentvoice][4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
     }
 
+__builtin_prefetch(&param[14],0,0);
+__builtin_prefetch(&param[29],0,0);
+__builtin_prefetch(&param[38],0,0);
+__builtin_prefetch(&param[48],0,0);
+__builtin_prefetch(&param[56],0,0);
 
         if(phase[currentvoice][2]< 0.f)
                 {
@@ -512,6 +539,16 @@ mf =  (1.f-(param[38]*modulator[currentvoice][ choice[currentvoice][10]]));
 mf+= (1.f-(param[48]*modulator[currentvoice][ choice[currentvoice][11]]));
 mo = param[56]*mf;
 
+
+__builtin_prefetch(&param[30],0,0);
+__builtin_prefetch(&param[31],0,0);
+__builtin_prefetch(&param[32],0,0);
+__builtin_prefetch(&param[40],0,0);
+__builtin_prefetch(&param[41],0,0);
+__builtin_prefetch(&param[42],0,0);
+__builtin_prefetch(&param[50],0,0);
+__builtin_prefetch(&param[51],0,0);
+__builtin_prefetch(&param[52],0,0);
 
 clib1 = fabs (mo);
 clib2 = fabs (mo-1.0f);
@@ -572,6 +609,16 @@ q[currentvoice][2] = param[51];
 #endif
 
 v[currentvoice][2] = param[52];
+
+__builtin_prefetch(&param[33],0,0);
+__builtin_prefetch(&param[34],0,0);
+__builtin_prefetch(&param[35],0,0);
+__builtin_prefetch(&param[43],0,0);
+__builtin_prefetch(&param[44],0,0);
+__builtin_prefetch(&param[45],0,0);
+__builtin_prefetch(&param[53],0,0);
+__builtin_prefetch(&param[54],0,0);
+__builtin_prefetch(&param[55],0,0);
 
 #ifndef _VECTOR
 tf1*= morph;
