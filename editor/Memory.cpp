@@ -26,17 +26,17 @@ Memory::Memory()
 	{
 		choice[i] = 0;
 	}	
-	char zeichenkette[128];
+	//char zeichenkette[128];
 	for ( i = 0;i<512;++i)
 	{
-		sprintf(zeichenkette,"%i untitled",i);
-		strcpy(sounds[i].name,zeichenkette);
+		sprintf(sounds[i].name,"%i untitled",i);
+		//strcpy(sounds[i].name,zeichenkette);
 	}
 	
 	for ( i = 0;i<128;++i)
 	{
-		sprintf(zeichenkette,"%i untitled",i);
-		strcpy(multis[i].name,zeichenkette);
+		sprintf(multis[i].name,"%i untitled",i);
+		//strcpy(multis[i].name,zeichenkette);
 	}
 }
 /**
@@ -206,12 +206,12 @@ void Memory::load()
 // new fileinput in textformat which is the way to go
 
 ifstream File ("minicomputerMemory.txt");
-int p,j,current=-1;
-int iParameter,i2Parameter;
-float fValue;
 string str,sParameter,sValue;
+float fValue;
+int iParameter,i2Parameter;
+int current=-1;
+unsigned int j;
 getline(File,str);
-bool success;
 while (File)
 {
 	sParameter="";
@@ -249,6 +249,14 @@ while (File)
 			{
 				sounds[current].name[j-1] = str[j];
 				++j;
+			}
+			if (j<128) // fill the rest with blanks to clear the string
+			{
+				while (j<128)
+				{
+					sounds[current].name[j-1]=' ';
+					++j;
+				}
 			}
 		}
 		break;
@@ -347,9 +355,9 @@ File.close();// done
  */
 void Memory::loadMulti()
 {
-int i;
 //***************** the depricated binary format, only for my personal backwards compatility
 #ifdef _BINFILE
+int i;
 FILE *fh; // file handle
     if ((fh=fopen("minicomputerMulti.mcm","rb")) ==NULL)
 	{
@@ -381,7 +389,8 @@ float fValue;
 
 ifstream File ("minicomputerMulti.txt");
 getline(File,str);// get the first line from the file
-int p,j,current=0;
+int current=0;
+unsigned int j;
 while (File)// as long there is anything in the file
 {
 	// reset some variables
@@ -405,6 +414,14 @@ while (File)// as long there is anything in the file
 			{
 				multis[current].name[j-1] = str[j];
 				++j;
+			}
+			if (j<128) // fill the rest with blanks to clear the string
+			{
+				while (j<128)
+				{
+					multis[current].name[j-1]=' ';
+					++j;
+				}
 			}
 		}
 		break;
@@ -451,7 +468,7 @@ bool Memory::parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fV
 	string sParameter="";
 	string sValue="";
 	string sP2="";
-	int index = 0;
+	unsigned int index = 0;
 	bool hasValue = false,hasP2 = false,isValue=false,isP2=false;
 	// first getting each digit character
 	while (index<str.length())// examine character per character

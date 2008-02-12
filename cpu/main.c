@@ -306,6 +306,7 @@ float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
 float osc1,osc2,delayMod;
 unsigned int currentvoice = 0;
 unsigned int index;
+// an union for a nice float to int casting trick which should be fast
 typedef union
 {
 	int i;
@@ -314,8 +315,8 @@ typedef union
 INTORFLOAT P1 __attribute__((aligned (16)));
 INTORFLOAT P2 __attribute__((aligned (16)));
 INTORFLOAT P3 __attribute__((aligned (16)));
-INTORFLOAT bias;
-bias.i = (23 +127) << 23;
+INTORFLOAT bias; // the magic number
+bias.i = (23 +127) << 23;// generating the magic number
 int iP1=0,iP2=0,iP3=0;
 #ifdef _VECTOR
 	union f4vector g __attribute__((aligned (16)));
@@ -374,6 +375,7 @@ for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 {
 // get the parameter settings
    float * param = parameter[currentvoice];
+// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
 P1.f =  phase[currentvoice][1];
 P2.f =  phase[currentvoice][2];
 P3.f =  phase[currentvoice][3];
@@ -400,7 +402,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 	if (iP1<0) iP1=tabM;
 	if (iP2<0) iP2=tabM;
 	if (iP3<0) iP3=tabM;
-
+// create the next oscillator phase step for osc 3
     phase[currentvoice][3]+= tabX * param[90];
     if(phase[currentvoice][3]  >= tabF)
     {
@@ -413,8 +415,10 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
         	//	if(*phase < 0.f) *phase = tabF-1;
                 }
 //modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
+// write the oscillator 3 output to modulators
 modulator [currentvoice][14] = table[choice[currentvoice][12]][iP3] ;
 
+// --------------- calculate the parameters and modulations of main oscillators 1 and 2
 tf = param[1];
 tf *=param[2];
 ta1 = param[9];
@@ -435,6 +439,8 @@ tf+=param[7]*modulator[currentvoice][choice[currentvoice][1]];
 	iP1=iP1&tabM;//i%=TableSize;
 	iP2=iP2&tabM;//i%=TableSize;*/
 	//if (i>tabM) i=tabM;
+
+// generate phase of oscillator 1
     phase[currentvoice][1]+= tabX * tf;
 	
 //	if (iP1<0) iP1=tabM;
@@ -461,6 +467,8 @@ tf+=param[7]*modulator[currentvoice][choice[currentvoice][1]];
 //osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
 modulator[currentvoice][3]=osc1*(param[13]*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
+// ------------------------ calculate oscillator 2 ---------------------
+// first the modulations and frequencys
 tf2 = param[16];
 tf2 *=param[17];
 ta2 = param[23];
@@ -474,6 +482,7 @@ tf2+=param[21]*modulator[currentvoice][choice[currentvoice][7]];
 //tf/=3.f;		
 //ta/=2.f;
 modulator[currentvoice][4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
+// then generate the actual phase:
     phase[currentvoice][2]+= tabX * tf2;
     if(phase[currentvoice][2]  >= tabF)
     {
@@ -491,14 +500,14 @@ modulator[currentvoice][4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 //osc2 = Oscillator(tf2,choice[currentvoice][5],&phase[currentvoice][2]);
 modulator[currentvoice][4] *= osc2;// osc2 fm out
 
-// mix pre filter
+// ------------------------------------- mix the 2 oscillators pre filter
 //temp=(parameter[currentvoice][14]-parameter[currentvoice][14]*ta1);
 temp=(param[14]*(1.f-ta1));
 temp*=osc1;
 temp+=osc2*(param[29]*(1.f-ta2));
 temp*=0.5f;// get the volume of the sum into a normal range	
 temp+=anti_denormal;
-/* filter settings*/
+// ------------- calculate the filter settings ------------------------------
 mf =  (1.f-(param[38]*modulator[currentvoice][ choice[currentvoice][10]]));
 mf+= (1.f-(param[48]*modulator[currentvoice][ choice[currentvoice][11]]));
 mo = param[56]*mf;

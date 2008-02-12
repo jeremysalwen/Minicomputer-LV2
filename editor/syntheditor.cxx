@@ -139,7 +139,8 @@ static void tabcallback(Fl_Widget* o, void* )
  * @param defined by FLTK but not used
  */
 static void callback(Fl_Widget* o, void*) {
-	unsigned d;
+if (o != NULL)
+{
 	paramon->value(((Fl_Valuator*)o)->value());
 	//float wert=-1024;
 //(Fl_Valuator*)o)->
@@ -444,8 +445,11 @@ switch (currentParameter)
 
 }
     
+#ifdef _DEBUG
 fflush(stdout);
-}
+#endif		
+} // end of o != NULL
+} // end of callback
 
 /**
  * copybutton callback, called whenever the user wants to copy filterparameters
@@ -478,7 +482,6 @@ static void copycallback(Fl_Widget* o, void*) {
  */
 static void finetune(Fl_Widget* o, void*)
 {
-
 	if (currentParameter<_PARACOUNT)// range check
 	{
 		switch (currentParameter)
@@ -639,7 +642,7 @@ static void storesound(Fl_Widget* o, void* e)
 	{
 	if (Knob[currentsound][i] != NULL)
 	{
-		int j=-1024;
+		//int j=-1024;
 		Speicher.sounds[Speicher.getChoice(currentsound)].parameter[i]=((Fl_Valuator*)Knob[currentsound][i])->value();
 		
 		switch (i)
@@ -835,7 +838,7 @@ static void storesound(Fl_Widget* o, void* e)
  */
 static void recall(unsigned int preset)
 {
-	int i,j=-1024;
+	int i;//,j=-1024;
 #ifdef _DEBUG
 	printf("choice %i %i\n",currentsound,preset);//((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
