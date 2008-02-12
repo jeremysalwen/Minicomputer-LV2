@@ -1812,8 +1812,8 @@ Fenster* UserInterface::make_window() {
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(326, 392, 25, 25, "amount");
-        o->labelsize(8);  o->minimum(-1);
-        o->maximum(1);
+        o->labelsize(8);  o->minimum(-2);
+        o->maximum(2);
         o->argument(38);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
@@ -1828,8 +1828,8 @@ Fenster* UserInterface::make_window() {
       }
       { Fl_Dial* o = new Fl_Dial(551, 392, 25, 25, "amount");
         o->labelsize(8);
-        o->argument(48);  o->minimum(-1);
-        o->maximum(1);
+        o->argument(48);  o->minimum(-2);
+        o->maximum(2);
         o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Choice* o = new Fl_Choice(492, 366, 85, 15, "morph mod 2");
