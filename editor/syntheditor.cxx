@@ -24,12 +24,13 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
  Fl_Choice* auswahl[8][17];
  Fl_Value_Input* Display[8][13];
  Fl_Widget* tab[9];
- Fl_Input_Choice* schoice[8];
+ Fl_Input* schoice[8];
  Fl_Roller* Rollers[8];
  Fl_Roller* multiRoller;
  Fl_Tabs* tabs;
  Fl_Button* lm,*sm;
  Fl_Value_Input* paramon;  
+ Fl_Value_Output* memDisplay[8];  
  Fl_Input_Choice*  Multichoice;
  
  int currentParameter=0;
@@ -550,13 +551,16 @@ static void tuneCallback(Fl_Widget* o, void*)
 static void rollerCallback(Fl_Widget* o, void*)
 {
 	int Faktor = (int)((Fl_Valuator* )o)->value();
-	schoice[currentsound]->value(Faktor);//Speicher.multis[currentmulti].sound[currentsound]);// set gui
+	schoice[currentsound]->value((Speicher.getName(0,Faktor)).c_str());//Speicher.multis[currentmulti].sound[currentsound]);// set gui
+	memDisplay[currentsound]->value(Faktor);// set gui
 }
+/*
 static void chooseCallback(Fl_Widget* o, void*)
 {
 //	int Faktor = (int)((Fl_Valuator* )o)->value();
 	Rollers[currentsound]->value(schoice[currentsound]->menubutton()->value());// set gui
-}
+	memDisplay[currentsound]->value(schoice[currentsound]->menubutton()->value());// set gui
+}*/
 static void multiRollerCallback(Fl_Widget* o, void*)
 {
 	int Faktor = (int)((Fl_Valuator* )o)->value();
@@ -600,7 +604,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 	#endif
 		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 		Fl::check();
-		Speicher.exportSound(fc->value(),schoice[currentsound]->menubutton()->value());
+		Speicher.exportSound(fc->value(),(unsigned int)memDisplay[currentsound]->value());
 		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 		Fl::check();
 	}
@@ -608,7 +612,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 }
 /** callback when import button was pressed, shows a filedialog
  */
-static void importPressed(Fl_Widget* o, void*)
+static void importPressed(Fl_Widget* o, void* )
 {
 char warn[256];
 sprintf (warn,"overwrite %s:",schoice[currentsound]->value());
@@ -619,15 +623,17 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 	if ((fc->value() != NULL))
 	{
 	#ifdef _DEBUG
-		printf("import to %i : %s\n",schoice[currentsound]->menubutton()->value(),fc->value());
+		//printf("currentsound %i,roller %f, importon %i to %i : %s\n",currentsound,Rollers[currentsound]->value(),((Fl_Input_Choice*)e)->menubutton()->value(),(int)memDisplay[currentsound]->value(),fc->value());//Speicher.multis[currentmulti].sound[currentsound]
 		fflush(stdout);
 	#endif
 		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 		Fl::check();
   		
-		Speicher.importSound(fc->value(),schoice[currentsound]->menubutton()->value());	
+		Speicher.importSound(fc->value(),(int)memDisplay[currentsound]->value());//schoice[currentsound]->menubutton()->value());	
 		// ok, now we have a new sound saved but we should update the userinterface
-	  	int i;
+		schoice[currentsound]->value(Speicher.getName(0,(int)memDisplay[currentsound]->value()).c_str());
+	  	/*
+		int i;
 		for (i = 0;i<8;++i)
 	  	{
   			schoice[i]->clear();
@@ -650,7 +656,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
   			schoice[6]->add(Speicher.getName(0,i).c_str());
   			schoice[7]->add(Speicher.getName(0,i).c_str());
 	  	}
-	
+		*/
 		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 		Fl::check();
 	}
@@ -664,17 +670,18 @@ static void storesound(Fl_Widget* o, void* e)
 {
 	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 	Fl::check();
+	int Speicherplatz = (int) memDisplay[currentsound]->value();
 #ifdef _DEBUG
-	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
+	printf("choice %i\n",Speicherplatz);//((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 #endif	
-	Speicher.setChoice(currentsound,((Fl_Input_Choice*)e)->menubutton()->value());
+	Speicher.setChoice(currentsound,Speicherplatz);//(Fl_Input_Choice*)e)->menubutton()->value());
 	// clean first the name string
 	sprintf(Speicher.sounds[Speicher.getChoice(currentsound)].name,"%s",((Fl_Input_Choice*)e)->value());
 #ifdef _DEBUG
 	printf("input choice %s\n",((Fl_Input_Choice*)e)->value());
 #endif	
-	((Fl_Input_Choice*)e)->menubutton()->replace(Speicher.getChoice(currentsound),((Fl_Input_Choice*)e)->value());
+	//((Fl_Input_Choice*)e)->menubutton()->replace(Speicher.getChoice(currentsound),((Fl_Input_Choice*)e)->value());
 	
 	//Schaltbrett.soundchoice-> add(Speicher.getName(i).c_str());
 	int i;
@@ -851,7 +858,7 @@ static void storesound(Fl_Widget* o, void* e)
 	fflush(stdout);
 #endif
 	Speicher.save();
-	
+	/*	
 	// ok, now we have saved but we should update the userinterface
   	for (i = 0;i<8;++i)
   	{
@@ -869,7 +876,7 @@ static void storesound(Fl_Widget* o, void* e)
   		schoice[6]->add(Speicher.getName(0,i).c_str());
   		schoice[7]->add(Speicher.getName(0,i).c_str());
   	}
-	
+	*/
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 	Fl::check();
 }
@@ -1051,17 +1058,17 @@ static void recall(unsigned int preset)
  * @param optional data, this time the entry id of which the sound 
  * should be loaded
  */
-static void loadsound(Fl_Widget* o, void* e)
+static void loadsound(Fl_Widget* o, void* )
 {
 	fl_cursor(FL_CURSOR_WAIT,FL_WHITE, FL_BLACK);
 	Fl::check();
 #ifdef _DEBUG
-	printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
+	//printf("maybe %i choice %i\n",Speicher.getChoice(currentsound),((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
 #endif	
 	//Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	//recall(Speicher.multis[currentmulti].sound[currentsound]);
-	recall((unsigned int)((Fl_Input_Choice*)e)->menubutton()->value());
+	recall((unsigned int)((int) memDisplay[currentsound]->value()));//(Fl_Input_Choice*)e)->menubutton()->value());
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 	Fl::check();
 }
@@ -1082,8 +1089,9 @@ static void loadmulti(Fl_Widget* o, void* e)
 	{
 		currentsound = i;
 		recall(Speicher.multis[currentmulti].sound[i]);// actual recall Bug
-		schoice[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
+		schoice[i]->value(Speicher.getName(0,Speicher.multis[currentmulti].sound[i]).c_str());// set gui
 		Rollers[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
+		memDisplay[i]->value(Speicher.multis[currentmulti].sound[i]);
 		// set the knobs of the mix
 		for (int j=0;j<_MULTISETTINGS;++j)
 		{
@@ -1203,9 +1211,9 @@ void UserInterface::changeSound(int channel,int pgm)
 	{
 		int t = currentsound;
 		currentsound = channel;
-		schoice[channel]->value(pgm);
-		schoice[channel]->damage(FL_DAMAGE_ALL);
-		schoice[channel]->redraw();
+		schoice[channel]->value(Speicher.getName(0,pgm).c_str());
+		//schoice[channel]->damage(FL_DAMAGE_ALL);
+		//schoice[channel]->redraw();
 		Rollers[channel]->value(pgm);// set gui
 		Rollers[channel]->redraw();
 		loadsound(NULL,soundchoice[channel]);
@@ -2385,20 +2393,20 @@ Fenster* UserInterface::make_window() {
         o->labelsize(8);
         o->labelcolor((Fl_Color)1);
       }*/
-      { Fl_Input_Choice* o = new Fl_Input_Choice(274, 471, 150, 14, "sound");
-        o->box(FL_BORDER_FRAME);
-        o->down_box(FL_BORDER_FRAME);
-        o->color(FL_FOREGROUND_COLOR);
-        o->selection_color(FL_FOREGROUND_COLOR);
+      { Fl_Input* o = new Fl_Input(274, 471, 150, 14, "sound");
+        o->box(FL_BORDER_BOX);
+        //o->down_box(FL_BORDER_FRAME);
+        //o->color(FL_FOREGROUND_COLOR);
+        //o->selection_color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
         o->textsize(8);
-        o->menubutton()->textsize(8);
-        o->menubutton()->type(Fl_Menu_Button::POPUP1);
+        //o->menubutton()->textsize(8);
+        //o->menubutton()->type(Fl_Menu_Button::POPUP1);
         o->align(FL_ALIGN_TOP_LEFT);
         soundchoice[i] = o;
         schoice[i] = o;
 	d->add(o);
-        o->callback((Fl_Callback*)chooseCallback,NULL);
+        //o->callback((Fl_Callback*)chooseCallback,NULL);
       }
       { Fl_Roller* o = new Fl_Roller(274, 487, 150, 14);
       	o->type(FL_HORIZONTAL);
@@ -2412,21 +2420,28 @@ Fenster* UserInterface::make_window() {
         o->callback((Fl_Callback*)rollerCallback,NULL);
       }
 
-      { Fl_Button* o = new Fl_Button(516, 473, 55, 19, "store sound");
+      { Fl_Button* o = new Fl_Button(516, 465, 55, 19, "store sound");
         o->tooltip("store this sound on current entry");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);o->labelcolor((Fl_Color)1);
         o->callback((Fl_Callback*)storesound,soundchoice[i]);
       }
-      { Fl_Button* o = new Fl_Button(436, 473, 70, 19, "load sound");
+      { Fl_Button* o = new Fl_Button(436, 465, 70, 19, "load sound");
         o->tooltip("actually load the chosen sound");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
         o->labelcolor((Fl_Color)186);
          o->callback((Fl_Callback*)loadsound,soundchoice[i]);
       }
+        { Fl_Value_Output* o = new Fl_Value_Output(490, 488, 28, 15,"memory");
+          o->box(FL_ROUNDED_BOX);
+          o->labelsize(8);
+	  o->maximum(512);
+          o->textsize(8);
+	  memDisplay[i]=o;
+        }
       { Fl_Button* o = new Fl_Button(600, 469, 70, 12, "import sound");
-        o->tooltip("import single sound current memory slot, you need to load it for playing");
+        o->tooltip("import single sound to dialed memory slot, you need to load it for playing");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
 	//o->labelcolor((Fl_Color)1);
@@ -2434,7 +2449,7 @@ Fenster* UserInterface::make_window() {
       }
 
       { Fl_Button* o = new Fl_Button(600, 485, 70, 12, "export sound");
-        o->tooltip("export sound data of current memory slot");
+        o->tooltip("export sound data of dialed memory slot");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
         //o->labelcolor((Fl_Color)186);

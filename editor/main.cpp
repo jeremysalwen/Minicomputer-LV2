@@ -205,10 +205,11 @@ int main(int argc, char **argv)
   {
   	//printf("bei %i\n",i);
   	//fflush(stdout);
-  	Schaltbrett.soundchoice[i]->clear();
+  	//Schaltbrett.soundchoice[i]->clear();
   } 
   	Speicher.load();
   	//printf("und load...\n");
+  /*
   for (int i=0;i<512;i++) 
   {
   	Schaltbrett.soundchoice[0]->add(Speicher.getName(0,i).c_str());
@@ -219,7 +220,7 @@ int main(int argc, char **argv)
   	Schaltbrett.soundchoice[5]->add(Speicher.getName(0,i).c_str());
   	Schaltbrett.soundchoice[6]->add(Speicher.getName(0,i).c_str());
   	Schaltbrett.soundchoice[7]->add(Speicher.getName(0,i).c_str());
-  }
+  }*/
   Speicher.loadMulti();
   for (int i=0;i<128;i++) 
   {

@@ -277,7 +277,7 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 			    else
 			    {*/
 					EGtrigger[voice][number] = 0;
-					EGstate[voice][number] = 1;
+				//	EGstate[voice][number] = 1;
 		/*	    }
 				
 			}*/
