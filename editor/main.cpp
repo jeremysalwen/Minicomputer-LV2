@@ -222,10 +222,10 @@ int main(int argc, char **argv)
   	Schaltbrett.soundchoice[7]->add(Speicher.getName(0,i).c_str());
   }*/
   Speicher.loadMulti();
-  for (int i=0;i<128;i++) 
+  /*for (int i=0;i<128;i++) 
   {
   	Schaltbrett.multichoice->add(Speicher.multis[i].name);
-  }
+  }*/
   //printf("weiter...\n");
   w->show(argc, argv);
     /* an address to send messages to. sometimes it is better to let the server

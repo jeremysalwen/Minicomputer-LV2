@@ -107,7 +107,7 @@ public:
   static Fl_Menu_Item menu_fmod[];
   static Fl_Menu_Item menu_wave[];
   Fl_Input*  soundchoice[8];
- Fl_Input_Choice*  multichoice;
+ Fl_Input*  multichoice;
    private:
   string tablabel[9];
 };

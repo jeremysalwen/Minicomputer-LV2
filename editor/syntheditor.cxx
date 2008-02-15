@@ -30,8 +30,8 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
  Fl_Tabs* tabs;
  Fl_Button* lm,*sm;
  Fl_Value_Input* paramon;  
- Fl_Value_Output* memDisplay[8];  
- Fl_Input_Choice*  Multichoice;
+ Fl_Value_Output *memDisplay[8],*multiDisplay;  
+ Fl_Input*  Multichoice;
  
  int currentParameter=0;
 
@@ -564,12 +564,14 @@ static void chooseCallback(Fl_Widget* o, void*)
 static void multiRollerCallback(Fl_Widget* o, void*)
 {
 	int Faktor = (int)((Fl_Valuator* )o)->value();
-	Multichoice->value(Faktor);// set gui
+	Multichoice->value(Speicher.multis[Faktor].name);// set gui
+	multiDisplay->value(Faktor);
 }
+/*
 static void chooseMultiCallback(Fl_Widget* o, void*)
 {
 	multiRoller->value(Multichoice->menubutton()->value());// set gui
-}
+}*/
 /**
  * callback from the export filedialog
  * do the actual export of current single sound
@@ -677,9 +679,9 @@ static void storesound(Fl_Widget* o, void* e)
 #endif	
 	Speicher.setChoice(currentsound,Speicherplatz);//(Fl_Input_Choice*)e)->menubutton()->value());
 	// clean first the name string
-	sprintf(Speicher.sounds[Speicher.getChoice(currentsound)].name,"%s",((Fl_Input_Choice*)e)->value());
+	sprintf(Speicher.sounds[Speicher.getChoice(currentsound)].name,"%s",((Fl_Input*)e)->value());
 #ifdef _DEBUG
-	printf("input choice %s\n",((Fl_Input_Choice*)e)->value());
+	printf("input choice %s\n",((Fl_Input*)e)->value());
 #endif	
 	//((Fl_Input_Choice*)e)->menubutton()->replace(Speicher.getChoice(currentsound),((Fl_Input_Choice*)e)->value());
 	
@@ -1083,7 +1085,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 {
 	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 	Fl::check();
-	currentmulti = (unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
+	currentmulti = (unsigned int)multiRoller->value();
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
 	{
@@ -1125,7 +1127,7 @@ currentsound = 0;
 	tabcallback(tabs,NULL);
 
 #ifdef _DEBUG
-	printf("multi choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
+	printf("multi choice %s\n",((Fl_Input*)e)->value());
 	fflush(stdout);
 #endif
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
@@ -1148,7 +1150,7 @@ static void storemulti(Fl_Widget* o, void* e)
 
 	if (Multichoice != NULL)
 	{
-		int t = Multichoice->menubutton()->value();
+		int t = (int) multiRoller->value();//Multichoice->menubutton()->value();
 #ifdef _DEBUG
 		printf("was:%d is:%d\n",currentmulti,t);
 #endif
@@ -1160,10 +1162,10 @@ static void storemulti(Fl_Widget* o, void* e)
 	else
 		printf("problems with the multichoice widgets!\n");
 
-	strcpy(Speicher.multis[currentmulti].name,((Fl_Input_Choice*)e)->value());
+	strcpy(Speicher.multis[currentmulti].name,((Fl_Input*)e)->value());
 	//printf("input choice %s\n",((Fl_Input_Choice*)e)->value());
 	
-	((Fl_Input_Choice*)e)->menubutton()->replace(currentmulti,((Fl_Input_Choice*)e)->value());
+	//((Fl_Input_Choice*)e)->menubutton()->replace(currentmulti,((Fl_Input_Choice*)e)->value());
 	
 	//Schaltbrett.soundchoice-> add(Speicher.getName(i).c_str());
 	// get the knobs of the mix
@@ -1196,11 +1198,12 @@ static void voicecallback(Fl_Widget* o, void* e)
 }*/
 void UserInterface::changeMulti(int pgm)
 {
-	multichoice->value(pgm);
+	multichoice->value(Speicher.multis[currentmulti].name);
 	multichoice->damage(FL_DAMAGE_ALL);
 	multichoice->redraw();
 	multiRoller->value(pgm);// set gui
 	multiRoller->redraw();
+	multiDisplay->value(pgm);
 	loadmulti(NULL,multichoice);
 	Fl::redraw();
 	Fl::flush();
@@ -1216,7 +1219,7 @@ void UserInterface::changeSound(int channel,int pgm)
 		//schoice[channel]->redraw();
 		Rollers[channel]->value(pgm);// set gui
 		Rollers[channel]->redraw();
-		loadsound(NULL,soundchoice[channel]);
+		loadsound(NULL,schoice[channel]);
 		Fl::redraw();
 		Fl::flush();
 		currentsound = t;
@@ -2433,11 +2436,16 @@ Fenster* UserInterface::make_window() {
         o->labelcolor((Fl_Color)186);
          o->callback((Fl_Callback*)loadsound,soundchoice[i]);
       }
-        { Fl_Value_Output* o = new Fl_Value_Output(490, 488, 28, 15,"memory");
+        { Fl_Value_Output* o = new Fl_Value_Output(490, 488, 20, 15,"memory");
           o->box(FL_ROUNDED_BOX);
-          o->labelsize(8);
+          o->color(FL_BLACK);
+	  o->labelsize(8);
 	  o->maximum(512);
           o->textsize(8);
+          o->textcolor(FL_RED);
+	  //char tooltip [64];
+	  //sprintf(tooltip,"accept Midi Program Change on channel %i",i);
+          //o->tooltip(tooltip);
 	  memDisplay[i]=o;
         }
       { Fl_Button* o = new Fl_Button(600, 469, 70, 12, "import sound");
@@ -2694,19 +2702,15 @@ Fenster* UserInterface::make_window() {
     }*/
 
 // ----------------------------------------- Multi
-      { Fl_Input_Choice* o = new Fl_Input_Choice(10, 476, 106, 14, "Multi");
-        o->box(FL_BORDER_FRAME);
-        o->down_box(FL_BORDER_FRAME);
-        o->color(FL_FOREGROUND_COLOR);
-        o->selection_color(FL_FOREGROUND_COLOR);
+      { Fl_Input* o = new Fl_Input(10, 476, 106, 14, "Multi");
+        o->box(FL_BORDER_BOX);
+        //o->color(FL_FOREGROUND_COLOR);
         o->labelsize(8);
         o->textsize(8);
-        o->menubutton()->textsize(8);
-        o->menubutton()->type(Fl_Menu_Button::POPUP1);
         o->align(FL_ALIGN_TOP_LEFT);
         //o->callback((Fl_Callback*)changemulti,NULL);
-        o->callback((Fl_Callback*)chooseMultiCallback,NULL); // for the roller
-        o->tooltip("choose multi, press load button to actually load it");
+        //o->callback((Fl_Callback*)chooseMultiCallback,NULL); // for the roller
+        o->tooltip("enter name for multisetup before storing it");
         multichoice = o;
         Multichoice = o;
        
@@ -2714,7 +2718,7 @@ Fenster* UserInterface::make_window() {
       // roller for the multis:
       { Fl_Roller* o = new Fl_Roller(20, 492, 80, 10);
       	o->type(FL_HORIZONTAL);
-        o->tooltip("roll the list of multis");
+        o->tooltip("roll the list of multis, press load button for loading or save button for storing");
         o->minimum(0);
 	o->maximum(127);
 	o->step(1);
@@ -2722,14 +2726,23 @@ Fenster* UserInterface::make_window() {
         o->callback((Fl_Callback*)multiRollerCallback,NULL);
 	multiRoller=o;
       }
-      { Fl_Button* o = new Fl_Button(207, 473, 55, 19, "store multi");
+        { Fl_Value_Output* o = new Fl_Value_Output(180, 488, 20, 15,"multiset");
+          o->box(FL_ROUNDED_BOX);
+          o->color(FL_BLACK);
+	  o->labelsize(8);
+	  o->maximum(512);
+          o->textsize(8);
+          o->textcolor(FL_RED);
+	  multiDisplay=o;
+        }
+      { Fl_Button* o = new Fl_Button(206, 465, 55, 19, "store multi");
         o->tooltip("overwrite this multi");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);o->labelcolor((Fl_Color)1);
         o->callback((Fl_Callback*)storemulti,multichoice);
 	sm = o;
       }
-      { Fl_Button* o = new Fl_Button(126, 473, 70, 19, "load multi");
+      { Fl_Button* o = new Fl_Button(126, 465, 70, 19, "load multi");
         o->tooltip("load current multi");
         o->box(FL_BORDER_BOX);
         o->labelsize(8);
