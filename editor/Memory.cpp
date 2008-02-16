@@ -38,6 +38,29 @@ Memory::Memory()
 		sprintf(multis[i].name,"%i untitled",i);
 		//strcpy(multis[i].name,zeichenkette);
 	}
+	//gotFolder = false;
+	// first determine where to save
+	//if (gotFolder == false)
+	//{
+	char kommand[1200];
+		gotFolder = true;
+		if (getenv("HOME") == NULL)
+		{
+			strcpy(folder,""); // ok, $HOME is not set so save it just HERE
+		}
+		else
+		{ 
+			string t = getenv("HOME");
+			sprintf(folder,"%s/.miniComputer",t.c_str());
+			if (access(folder, R_OK) != 0)
+			{
+				sprintf(kommand,"mkdir %s",folder);
+				system(kommand);
+		        	cout<<kommand<<endl;
+			}
+		}
+	//}
+
 }
 /**
  * destructor
@@ -94,7 +117,8 @@ unsigned int Memory::getChoice(unsigned int voice)
  */
 void Memory::save()
 {
-    /*ofstream ofs("minicomputerMemory.mcm", std::ios::binary);
+char kommand[1200];
+	    /*ofstream ofs("minicomputerMemory.mcm", std::ios::binary);
   //boost::archive::text_oarchive oa(ofs);
 	for (int i=0;i<139;i++)
 	{
@@ -107,7 +131,8 @@ void Memory::save()
   //................................binary format, depricated! ............................
 #ifdef _BINFILE
 FILE *fh; // file handle
-  system("mv minicomputerMemory.mcm minicomputerMemory.bak");// make a backup
+
+    system("mv minicomputerMemory.mcm minicomputerMemory.bak");// make a backup
     if ((fh=fopen("minicomputerMemory.mcm","wb")) ==NULL)
 	{
 		printf("cant open file minicomputerMemory.mcm\n");
@@ -130,8 +155,9 @@ FILE *fh; // file handle
 // *************************************************************
 // new fileoutput as textfile with a certain coding which is
 // documented in the docs
+	sprintf(kommand,"%s/minicomputerMemory.temp",folder);
 
-ofstream File ("minicomputerMemory.temp"); // temporary file
+ofstream File (kommand); // temporary file
 int p,j;
 for (int i=0;i<512;++i)
  {  
@@ -150,9 +176,14 @@ for (int i=0;i<512;++i)
  }// end of for i
 
 File.close();
-	
-  system("mv minicomputerMemory.txt minicomputerMemory.txt.bak");// make a backup
-  system("mv minicomputerMemory.temp minicomputerMemory.txt");// commit the file finally
+	sprintf(kommand,"%s/minicomputerMemory.txt",folder);
+	if (access(kommand, R_OK) != 0) // check if there a previous file which need to be backed up
+	{
+		sprintf(kommand,"mv %s/minicomputerMemory.txt %s/minicomputerMemory.txt.bak",folder,folder);
+  		system(kommand);// make a backup
+	}
+	sprintf(kommand,"mv %s/minicomputerMemory.temp %s/minicomputerMemory.txt",folder,folder);
+  	system(kommand);// commit the file finally
 }
 
 /**
@@ -203,8 +234,11 @@ void Memory::load()
 #endif
 // *************************************************************
 // new fileinput in textformat which is the way to go
+char path[1200];
+sprintf(path,"%s/minicomputerMemory.txt",folder);
+printf("loading %s",path);
+ifstream File (path);
 
-ifstream File ("minicomputerMemory.txt");
 string str,sParameter,sValue;
 float fValue;
 int iParameter,i2Parameter;
@@ -401,6 +435,7 @@ save();
  */
 void Memory::saveMulti()
 {
+	char kommand[1200];
       int i;
       //************* the binary depricated fileformat
 #ifdef _BINFILE      
@@ -427,7 +462,10 @@ void Memory::saveMulti()
 #endif
 //---------------------- new textformat
 // first write in temporary file, just in case
-ofstream File ("minicomputerMulti.temp");
+
+sprintf(kommand,"%s/minicomputerMulti.temp",folder);
+ofstream File (kommand); // temporary file
+
 int p,j;
 for (i=0;i<128;++i)// write the whole 128 multis
 {
@@ -444,8 +482,14 @@ for (i=0;i<128;++i)// write the whole 128 multis
 
 File.close();// done
 	
-  system("mv minicomputerMulti.txt minicomputerMulti.txt.bak");// make a backup of the original file
-  system("mv minicomputerMulti.temp minicomputerMulti.txt");// commit the file
+	sprintf(kommand,"%s/minicomputerMulti.txt",folder);
+	if (access(kommand, R_OK) != 0) // check if there a previous file which need to be backed up
+ 	{
+		sprintf(kommand,"mv %s/minicomputerMulti.txt %s/minicomputerMulti.txt.bak",folder,folder);
+  		system(kommand);// make a backup of the original file
+  	}
+  sprintf(kommand,"mv %s/minicomputerMulti.temp %s/minicomputerMulti.txt",folder,folder);
+  system(kommand);// commit the file
 }
 /**
  * load the multitemperal setups which are stored in an extrafile
@@ -488,7 +532,10 @@ string str,sValue,sParameter;
 int iParameter,i2Parameter;
 float fValue;
 
-ifstream File ("minicomputerMulti.txt");
+char path[1200];
+sprintf(path,"%s/minicomputerMulti.txt",folder);
+
+ifstream File (path);
 getline(File,str);// get the first line from the file
 int current=0;
 unsigned int j;

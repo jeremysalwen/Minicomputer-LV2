@@ -27,6 +27,9 @@
 //#include <boost/archive/text_iarchive.hpp>
 #include <stdio.h>
 #include <stdlib.h>
+
+    #include <unistd.h>
+    #include <errno.h> 
 #include "../common.h"
 using namespace std;
 //#include "patch.h"
@@ -77,6 +80,8 @@ public:
 	private:
 	unsigned int choice[8];
 	bool parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fValue);
+	char folder[1024]; // the directory to write stuff in
+	bool gotFolder;
 };
 
 #endif /*MEMORY_H_*/
