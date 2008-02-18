@@ -80,6 +80,16 @@ static void tabcallback(Fl_Widget* o, void* )
 	Fl_Widget* e =((Fl_Tabs*)o)->value();
 	if (e==tab[8])
 	{
+		if (multiDisplay != NULL)
+			multiDisplay->hide();
+		else
+			printf("there seems to be something wrong with multiroller widget");
+		
+		if (multiRoller != NULL)
+			multiRoller->hide();
+		else
+			printf("there seems to be something wrong with multiroller widget");
+
 		if (Multichoice != NULL)
 			Multichoice->hide();
 		else
@@ -102,6 +112,16 @@ static void tabcallback(Fl_Widget* o, void* )
 	}
 	else
 	{
+		if (multiDisplay != NULL)
+			multiDisplay->show();
+		else
+			printf("there seems to be something wrong with multiDisplay widget");
+
+		if (multiRoller != NULL)
+			multiRoller->show();
+		else
+			printf("there seems to be something wrong with multiroller widget");
+		
 		if (Multichoice != NULL)
 			Multichoice->show();
 		else
@@ -141,8 +161,28 @@ static void tabcallback(Fl_Widget* o, void* )
  */
 static void callback(Fl_Widget* o, void*) {
 if (o != NULL)
-{
-	paramon->value(((Fl_Valuator*)o)->value());
+{	
+currentParameter = ((Fl_Valuator*)o)->argument();
+
+		// show only parameter on finetune when its not a frequency
+		switch (currentParameter)
+		{
+			case 1:
+			case 3:
+			case 16:
+			case 18:
+			case 30:
+			case 33:
+			case 40:
+			case 43:
+			case 50:
+			case 53:
+			case 90:
+			 break; // do nothin
+			default: 
+				paramon->value(((Fl_Valuator*)o)->value());
+			break;
+		}
 	//float wert=-1024;
 //(Fl_Valuator*)o)->
  // printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
@@ -166,8 +206,8 @@ else if (((Fl_Valuator*)o)->value()!=0)
     else
     lo_send(t, "/Minicomputer", "if",10,0.f);
 */
-currentParameter = ((Fl_Valuator*)o)->argument();
 
+// now actually process parameter
 switch (currentParameter)
 {
 	case 256:
@@ -1243,7 +1283,7 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"eg 4", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"eg 5", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"eg 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"global osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"modulation osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"mod wheel", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
@@ -1251,7 +1291,7 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
-
+// redundant for now...
 Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"none", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"velocity", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
@@ -1267,7 +1307,7 @@ Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"eg 4", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"eg 5", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"eg 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
- {"global osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"modulation osc", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"touch", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"mod wheel", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
@@ -1392,11 +1432,11 @@ Fenster* UserInterface::make_window() {
     { Fl_Tabs* o = new Fl_Tabs(0,0,995, 515);
     	 o->callback((Fl_Callback*)tabcallback);
 	 int i;
-    for (i=0;i<8;++i)
+    for (i=0;i<8;++i)// generate 8 tabs for the 8 voices
     {
     	{ 
     	ostringstream oss;
-	oss<<"sound "<<(i+1);
+	oss<<"sound "<<(i+1);// create name for tab
 	tablabel[i]=oss.str();
 	Fl_Group* o = new Fl_Group(1, 10, 995, 515, tablabel[i].c_str());
     	 o->color((Fl_Color)246);
@@ -1426,7 +1466,7 @@ Fenster* UserInterface::make_window() {
         o->callback((Fl_Callback*)callback);
         Knob[i][1] = o;
       }
-      { Fl_Value_Input* o = new Fl_Value_Input(16, 66, 46, 15);
+      { Fl_Value_Input* o = new Fl_Value_Input(16, 66, 46, 15);// frequency display of oscillator 1
         o->box(FL_ROUNDED_BOX);
         o->labelsize(8);
         o->textsize(8);
@@ -1764,6 +1804,7 @@ Fenster* UserInterface::make_window() {
     	o->xstep(500);
     	o->labelsize(8);
     	o->argument(30);
+        o->yvalue(200.5);
     	o->callback((Fl_Callback*)callback);
     	Knob[i][o->argument()] = o;
     	
@@ -1779,7 +1820,7 @@ Fenster* UserInterface::make_window() {
           o->labelsize(8);
           o->argument(31);
           o->minimum(0.9);
-          o->value(0.5);
+          o->value(0.9);
           o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
@@ -1787,7 +1828,7 @@ Fenster* UserInterface::make_window() {
           o->labelsize(8);
            o->argument(32);
 		o->callback((Fl_Callback*)callback);o->minimum(-1);
-          o->value(0);
+          o->value(0.5);
           o->maximum(1);Knob[i][o->argument()] = o;
         }
         
@@ -1798,6 +1839,7 @@ Fenster* UserInterface::make_window() {
     	o->box(FL_BORDER_BOX);
     	o->xstep(500); o->selection_color(0);
     	o->labelsize(8);
+	o->yvalue(20);
     	o->callback((Fl_Callback*)callback);
        /* Fl_Dial* o = f1cut2 = new Fl_SteinerKnob(481, 50, 34, 34, "cut");
           o->labelsize(8); 
@@ -1821,7 +1863,7 @@ Fenster* UserInterface::make_window() {
           o->labelsize(8); 
           o->labelsize(8);
           o->minimum(-1);
-          o->value(0);
+          o->value(0.5);
           o->maximum(1);
            o->argument(35);
 	   o->callback((Fl_Callback*)callback);
@@ -1833,6 +1875,7 @@ Fenster* UserInterface::make_window() {
           o->textsize(8);
 	  o->maximum(10000);
 	  o->step(0.01);
+	o->value(200);
           o->argument(30);
 	   o->callback((Fl_Callback*)cutoffCallback);
           Display[i][4]=o;
@@ -1843,6 +1886,7 @@ Fenster* UserInterface::make_window() {
           o->textsize(8);
 	  o->maximum(10000);
 	  o->step(0.01);
+	o->value(20);
           o->argument(33);
 	   o->callback((Fl_Callback*)cutoffCallback);
            Display[i][5]=o;
@@ -2357,7 +2401,7 @@ Fenster* UserInterface::make_window() {
 		  o->callback((Fl_Callback*)choicecallback);
 		  auswahl[i][o->argument()]=o;
         } 
-        { Fl_Value_Input* o = new Fl_Value_Input(690, 415, 38, 15);
+        { Fl_Value_Input* o = new Fl_Value_Input(690, 415, 38, 15);// frequency display for modulation oscillator
           o->box(FL_ROUNDED_BOX);
           o->labelsize(8);
 	  o->maximum(10000);
@@ -2547,7 +2591,7 @@ Fenster* UserInterface::make_window() {
         o->minimum(0);
         o->maximum(2);
 	o->color(fl_rgb_color(190,160,255));
-        o->value(1);
+        o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(874, 150, 25, 25, "aux 1");
@@ -2556,7 +2600,7 @@ Fenster* UserInterface::make_window() {
         o->minimum(0);
         o->maximum(2);
 	o->color(fl_rgb_color(140,140,255));
-        o->value(1);
+        o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(904, 150, 25, 25, "aux 2");
@@ -2565,7 +2609,7 @@ Fenster* UserInterface::make_window() {
         o->minimum(0);
 	o->color(fl_rgb_color(140,140,255));
         o->maximum(2);
-        o->value(1);
+        o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(934, 150, 25, 25, "mix vol");
@@ -2574,7 +2618,7 @@ Fenster* UserInterface::make_window() {
         o->minimum(0);
         o->maximum(2);
 	o->color(fl_rgb_color(170,140,255));
-        o->value(1);
+        o->value(0);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Slider* o = new Fl_Slider(864, 200, 80, 10, "mix pan");
@@ -2584,7 +2628,7 @@ Fenster* UserInterface::make_window() {
         o->minimum(0);
         o->maximum(1);
 	o->color(fl_rgb_color(170,140,255));
-        o->value(0.5);
+        o->value(0.0);
 	o->type(FL_HORIZONTAL);
 	o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
@@ -2680,7 +2724,7 @@ Fenster* UserInterface::make_window() {
       //o->textcolor(FL_BACKGROUND2_COLOR); 
       o->textfont(FL_HELVETICA_BOLD );
       o->labelcolor(FL_BACKGROUND2_COLOR);
-    	o->value("<html><body><i><center>version 0.9</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com</center></body></html>");
+    	o->value("<html><body><i><center>version 1.0</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com</center></body></html>");
     }	
     o->end(); 
     tab[i]=o;
