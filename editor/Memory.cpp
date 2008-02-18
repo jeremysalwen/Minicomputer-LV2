@@ -640,7 +640,14 @@ bool Memory::parseNumbers(string &str,int &iParameter,int &i2Parameter,float &fV
 		{
 			if (isValue)
 			{
-				sValue+=str[index];
+				sValue+='.';
+			}
+		}
+		else if (str[index] == '-')
+		{
+			if (isValue)
+			{
+				sValue+='-';
 			}
 		}
 		else if (str[index] == ':')
