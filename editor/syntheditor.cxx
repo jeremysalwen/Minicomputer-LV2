@@ -1131,7 +1131,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 	{
 
 		currentsound = i;
-		if ((Speicher.multis[currentmulti].sound[i]>0) && (Speicher.multis[currentmulti].sound[i]<512))
+		if ((Speicher.multis[currentmulti].sound[i]>=0) && (Speicher.multis[currentmulti].sound[i]<512))
 		{
 		recall(Speicher.multis[currentmulti].sound[i]);// actual recall Bug
 		#ifdef _DEBUG
