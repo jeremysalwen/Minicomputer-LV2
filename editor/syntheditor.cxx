@@ -1129,11 +1129,31 @@ static void loadmulti(Fl_Widget* o, void* e)
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
 	{
+
 		currentsound = i;
+		if ((Speicher.multis[currentmulti].sound[i]>0) && (Speicher.multis[currentmulti].sound[i]<512))
+		{
 		recall(Speicher.multis[currentmulti].sound[i]);// actual recall Bug
+		#ifdef _DEBUG
+			printf("i ist %i Speicher ist %i\n",i,Speicher.multis[currentmulti].sound[i]);
+			fflush(stdout);
+		#endif
 		schoice[i]->value(Speicher.getName(0,Speicher.multis[currentmulti].sound[i]).c_str());// set gui
+		#ifdef _DEBUG
+			printf("schoice gesetzt\n");
+			fflush(stdout);
+		#endif
 		Rollers[i]->value(Speicher.multis[currentmulti].sound[i]);// set gui
+		#ifdef _DEBUG
+			printf("Roller gesetzt\n");
+			fflush(stdout);
+		#endif
 		memDisplay[i]->value(Speicher.multis[currentmulti].sound[i]);
+		#ifdef _DEBUG
+			printf("memDisplay gesetzt\n");
+			fflush(stdout);
+		#endif
+		}
 		// set the knobs of the mix
 		for (int j=0;j<_MULTISETTINGS;++j)
 		{
@@ -1151,6 +1171,10 @@ static void loadmulti(Fl_Widget* o, void* e)
 				case 4:// knob 109
 				{
 					actualknob = j+105;
+					#ifdef _DEBUG
+					printf("i:%i j:%i knob:%i\n",i,j,actualknob);
+					fflush(stdout);
+					#endif
 					((Fl_Valuator*)Knob[i][actualknob])->value(Speicher.multis[currentmulti].settings[i][j]);
 					callback(Knob[i][actualknob],NULL);
 				}
