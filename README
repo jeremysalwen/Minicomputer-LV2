@@ -1,4 +1,4 @@
-Minicomputer v. 0.5 beta
+Minicomputer v. 1.0
 Industrial Grade Digital Synthesizer
 
 by Malte Steiner
@@ -9,7 +9,7 @@ Minicomputer is a standalone Linux softwaresynthesizer for
 creating experimental electronic sounds as its often used 
 in Industrial music.
 
-This is a prerelease version and contains some bugs but 
+This is a 1.0 version and may contain some bugs but 
 already worked in studio for my project 'Akustikkoppler' 
 and live for 'Notstandskomitee'.
 
@@ -23,6 +23,7 @@ Dependancies includes:
 - FLTK
 - Alsaseq
 - pthreads
+- liblo
 
 and 
 
@@ -49,6 +50,9 @@ forces a build for 64bit platforms with the -m64 option
 - k8=1
 optimizes for AMD K8 cpus, giving the compilers the -march=k8 -mtune=k8 settings
 
+-k7=1
+optimizes for AMD Athlon XP cpus
+
 So a k8 64bit build looks like
 
 scons 64bit=1 k8=1
@@ -59,4 +63,7 @@ TROUBLESHOOTING:
 make sure that you have the developer version of the library installed which comes extra and additionally.Usually looks like libxyz.dev
 
 
+A word to package maintainers:
+
+I welcome the inclusion of Minicomputer in repositorys. If you encounter any difficulties please contact me at the email address seen above and we work out a solution.
 
