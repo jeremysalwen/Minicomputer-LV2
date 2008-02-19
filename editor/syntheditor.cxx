@@ -1306,8 +1306,8 @@ void UserInterface::changeMulti(int pgm)
 {
 Fl::lock();
 	multichoice->value(Speicher.multis[currentmulti].name);
-	multichoice->damage(FL_DAMAGE_ALL);
-	multichoice->redraw();
+	//multichoice->damage(FL_DAMAGE_ALL);
+	//multichoice->redraw();
 	multiRoller->value(pgm);// set gui
 	multiRoller->redraw();
 	multiDisplay->value(pgm);
