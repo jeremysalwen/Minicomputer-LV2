@@ -133,7 +133,7 @@ if (poll(pfd, npfd, 100000) > 0)
                 channel,  ev->data.control.param,value);
 #endif		
 	// see if its the control channel
-	if (ev->data.control.channel == 9)
+	if (ev->data.control.channel == 8)
 	{ // perform multi program change
 		// first a range check
 		if ((value>-1) && (value <128))
@@ -141,7 +141,7 @@ if (poll(pfd, npfd, 100000) > 0)
 			Schaltbrett.changeMulti(value);
 		}
 	}
-	else if ((channel>0) && (channel<9)) 
+	else if ((channel>=0) && (channel<8)) 
 	{
 		//program change on the sounds
 		if ((value>-1) && (value <128))
@@ -227,6 +227,7 @@ int main(int argc, char **argv)
   	Schaltbrett.multichoice->add(Speicher.multis[i].name);
   }*/
   //printf("weiter...\n");
+  Fl::lock();
   w->show(argc, argv);
     /* an address to send messages to. sometimes it is better to let the server
      * pick a port number for you by passing NULL as the last argument */

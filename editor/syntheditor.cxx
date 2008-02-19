@@ -71,6 +71,7 @@ static void changemulti(Fl_Widget* o, void*)
  */
 static void tabcallback(Fl_Widget* o, void* )
 {
+Fl::lock();
 	//int* g;
 	//g=(int*)e;
 	
@@ -153,6 +154,9 @@ static void tabcallback(Fl_Widget* o, void* )
 	fflush(stdout);
 #endif
  	} // end of else
+
+Fl::awake();
+Fl::unlock();
 }
 /**
  * main callback, called whenever a parameter has changed
@@ -160,6 +164,7 @@ static void tabcallback(Fl_Widget* o, void* )
  * @param defined by FLTK but not used
  */
 static void callback(Fl_Widget* o, void*) {
+Fl::lock();
 if (o != NULL)
 {	
 currentParameter = ((Fl_Valuator*)o)->argument();
@@ -490,6 +495,9 @@ switch (currentParameter)
 fflush(stdout);
 #endif		
 } // end of o != NULL
+
+Fl::awake();
+Fl::unlock();
 } // end of callback
 
 /**
@@ -540,8 +548,11 @@ static void finetune(Fl_Widget* o, void*)
 			case 90:
 			 break; // do nothin
 			default: 
-			((Fl_Valuator* )Knob[currentsound][currentParameter])->value(((Fl_Valuator* )o)->value());
-			callback(Knob[currentsound][currentParameter],NULL);
+			Fl::lock();
+				((Fl_Valuator* )Knob[currentsound][currentParameter])->value(((Fl_Valuator* )o)->value());
+				callback(Knob[currentsound][currentParameter],NULL);
+			Fl::awake();
+			Fl::unlock();
 			break;
 		}
 	}
@@ -565,12 +576,15 @@ static void lfoCallback(Fl_Widget* o, void*)
  */
 static void cutoffCallback(Fl_Widget* o, void*)
 {
+	Fl::lock();
 	int Faktor = ((int)(((Fl_Valuator* )o)->value()/1000)*1000);
 	float Rem = ((Fl_Valuator* )o)->value()-Faktor;
 	int Argument = ((Fl_Valuator* )o)->argument();
 	((Fl_Positioner* )Knob[currentsound][Argument])->xvalue(Faktor);
 	((Fl_Positioner* )Knob[currentsound][Argument])->yvalue(Rem);
 	callback(Knob[currentsound][Argument],NULL);
+	Fl::awake();
+	Fl::unlock();
 }
 /** callback for frequency positioners in the oscillators
  * which are to be treated a bit different
@@ -580,19 +594,25 @@ static void cutoffCallback(Fl_Widget* o, void*)
  */
 static void tuneCallback(Fl_Widget* o, void*)
 {
+	Fl::lock();
 	int Faktor = (int)((Fl_Valuator* )o)->value();
 	float Rem = ((Fl_Valuator* )o)->value()-Faktor;
 	int Argument = ((Fl_Valuator* )o)->argument();
 	((Fl_Positioner* )Knob[currentsound][Argument])->xvalue(Faktor);
 	((Fl_Positioner* )Knob[currentsound][Argument])->yvalue(Rem);
 	callback(Knob[currentsound][Argument],NULL);
+	Fl::awake();
+	Fl::unlock();
 }
 
 static void rollerCallback(Fl_Widget* o, void*)
 {
-	int Faktor = (int)((Fl_Valuator* )o)->value();
-	schoice[currentsound]->value((Speicher.getName(0,Faktor)).c_str());//Speicher.multis[currentmulti].sound[currentsound]);// set gui
-	memDisplay[currentsound]->value(Faktor);// set gui
+	Fl::lock();
+		int Faktor = (int)((Fl_Valuator* )o)->value();
+		schoice[currentsound]->value((Speicher.getName(0,Faktor)).c_str());//Speicher.multis[currentmulti].sound[currentsound]);// set gui
+		memDisplay[currentsound]->value(Faktor);// set gui
+	Fl::awake();
+	Fl::unlock();
 }
 /*
 static void chooseCallback(Fl_Widget* o, void*)
@@ -603,9 +623,12 @@ static void chooseCallback(Fl_Widget* o, void*)
 }*/
 static void multiRollerCallback(Fl_Widget* o, void*)
 {
-	int Faktor = (int)((Fl_Valuator* )o)->value();
-	Multichoice->value(Speicher.multis[Faktor].name);// set gui
-	multiDisplay->value(Faktor);
+	Fl::lock();
+		int Faktor = (int)((Fl_Valuator* )o)->value();
+		Multichoice->value(Speicher.multis[Faktor].name);// set gui
+		multiDisplay->value(Faktor);
+	Fl::awake();
+	Fl::unlock();
 }
 /*
 static void chooseMultiCallback(Fl_Widget* o, void*)
@@ -644,11 +667,16 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 		printf("export to %s\n",fc->value());
 		fflush(stdout);
 	#endif
+		Fl::lock();
 		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 		Fl::check();
+		
 		Speicher.exportSound(fc->value(),(unsigned int)memDisplay[currentsound]->value());
+		
 		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 		Fl::check();
+		Fl::awake();
+		Fl::unlock();
 	}
 
 }
@@ -668,6 +696,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 		//printf("currentsound %i,roller %f, importon %i to %i : %s\n",currentsound,Rollers[currentsound]->value(),((Fl_Input_Choice*)e)->menubutton()->value(),(int)memDisplay[currentsound]->value(),fc->value());//Speicher.multis[currentmulti].sound[currentsound]
 		fflush(stdout);
 	#endif
+		Fl::lock();
 		fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 		Fl::check();
   		
@@ -701,6 +730,8 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 		*/
 		fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 		Fl::check();
+		Fl::awake();
+		Fl::unlock();
 	}
 
 }
@@ -710,6 +741,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
  */
 static void storesound(Fl_Widget* o, void* e)
 {
+	Fl::lock();
 	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 	Fl::check();
 	int Speicherplatz = (int) memDisplay[currentsound]->value();
@@ -921,6 +953,8 @@ static void storesound(Fl_Widget* o, void* e)
 	*/
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 	Fl::check();
+	Fl::awake();
+	Fl::unlock();
 }
 /**
  * recall a single sound
@@ -1102,8 +1136,9 @@ static void recall(unsigned int preset)
  */
 static void loadsound(Fl_Widget* o, void* )
 {
-	fl_cursor(FL_CURSOR_WAIT,FL_WHITE, FL_BLACK);
-	Fl::check();
+Fl::lock();
+	//fl_cursor(FL_CURSOR_WAIT,FL_WHITE, FL_BLACK);
+	//Fl::awake();
 #ifdef _DEBUG
 	//printf("maybe %i choice %i\n",Speicher.getChoice(currentsound),((Fl_Input_Choice*)e)->menubutton()->value());
 	fflush(stdout);
@@ -1111,8 +1146,9 @@ static void loadsound(Fl_Widget* o, void* )
 	//Speicher.multis[currentmulti].sound[currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	//recall(Speicher.multis[currentmulti].sound[currentsound]);
 	recall((unsigned int)((int) memDisplay[currentsound]->value()));//(Fl_Input_Choice*)e)->menubutton()->value());
-	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
-	Fl::check();
+	//fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	Fl::awake();
+	Fl::unlock();
 }
 /**
  * callback when the load multi button is pressed
@@ -1123,8 +1159,9 @@ static void loadsound(Fl_Widget* o, void* )
  */
 static void loadmulti(Fl_Widget* o, void* e)
 {
-	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
-	Fl::check();
+	Fl::lock();
+	//fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
+	//Fl::awake();
 	currentmulti = (unsigned int)multiRoller->value();
 	//multi[currentmulti][currentsound]=(unsigned int)((Fl_Input_Choice*)e)->menubutton()->value();
 	for (int i=0;i<8;++i)
@@ -1194,8 +1231,10 @@ currentsound = 0;
 	printf("multi choice %s\n",((Fl_Input*)e)->value());
 	fflush(stdout);
 #endif
-	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
-	Fl::check();
+	//fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
+	//Fl::check();
+	Fl::awake();
+	Fl::unlock();
 }
 
 /**
@@ -1205,6 +1244,7 @@ currentsound = 0;
  */
 static void storemulti(Fl_Widget* o, void* e)
 {
+	Fl::lock();
 	fl_cursor(FL_CURSOR_WAIT ,FL_WHITE, FL_BLACK);
 	Fl::check();
 	/*printf("choice %i\n",((Fl_Input_Choice*)e)->menubutton()->value());
@@ -1251,6 +1291,8 @@ static void storemulti(Fl_Widget* o, void* e)
 	
 	fl_cursor(FL_CURSOR_DEFAULT,FL_WHITE, FL_BLACK);
 	Fl::check();
+	Fl::awake();
+	Fl::unlock();
 }
 /*
 static void voicecallback(Fl_Widget* o, void* e)
@@ -1262,6 +1304,7 @@ static void voicecallback(Fl_Widget* o, void* e)
 }*/
 void UserInterface::changeMulti(int pgm)
 {
+Fl::lock();
 	multichoice->value(Speicher.multis[currentmulti].name);
 	multichoice->damage(FL_DAMAGE_ALL);
 	multichoice->redraw();
@@ -1269,13 +1312,16 @@ void UserInterface::changeMulti(int pgm)
 	multiRoller->redraw();
 	multiDisplay->value(pgm);
 	loadmulti(NULL,multichoice);
-	Fl::redraw();
-	Fl::flush();
+//	Fl::redraw();
+//	Fl::flush();
+	Fl::awake();
+	Fl::unlock();
 }
 void UserInterface::changeSound(int channel,int pgm)
 {
 	if ((channel >-1) && (channel < 8) && (pgm>-1) && (pgm<128))
 	{
+	Fl::lock();
 		int t = currentsound;
 		currentsound = channel;
 		schoice[channel]->value(Speicher.getName(0,pgm).c_str());
@@ -1283,10 +1329,13 @@ void UserInterface::changeSound(int channel,int pgm)
 		//schoice[channel]->redraw();
 		Rollers[channel]->value(pgm);// set gui
 		Rollers[channel]->redraw();
+		memDisplay[channel]->value(pgm);
 		loadsound(NULL,schoice[channel]);
-		Fl::redraw();
-		Fl::flush();
+//		Fl::redraw();
+//		Fl::flush();
 		currentsound = t;
+	Fl::awake();
+	Fl::unlock();
 	}
 }
 /**
