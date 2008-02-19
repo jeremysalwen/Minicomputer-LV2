@@ -1302,10 +1302,14 @@ static void voicecallback(Fl_Widget* o, void* e)
 	recall(multi[currentmulti][currentsound]);
 	transmit=true;
 }*/
+/**
+ * change the multisetup,should be called from a Midi Program Change event on Channel 9
+ * @param int the Program number between 0 and 127
+ */
 void UserInterface::changeMulti(int pgm)
 {
 Fl::lock();
-	multichoice->value(Speicher.multis[currentmulti].name);
+	multichoice->value(Speicher.multis[pgm].name);
 	//multichoice->damage(FL_DAMAGE_ALL);
 	//multichoice->redraw();
 	multiRoller->value(pgm);// set gui
@@ -1317,6 +1321,11 @@ Fl::lock();
 	Fl::awake();
 	Fl::unlock();
 }
+/**
+ * change the sound for a certain voice,should be called from a Midi Program Change event on Channel 1 - 8
+ * @param int the voice between 0 and 7 (it is not clear if the first Midi channel is 1 (which is usually the case in the hardware world) or 0)
+ * @param int the Program number between 0 and 127
+ */
 void UserInterface::changeSound(int channel,int pgm)
 {
 	if ((channel >-1) && (channel < 8) && (pgm>-1) && (pgm<128))
