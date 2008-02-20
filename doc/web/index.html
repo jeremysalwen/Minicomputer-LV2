@@ -1,0 +1,72 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Minicomputer</title>
+<meta name="author" content="Malte Steiner">
+<meta name="keywords" content="Linux,softwaresynthesizer,synthesizer,sound,realtime,audio,sound design">
+<meta name="description" content="about Minicomputer softwaresynthesizer for Linux">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8">
+<meta http-equiv="content-style-type" content="text/css">
+</head>
+<body background="miniDigit.gif">
+
+<div style="position:absolute; left: 0px;" name="Logo"><img src="minicomputerG.gif" width="290" height="186" border="0" alt="Minicomputer softwaresynthesizer" title="Minicomputer softwaresynthesizer" /></div>
+<div style="border: solid 1px #000; font-family: arial, helvetica, sans-serif; font-size: 15; left: 10px; width:250px;padding:10px; height:120px; top:200px; position: absolute; background-color:#fff">
+<b><a href="guiFullscreen.gif" title="screenshot of Minicomputers editor" name="screenshot of Minicomputers editor">screenshot</a><br />
+<a href="minicomputerManual.pdf" title="Manual Minicomputer softwaresynthesizer" name="Manual Minicomputer softwaresynthesizer">manual as pdf</a><br />
+<a href="http://sourceforge.net/project/showfiles.php?group_id=203751" title="Download sources for Minicomputer inclusive manual" name="Download sources for Minicomputer inclusive manual">download source incl. manual</a><br />
+audio demos, only one sound at a time, no further effects:<br />
+<a href="minicomputer1.mp3" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo1 MP3</a> | <a href="minicomputer1.ogg" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo1 OGG</a><br />
+<a href="minicomputer2.mp3" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo2 MP3</a> | <a href="minicomputer2.ogg" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo2 OGG</a><br />
+<a href="minicomputer3.mp3" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo3 MP3</a> | <a href="minicomputer3.ogg" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo3 OGG</a><br />
+<a href="http://sourceforge.net/projects/minicomputer/" title="Minicomputer projectsite at sourceforge" name="Minicomputer projectsite at sourceforge">Projectsite at Sourceforge</a><br/ >
+</b><br /></div>
+<div align="center" style="left: 10px; width:250px;padding:10px; top:340px; position: absolute; "><table width=100%><tr><td><a href="http://sourceforge.net"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=203751&amp;type=3" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a></td>
+<td>&nbsp;</td><td><a href="http://sourceforge.net/donate/index.php?group_id=203751"><img src="http://images.sourceforge.net/images/project-support.jpg" width="88" height="32" border="0" alt="Support This Project" /> </a></td>
+</tr></table><br /><br /><br />
+<a href="http://www.block4.com" title="Block 4 media art + development" name="Block 4 media art + development"><img src="b4.gif" width="108" height="120" border="0" name="Block 4 media art + development" alt="Block 4 media art + development"></a>
+</div>
+<div style="font-family: arial, helvetica, sans-serif; font-size: 10; left: 320px; width:60%; position: absolute; padding:10px; background-color:#ddd"><h2>Industrial Grade Digital Synthesizer for Linux</h2><br />
+
+Minicomputer is a standalone Linux softwaresynthesizer for
+creating experimental electronic sounds as its often used
+in Industrial music, IDM, EBM, Glitch, sound design and minimal electronic. It is monophonic but can produce up to 8 different sounds at the same time.<br />
+It uses <a href="http://jackaudio.org/" title="Jack audio for Linux" name="Jack audio for Linux">Jack</a> as realtime audio infrastructure and can be controlled via Midi.<br /><br />
+Minicomputer is free open source software distributed under GPL 3 written by Malte Steiner 2007/2008.<br /><br />
+Its a version 1.0 release but runs stable for me live and in studio. Projects already using it are<br /><br />
+<a href="http://www.block4.com/index.php?id=10" title="Notstandskomitee at Block 4" name="Notstandskomitee at Block 4">Notstandskomitee</a><br/>
+<a href="http://www.myspace.com/akustikkoppler" title="Akustikkoppler on myspace" name="Akustikkoppler on myspace">Akustikkoppler</a><br/><br />
+Minicomputer will be presented at <a href="http://lac.linuxaudio.org/" title="Linux Audio Conference" name="Linux Audio Conference">LAC 2008</a> at the club night 29.2. and<br />
+<a href="http://musik.messefrankfurt.com/global/en/home.html" title="Frankfurter Musikmesse" name="Frankfurter Musikmesse">Frankfurter Musikmesse</a> 2008 12.-15.3. at the booth <b>B66</b> in <b>hall 5.1</b> by <a href="http://www.synthesizer-magazin.de/" title="Synthesizer Magazin" name="Synthesizer Magazin">Synthesizer Magazin</a>
+<br />
+<br />
+The application is split into 2 programms, the engine written in C and an editor written in C++.<br />
+Its brand new so it will take a while until binarys are available in the repositories of your favorite Linux distribution. So most likely you have to compile it on your own which actually means at best, if all librarys are installed on your computer, just typing in <b>scons</b> from within the Minicomputer directory.<br /><br />
+Dependencies includes:<br />
+<br />
+<ul><li> Jack</li>
+<li> FLTK</li>
+<li> Alsaseq</li>
+<li> pthreads</li>
+<li> liblo</li></ul>
+<br />
+and<br />
+<br />
+<ul><li> Scons for building</li></ul>
+<br />
+Take care, it can be harsh! Use it on your own risk, you have been warnend!<br />
+<br />
+Minicomputer doesn't ape any existing synthesizer but has a rather traditional, subtractive
+approach and thus is easy to operate. Its made of 8 parallel voices forming a multitemperal
+setup, suited for example as a drumsynth. Each voice is monophonic in itself so it can play
+only one key per time, additional triggers might cut off a sound of the same voice which
+was already on or fading.<br/><br />
+<h3>The sound architecture:</h3>
+<div align="center"><img src="architectureAlpha.gif" width="603" height="376" border="0" name="soundarchitecture of Minicomputer" alt="soundarchitecture of Minicomputer" /></div><br/>
+Each voice have two oscillators feeding a morphing filter which is made of 3 filters in parallel, creating vivid formants often result in vocal like sound. Each voice includes a complete delay line which can be also modulated by envelopes, oscillators, Midi events etc. Every part is calculated sample accurate so it is 
+not that easy on the cpu, but on the other hand features a rich sound and synthesis flexibilty. Because the filter can create three resonances, the signal path can be feedbacked on several modulation points and every modulator can reach into audio range, volume differences can occur so take care. 
+
+</div>
+</body>
+</html>
