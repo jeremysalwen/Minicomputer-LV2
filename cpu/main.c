@@ -1,7 +1,7 @@
 /** Minicomputer
  * industrial grade digital synthesizer
  *
- * Copyright 2007 Malte Steiner
+ * Copyright 2007,2008 Malte Steiner
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -53,21 +53,24 @@ unsigned int lastnote[_MULTITEMP];
 int delayI[_MULTITEMP],delayJ[_MULTITEMP];
 
 snd_seq_t *open_seq();
- snd_seq_t *seq_handle;
-  int npfd;
-  struct pollfd *pfd;
-#ifdef _VECTOR  
-  typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
+snd_seq_t *seq_handle;
+int npfd;
+struct pollfd *pfd;
 
-union f4vector 
-{
-  v4sf v;// __attribute__((aligned (16)));
-  float f[4];// __attribute__((aligned (16)));
-};
+#ifdef _VECTOR  
+	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
+	union f4vector 
+	{
+		v4sf v;// __attribute__((aligned (16)));
+		float f[4];// __attribute__((aligned (16)));
+	};
 #endif
+
 //void midi_action(snd_seq_t *seq_handle);
 
-
+/**
+ * function to create Alsa Midiport
+ */
 snd_seq_t *open_seq() {
 
   snd_seq_t *seq_handle;
@@ -107,7 +110,7 @@ float srate = 3.145f/ 48000.f;
 int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 int done = 0;
-static const float anti_denormal = 1e-20;
+static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
 /* inlined manually
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
@@ -147,11 +150,11 @@ static inline float Oscillator(float frequency,int wave,float *phase)
 
 static inline void egStart (unsigned int voice,unsigned int number)
 {
-	     EGtrigger[voice][number]=1;
-	     EG[voice][number][0] = 1.f; // triggerd
-		 EG[voice][number][5] = 1.f; // target
-         EG[voice][number][7] = 0.0f;// state
-         EGstate[voice][number] = 0;// state
+	EGtrigger[voice][number]=1;
+	EG[voice][number][0] = 1.f; // triggerd
+	EG[voice][number][5] = 1.f; // target
+        EG[voice][number][7] = 0.0f;// state
+        EGstate[voice][number] = 0;// state
 		 //printf("start %i", voice);
 }
 /**
@@ -162,10 +165,10 @@ static inline void egStart (unsigned int voice,unsigned int number)
  */
 static inline void egStop (unsigned int voice,unsigned int number)
 {
-	    // if (EGrepeat[voice][number] == 0) 
-	    EGtrigger[voice][number] = 0; // triggerd
-		 EGstate[voice][number] = 0; // target
-		// printf("stop %i", voice);
+	// if (EGrepeat[voice][number] == 0) 
+	EGtrigger[voice][number] = 0; // triggerd
+	EGstate[voice][number] = 0; // target
+	// printf("stop %i", voice);
 }
 /**
  * calculate the envelope, done in audiorate to avoide zippernoise
@@ -286,8 +289,8 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 	//	{
 	//		EG[voice][number][0] = 0.f;
 			
-			EG[voice][number][0] = 1.f; // triggerd
-		    EGstate[voice][number] = 1; // target
+		EG[voice][number][0] = 1.f; // triggerd
+		EGstate[voice][number] = 1; // target
             //EG[voice][number][6] = 0.0f;// state
 	//	}
 		
@@ -298,58 +301,60 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 
 /* this is the heart of the client. the process callback. 
  * this will be called by jack every process cycle.
- * jack provides us with a buffer for out output port, 
- * which we can happily write into. inthis case we just 
- * fill it with 0's to produce.... silence! not to bad, eh? */
+ * jack provides us with a buffer for every output port, 
+ * which we can happily write into.*/
 int process(jack_nframes_t nframes, void *arg) {
-float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
-float osc1,osc2,delayMod;
-unsigned int currentvoice = 0;
-unsigned int index;
-// an union for a nice float to int casting trick which should be fast
-typedef union
-{
-	int i;
-	float f;
-} INTORFLOAT;
-INTORFLOAT P1 __attribute__((aligned (16)));
-INTORFLOAT P2 __attribute__((aligned (16)));
-INTORFLOAT P3 __attribute__((aligned (16)));
-INTORFLOAT bias; // the magic number
-bias.i = (23 +127) << 23;// generating the magic number
-int iP1=0,iP2=0,iP3=0;
-#ifdef _VECTOR
-	union f4vector g __attribute__((aligned (16)));
-	union f4vector h __attribute__((aligned (16)));
-	union f4vector i __attribute__((aligned (16)));
-	union f4vector j __attribute__((aligned (16)));
-	g.f[1] = 2.f; g.f[2] = 2.f; g.f[3] = 2.f; // first entry differs always
-	//g.f[1] = 2.f*srate; g.f[2] = 2.f*srate; g.f[3] = 2.f*srate; // first entry differs always
-	i.f[0]=1.f; i.f[1] = srate; i.f[2] = srate; i.f[3] = srate; 
-	h.f[0]=1.f; h.f[1] = 0.1472725f; h.f[2] = 0.1472725f; h.f[3] = 0.1472725f;
 
-#endif
+	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
+	float osc1,osc2,delayMod;
+	unsigned int currentvoice = 0;
+	unsigned int index;
+
+	// an union for a nice float to int casting trick which should be fast
+	typedef union
+	{
+		int i;
+		float f;
+	} INTORFLOAT;
+	INTORFLOAT P1 __attribute__((aligned (16)));
+	INTORFLOAT P2 __attribute__((aligned (16)));
+	INTORFLOAT P3 __attribute__((aligned (16)));
+	INTORFLOAT bias; // the magic number
+	bias.i = (23 +127) << 23;// generating the magic number
+
+	int iP1=0,iP2=0,iP3=0;
+
+	#ifdef _VECTOR
+		union f4vector g __attribute__((aligned (16)));
+		union f4vector h __attribute__((aligned (16)));
+		union f4vector i __attribute__((aligned (16)));
+		union f4vector j __attribute__((aligned (16)));
+		g.f[1] = 2.f; g.f[2] = 2.f; g.f[3] = 2.f; // first entry differs always
+		//g.f[1] = 2.f*srate; g.f[2] = 2.f*srate; g.f[3] = 2.f*srate; // first entry differs always
+		i.f[0]=1.f; i.f[1] = srate; i.f[2] = srate; i.f[3] = srate; 
+		h.f[0]=1.f; h.f[1] = 0.1472725f; h.f[2] = 0.1472725f; h.f[3] = 0.1472725f;
+	#endif
 	float *bufferMixLeft = (float*) jack_port_get_buffer(port[8], nframes);
 	float *bufferMixRight = (float*) jack_port_get_buffer(port[9], nframes);
 	float *bufferAux1 = (float*) jack_port_get_buffer(port[10], nframes);
 	float *bufferAux2 = (float*) jack_port_get_buffer(port[11], nframes);
-/*jack_midi_port_info_t* info;
-	void* buf;
-	jack_midi_event_t ev;
+	
+	// functions for including JACK Midi later, commented out for now
+	/*jack_midi_port_info_t* info;
+		void* buf;
+		jack_midi_event_t ev;
 	
 	
-	buf = jack_port_get_buffer(inbuf, bufsize);
-	info = jack_midi_port_get_info(buf, bufsize);
-	for(index=0; index<info->event_count; ++index)
-	{
-		jack_midi_event_get(&ev, buf, index, nframes);
-	}
-*/
-	
-		
+		buf = jack_port_get_buffer(inbuf, bufsize);
+		info = jack_midi_port_get_info(buf, bufsize);
+		for(index=0; index<info->event_count; ++index)
+		{
+			jack_midi_event_get(&ev, buf, index, nframes);
+		}
+	*/
 
-	/* so we do it :) */
-	for (index = 0; index < nframes; ++index) {
+/* so we do it :) */
+for (index = 0; index < nframes; ++index) {
 	/* this function returns a pointer to the buffer where 
      * we can write our frames samples */
 
@@ -791,7 +796,7 @@ bufferMixRight[index] += result * param[107];
                 
        }
 }
-	return 1;
+	return 1;// thanks to Sean Bolton pointing to a bug when I returned 1
 }
 
 /* a flag which will be set by our signal handler when 

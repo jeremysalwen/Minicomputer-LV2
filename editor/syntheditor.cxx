@@ -22,7 +22,7 @@ static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
 // gcc -o synthEditor2 syntheditor.cxx -lfltk -llo
  Fl_Widget* Knob[8][_PARACOUNT];
  Fl_Choice* auswahl[8][17];
- Fl_Value_Input* Display[8][13];
+ Fl_Value_Input* miniDisplay[8][13];
  Fl_Widget* tab[9];
  Fl_Input* schoice[8];
  Fl_Roller* Rollers[8];
@@ -223,7 +223,7 @@ switch (currentParameter)
 	case 1:
 	{
 		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
-		Display[currentsound][0]->value( ((Fl_Valuator* )Knob[currentsound][1])->value() );
+		miniDisplay[currentsound][0]->value( ((Fl_Valuator* )Knob[currentsound][1])->value() );
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 #endif
@@ -235,16 +235,16 @@ switch (currentParameter)
 		{
 			Knob[currentsound][1]->deactivate();
 			Knob[currentsound][3]->activate();
-			Display[currentsound][1]->activate();
-			Display[currentsound][0]->deactivate();
+			miniDisplay[currentsound][1]->activate();
+			miniDisplay[currentsound][0]->deactivate();
 			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
 		}
 		else
 		{
 			Knob[currentsound][3]->deactivate();
 			Knob[currentsound][1]->activate();
-			Display[currentsound][0]->activate();
-			Display[currentsound][1]->deactivate();
+			miniDisplay[currentsound][0]->activate();
+			miniDisplay[currentsound][1]->deactivate();
 			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 #ifdef _DEBUG
@@ -258,16 +258,16 @@ switch (currentParameter)
 		{
 			Knob[currentsound][16]->deactivate();
 			Knob[currentsound][18]->activate();
-			Display[currentsound][3]->activate();
-			Display[currentsound][2]->deactivate();
+			miniDisplay[currentsound][3]->activate();
+			miniDisplay[currentsound][2]->deactivate();
 			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),0.f);
 		}
 		else
 		{
 			Knob[currentsound][18]->deactivate();
 			Knob[currentsound][16]->activate();
-			Display[currentsound][2]->activate();
-			Display[currentsound][3]->deactivate();
+			miniDisplay[currentsound][2]->activate();
+			miniDisplay[currentsound][3]->deactivate();
 			if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Light_Button*)o)->argument(),1.f);
 		}
 #ifdef _DEBUG
@@ -279,7 +279,7 @@ switch (currentParameter)
 	{
 		float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
 		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
-		Display[currentsound][1]->value( f);
+		miniDisplay[currentsound][1]->value( f);
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
@@ -289,10 +289,10 @@ switch (currentParameter)
 	{
 		/*float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
 		lo_send(t, "/Minicomputer", "if",((Fl_Positioner*)o)->argument(),f);
-		Display[2]->value( f);
+		miniDisplay[2]->value( f);
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);*/
 		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
-		Display[currentsound][2]->value( ((Fl_Valuator*)o)->value() );//Knob[16])->value() );
+		miniDisplay[currentsound][2]->value( ((Fl_Valuator*)o)->value() );//Knob[16])->value() );
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
 #endif
@@ -302,12 +302,12 @@ switch (currentParameter)
 	{ 
 		float f = ((Fl_Positioner*)o)->xvalue() + ((Fl_Positioner*)o)->yvalue();
 		if (transmit)lo_send(t, "/Minicomputer", "iif",currentsound,((Fl_Positioner*)o)->argument(),f);
-		Display[currentsound][3]->value( f);
+		miniDisplay[currentsound][3]->value( f);
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
 /*lo_send(t, "/Minicomputer", "if",((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());
-		Display[3]->value( ((Fl_Valuator* )Knob[18])->value() );
+		miniDisplay[3]->value( ((Fl_Valuator* )Knob[18])->value() );
 		printf("%li : %g     \r", ((Fl_Valuator*)o)->argument(),((Fl_Valuator*)o)->value());*/
 	break;
 	}
@@ -410,7 +410,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
-		Display[currentsound][4]->value(f);
+		miniDisplay[currentsound][4]->value(f);
 		break;
 	}
 	case 33:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
@@ -418,7 +418,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif		
-		Display[currentsound][5]->value(f);
+		miniDisplay[currentsound][5]->value(f);
 		break;
 	}
 	case 40:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
@@ -426,7 +426,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
-		Display[currentsound][6]->value(f);
+		miniDisplay[currentsound][6]->value(f);
 		break;
 	}
 	case 43:{	float f=((Fl_Positioner*)o)->xvalue()+((Fl_Positioner*)o)->yvalue();
@@ -434,7 +434,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
-		Display[currentsound][7]->value(f);
+		miniDisplay[currentsound][7]->value(f);
 		break;
 	}
 	case 50:{
@@ -458,7 +458,7 @@ switch (currentParameter)
 #endif
 		//printf(",,do it\n");
 						fflush(stdout);
-		Display[currentsound][8]->value(f);
+		miniDisplay[currentsound][8]->value(f);
 
 		break;
 	}
@@ -467,7 +467,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
-		Display[currentsound][9]->value(f);
+		miniDisplay[currentsound][9]->value(f);
 		break;
 	}
 	case 90:
@@ -476,7 +476,7 @@ switch (currentParameter)
 #ifdef _DEBUG
 		printf("%li : %g     \r", ((Fl_Positioner*)o)->argument(),f);
 #endif
-		Display[currentsound][10]->value(f);
+		miniDisplay[currentsound][10]->value(f);
 		break;
 	}
 	default:
@@ -1556,7 +1556,7 @@ Fenster* UserInterface::make_window() {
 	o->step(0.001);
         o->argument(1);
         o->callback((Fl_Callback*)callback);
-        Display[i][0]=o;
+        miniDisplay[i][0]=o;
         
       }
       { Fl_Light_Button* o = new Fl_Light_Button(20, 92, 66, 19, "fix frequency");
@@ -1610,7 +1610,7 @@ Fenster* UserInterface::make_window() {
     	o->argument(3);
 	o->step(0.001);
     	o->callback((Fl_Callback*)tuneCallback);
-        Display[i][1]=o;
+        miniDisplay[i][1]=o;
       }
       { Fl_Dial* o = new Fl_Dial(260, 97, 25, 25, "amount");
         o->labelsize(8);
@@ -1728,7 +1728,7 @@ Fenster* UserInterface::make_window() {
 	o->step(0.001);
         o->argument(16);
         o->callback((Fl_Callback*)callback);
-        Display[i][2]=o;
+        miniDisplay[i][2]=o;
       }
       { Fl_Light_Button* o = new Fl_Light_Button(20, 316, 66, 19, "fix frequency");
         o->box(FL_BORDER_BOX);
@@ -1777,7 +1777,7 @@ Fenster* UserInterface::make_window() {
     	o->argument(18);
 	o->step(0.001);
     	o->callback((Fl_Callback*)tuneCallback);
-        Display[i][3]=o;
+        miniDisplay[i][3]=o;
       }
       { Fl_Dial* o = new Fl_Dial(260, 321, 25, 25, "amount");
         o->labelsize(8);
@@ -1960,7 +1960,7 @@ Fenster* UserInterface::make_window() {
 	o->value(200);
           o->argument(30);
 	   o->callback((Fl_Callback*)cutoffCallback);
-          Display[i][4]=o;
+          miniDisplay[i][4]=o;
         }
         { Fl_Value_Input* o = new Fl_Value_Input(528, 100, 38, 15);
           o->box(FL_ROUNDED_BOX);
@@ -1971,7 +1971,7 @@ Fenster* UserInterface::make_window() {
 	o->value(20);
           o->argument(33);
 	   o->callback((Fl_Callback*)cutoffCallback);
-           Display[i][5]=o;
+           miniDisplay[i][5]=o;
         }
 	/*
         { Fl_Button* o = new Fl_Button(426, 35, 45, 15, "copy ->");
@@ -2096,7 +2096,8 @@ Fenster* UserInterface::make_window() {
           o->argument(40);
 	  o->step(0.01);
 	   o->callback((Fl_Callback*)cutoffCallback);
-          o->textsize(8);Display[i][6]=o;
+          o->textsize(8);
+	  miniDisplay[i][6]=o;
         }
         { Fl_Value_Input* o = new Fl_Value_Input(528, 204, 38, 15);
           o->box(FL_ROUNDED_BOX);
@@ -2105,7 +2106,8 @@ Fenster* UserInterface::make_window() {
 	  o->maximum(10000);
 	  o->step(0.01);
 	   o->callback((Fl_Callback*)cutoffCallback);
-          o->textsize(8);Display[i][7]=o;
+          o->textsize(8);
+	  miniDisplay[i][7]=o;
         }
 	/*
         { Fl_Button* o = new Fl_Button(426, 139, 45, 15, "copy ->");
@@ -2191,7 +2193,8 @@ Fenster* UserInterface::make_window() {
 	  o->step(0.01);
           o->argument(50);
 	   o->callback((Fl_Callback*)cutoffCallback);
-          o->textsize(8);Display[i][8]=o;
+          o->textsize(8);
+	  miniDisplay[i][8]=o;
         }
         { Fl_Value_Input* o = new Fl_Value_Input(528, 310, 38, 15);
           o->box(FL_ROUNDED_BOX);
@@ -2200,7 +2203,8 @@ Fenster* UserInterface::make_window() {
           o->argument(53);
 	  o->step(0.01);
 	   o->callback((Fl_Callback*)cutoffCallback);
-          o->textsize(8);Display[i][9]=o;
+          o->textsize(8);
+	  miniDisplay[i][9]=o;
         }
 	/*
         { Fl_Button* o = new Fl_Button(426, 245, 45, 15, "copy ->");
@@ -2491,7 +2495,7 @@ Fenster* UserInterface::make_window() {
           o->textsize(8);
     	o->callback((Fl_Callback*)tuneCallback);
     	o->argument(90);
-	  Display[i][10]=o;
+	  miniDisplay[i][10]=o;
         }
         o->end();
       }
