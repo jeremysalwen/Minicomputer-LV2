@@ -8,6 +8,9 @@
 // debug output
 //#define _DEBUG
 
+// prefetch support with intrinsics
+//#define _PREFETCH
+
 // vectorize calculations
 //#define _VECTOR
 
