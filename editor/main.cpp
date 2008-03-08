@@ -181,11 +181,11 @@ if (poll(pfd, npfd, 100000) > 0)
     snd_seq_free_event(ev);
    }// end of first while, emptying the seqdata queue
   } while (1==1);// doing forever, was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
-  return 0;
 }
 
 int main(int argc, char **argv)
 {
+  printf("minieditor version %s\n",_VERSION);
 // ------------------------ midi init ---------------------------------
   pthread_t midithread;
   seq_handle = open_seq();
@@ -201,12 +201,12 @@ int main(int argc, char **argv)
 // ------------------------ create gui --------------
 	Fenster* w =Schaltbrett.make_window();
   //
-  for (int i = 0;i<8;++i)
-  {
+  //for (int i = 0;i<8;++i)
+  //{
   	//printf("bei %i\n",i);
   	//fflush(stdout);
   	//Schaltbrett.soundchoice[i]->clear();
-  } 
+  //} 
   	Speicher.load();
   	//printf("und load...\n");
   /*
@@ -227,8 +227,44 @@ int main(int argc, char **argv)
   	Schaltbrett.multichoice->add(Speicher.multis[i].name);
   }*/
   //printf("weiter...\n");
+  // check color settings in arguments and add some if missing
+  bool needcolor=true;
+  int i;
+  if (argc > 1)
+  {
+  	for (i = 0;i<argc;++i)
+	{
+	  	if ((strcmp(argv[i],"-bg")==0) || (strcmp(argv[i],"-fg")==0))
+		{
+			needcolor = false;
+			break; // no need to go further, assuming the user knows what he/she does
+		}
+	}
+  }
+  int ac = argc; // new argumentcount
+  if (needcolor)
+  {
+  	ac += 4;// add 2 more arguments and their values
+  }
+  char * av[ac]; // the new array
+  // copy existing arguments
+  for (i = 0;i<argc;++i)
+  {
+  	av[i] = argv[i];
+  }
+  if (needcolor) // add the arguments in case they are needed
+  {
+  	char bg[]="-bg";
+	char bgv[]="grey";
+	char fg[]="-fg";
+	char fgv[]="black";
+	av[ac-4] = bg;
+	av[ac-3] = bgv;
+	av[ac-2] = fg;
+	av[ac-1] = fgv;
+  }
   Fl::lock();
-  w->show(argc, argv);
+  w->show(ac, av);
     /* an address to send messages to. sometimes it is better to let the server
      * pick a port number for you by passing NULL as the last argument */
     
@@ -236,6 +272,5 @@ int main(int argc, char **argv)
 
 	
 		//lo_send(t, "/a/b/c/d", "f",10.f);
-	
     return Fl::run();
 }

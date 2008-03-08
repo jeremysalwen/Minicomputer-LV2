@@ -2810,7 +2810,10 @@ Fenster* UserInterface::make_window() {
       //o->textcolor(FL_BACKGROUND2_COLOR); 
       o->textfont(FL_HELVETICA_BOLD );
       o->labelcolor(FL_BACKGROUND2_COLOR);
-    	o->value("<html><body><i><center>version 1.0</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com</center></body></html>");
+      char Textausgabe[400];
+      char version[] = _VERSION;
+      sprintf(Textausgabe,"<html><body><i><center>version %s</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com<br>http://minicomputer.sourceforge.net</center></body></html>",version);
+    	o->value(Textausgabe);
     }	
     o->end(); 
     tab[i]=o;

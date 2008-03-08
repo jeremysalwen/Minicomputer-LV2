@@ -24,4 +24,7 @@
 // how many additional settings per sound in multi to store
 #define _MULTISETTINGS 6
 
+// the version number as string
+#define _VERSION "1.1"
+
 #endif

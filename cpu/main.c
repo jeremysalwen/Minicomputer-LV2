@@ -975,9 +975,10 @@ static void *midiprocessor(void *handle) {
 		} */
 		
 	snd_seq_event_t *ev;
- 	printf("start\n");
+ 	#ifdef _DEBUG
+	printf("start\n");
  	fflush(stdout);
-
+	#endif
 	//do {
 	   while ((quit==0) && (snd_seq_event_input(seq_handle, &ev)))
 	   {
@@ -1084,6 +1085,8 @@ static void *midiprocessor(void *handle) {
  fflush(stdout);
 }// end of midiprocessor
 int main() {
+printf("minicomputer version %s\n",_VERSION);
+
 // ------------------------ midi init ---------------------------------
 	pthread_t midithread;
 	seq_handle = open_seq();
