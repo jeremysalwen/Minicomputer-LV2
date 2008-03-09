@@ -52,6 +52,7 @@ jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
 unsigned int lastnote[_MULTITEMP];
 int delayI[_MULTITEMP],delayJ[_MULTITEMP];
 
+char jackName[64]="Minicomputer";// signifier for audio and midiconnections, to be filled with OSC port number
 snd_seq_t *open_seq();
 snd_seq_t *seq_handle;
 int npfd;
@@ -81,8 +82,8 @@ snd_seq_t *open_seq() {
     fprintf(stderr, "Error opening ALSA sequencer.\n");
     exit(1);
   }
-  snd_seq_set_client_name(seq_handle, "Minicomputer");
-  if ((portid = snd_seq_create_simple_port(seq_handle, "Minicomputer",
+  snd_seq_set_client_name(seq_handle, jackName);
+  if ((portid = snd_seq_create_simple_port(seq_handle, jackName,
             SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
             SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
     fprintf(stderr, "Error creating sequencer port.\n");
@@ -1084,8 +1085,33 @@ static void *midiprocessor(void *handle) {
  printf("midi thread stopped\n");
  fflush(stdout);
 }// end of midiprocessor
-int main() {
+int main(int argc, char **argv) {
 printf("minicomputer version %s\n",_VERSION);
+// ------------------------ decide the oscport number -------------------------
+char OscPort[] = _OSCPORT; // default value for OSC port
+char *oport = OscPort;// pointer of the OSC port string
+int i;
+  if (argc > 1)
+  {
+  	for (i = 0;i<argc;++i)
+	{
+		if (strcmp(argv[i],"-port")==0) // got a OSC port argument
+		{
+			++i;// looking for the next entry
+			if (i<argc)
+			{
+				int tport = atoi(argv[i]);
+				if (tport > 0) oport = argv[i]; // overwrite the default for the OSCPort
+			}
+			else break; // we are through
+		}
+	}
+  }
+
+
+
+	printf("osc port %s\n",oport);
+	sprintf(jackName,"Minicomputer%s",oport);// store globally a unique name
 
 // ------------------------ midi init ---------------------------------
 	pthread_t midithread;
@@ -1098,8 +1124,8 @@ printf("minicomputer version %s\n",_VERSION);
 	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
 	
 	// ------------------------ OSC Init ------------------------------------   
-	/* start a new server on port definied in _OSCPORT */
-	lo_server_thread st = lo_server_thread_new(_OSCPORT, error);
+	/* start a new server on port definied where oport points to */
+	lo_server_thread st = lo_server_thread_new(oport, error);
 
 	/* add method that will match any path and args */
 	lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, NULL);
@@ -1118,8 +1144,9 @@ printf("minicomputer version %s\n",_VERSION);
 	signal(SIGINT, signalled);
 
 	init();
-	/* naturally we need to become a jack client :) */
-	client = jack_client_new("Minicomputer");
+	/* naturally we need to become a jack client
+	 * prefered with a unique name, so lets add the OSC port to it*/
+	client = jack_client_new(jackName);
 	if (!client) {
 		printf("couldn't connect to jack server. Either it's not running or the client name is already taken\n");
 		exit(1);

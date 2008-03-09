@@ -22,18 +22,18 @@
 #include <lo/lo.h>
 #include <alsa/asoundlib.h>
 #include <pthread.h>
+#include "../common.h"
+#include "Memory.h"
+#include "syntheditor.h"
 snd_seq_t *open_seq();
- snd_seq_t *seq_handle;
-  int npfd;
-  struct pollfd *pfd;
-
+snd_seq_t *seq_handle;
+int npfd;
+struct pollfd *pfd;
+char midiName[64]="MinicomputerEditor";// signifier for midiconnections, to be filled with OSC port number
 lo_address t;
 // some common definitions
-#include "../common.h"
 
-#include "Memory.h"
 Memory Speicher;
-#include "syntheditor.h"
 UserInterface Schaltbrett;
 /** open an Alsa Midiport for accepting programchanges and later more...
  */
@@ -46,8 +46,8 @@ snd_seq_t *open_seq() {
     fprintf(stderr, "Error opening ALSA sequencer.\n");
     exit(1);
   }
-  snd_seq_set_client_name(seq_handle, "MinicomputerEditor");
-  if ((portid = snd_seq_create_simple_port(seq_handle, "MinicomputerEditor",
+  snd_seq_set_client_name(seq_handle,midiName);
+  if ((portid = snd_seq_create_simple_port(seq_handle, midiName,
             SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
             SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
     fprintf(stderr, "Error creating sequencer port.\n");
@@ -181,23 +181,12 @@ if (poll(pfd, npfd, 100000) > 0)
     snd_seq_free_event(ev);
    }// end of first while, emptying the seqdata queue
   } while (1==1);// doing forever, was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
+  return 0;// why the compiler insists to have this here? Its a void function so what??
 }
 
 int main(int argc, char **argv)
 {
   printf("minieditor version %s\n",_VERSION);
-// ------------------------ midi init ---------------------------------
-  pthread_t midithread;
-  seq_handle = open_seq();
-  npfd = snd_seq_poll_descriptors_count(seq_handle, POLLIN);
-  pfd = (struct pollfd *)alloca(npfd * sizeof(struct pollfd));
-  snd_seq_poll_descriptors(seq_handle, pfd, npfd, POLLIN);
-    
-    // create the thread and tell it to use Midi::work as thread function
-	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
-// ------------------------ osc init ---------------------------------
-   t = lo_address_new(NULL, _OSCPORT);
-
 // ------------------------ create gui --------------
 	Fenster* w =Schaltbrett.make_window();
   //
@@ -230,6 +219,8 @@ int main(int argc, char **argv)
   // check color settings in arguments and add some if missing
   bool needcolor=true;
   int i;
+  char OscPort[] = _OSCPORT; // default value for OSC port
+  char *oport = OscPort;
   if (argc > 1)
   {
   	for (i = 0;i<argc;++i)
@@ -237,21 +228,96 @@ int main(int argc, char **argv)
 	  	if ((strcmp(argv[i],"-bg")==0) || (strcmp(argv[i],"-fg")==0))
 		{
 			needcolor = false;
-			break; // no need to go further, assuming the user knows what he/she does
+		}
+		else if (strcmp(argv[i],"-port")==0) // got a OSC port argument
+		{
+			++i;// looking for the next entry
+			if (i<argc)
+			{
+				int tport = atoi(argv[i]);
+				if (tport > 0) oport = argv[i]; // overwrite the default for the OSCPort
+			}
+			else break; // we are through
 		}
 	}
   }
-  int ac = argc; // new argumentcount
+  
+// ------------------------ osc init ---------------------------------
+  t = lo_address_new(NULL, oport);
+  printf("\n\nosc port %s\n",oport);
+  sprintf(midiName,"miniEditor%s",oport);// store globally a unique name
+// -------------------------------------------------------------------
+// ------------------------ midi init ---------------------------------
+  pthread_t midithread;
+  seq_handle = open_seq();
+  npfd = snd_seq_poll_descriptors_count(seq_handle, POLLIN);
+  pfd = (struct pollfd *)alloca(npfd * sizeof(struct pollfd));
+  snd_seq_poll_descriptors(seq_handle, pfd, npfd, POLLIN);
+    
+    // create the thread and tell it to use Midi::work as thread function
+	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
+
+
+  int ac = 0; // new argumentcount
+  // copy existing arguments, filtering out osc port arguments
+  // step one, parsing and determine the final count of arguments
+  for (i = 0;i<argc;++i)
+  {
+  	if (strcmp(argv[i],"-port") == 0)
+	{
+		++i; // skip this parameter
+		if (i<argc)
+		{
+			int tport = atoi(argv[i]);
+			if (tport > 0)
+			{
+				++i; // skip the port number too	
+				if (i>=argc) 
+				{
+					break; // we are through
+				}
+			}
+		}
+		else break; // we are through
+	}
+  	else 
+	{
+		++ac;
+	}
+  }
+  
   if (needcolor)
   {
   	ac += 4;// add 2 more arguments and their values
   }
   char * av[ac]; // the new array
-  // copy existing arguments
-  for (i = 0;i<argc;++i)
+  
+  for (i = 0;i<argc;++i) // now actually copying it
   {
-  	av[i] = argv[i];
+  	if (strcmp(argv[i],"-port") == 0)
+	{
+		++i; // skip this parameter
+		if (i<argc)
+		{
+			int tport = atoi(argv[i]);
+			if (tport > 0)
+			{
+				++i; // skip the port number too	
+				if (i>=argc) 
+				{
+					break; // we are through
+				}
+			}
+		}
+		else break; // we are through
+	}
+  	else 
+	{
+		av[i] = argv[i];
+		printf("%s\n",argv[i]);
+	}
   }
+
   if (needcolor) // add the arguments in case they are needed
   {
   	char bg[]="-bg";
