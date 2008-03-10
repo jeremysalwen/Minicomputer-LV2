@@ -31,11 +31,21 @@ audio demos, only one sound at a time, no further effects:<br />
 
 Minicomputer is a standalone Linux softwaresynthesizer for
 creating experimental electronic sounds as its often used
-in Industrial music, IDM, EBM, Glitch, sound design and minimal electronic. It is monophonic but can produce up to 8 different sounds at the same time.<br />
+in but not limited to Industrial music, IDM, EBM, Glitch, sound design and minimal electronic. It is monophonic but can produce up to 8 different sounds at the same time.<br />
 It uses <a href="http://jackaudio.org/" title="Jack audio for Linux" name="Jack audio for Linux">Jack</a> as realtime audio infrastructure and can be controlled via Midi.<br /><br />
 Minicomputer is free open source software distributed under GPL 3 written by Malte Steiner 2007/2008.<br /><br />
-Its a version 1.0 release but runs stable for me live and in studio.<br /><br /><b>If you experienced wrong colors in the editor so it doesnt look like in the screenshot, try to start it with following parameters<br/>
-./miniEditor -bg grey -fg black<br/>Some users reported a reverse colorscheme, done by their window managers.</b><br /><br />
+Its a version 1.0 release but runs stable for me live and in studio.<br /><br />If you experienced wrong colors in the editor so it doesnt look like in the screenshot, try to start it with following parameters<br/>
+./miniEditor -bg grey -fg black<br/>Some users reported a reverse colorscheme, done by their window managers.<br /><b>update 1.1 is out now and should fix the color bug amoung others:</b><br/>
+1.1 9.March.2008<br />
+- new: parameter -port for specifying the OSC port so more than one instance can be run easily<br />
+<br />
+- fix: color bug at the editor, should be now the default colors<br />
+- fix: zombification bug which happens with newer Jack versions<br />
+- fix: new, nonblocking midi thread at the engine<br />
+<br />
+- todo: implement nonblocking midi thread at the editor too<br />
+<br />
+<br /><br />
 Projects already using it are<br /><br />
 <a href="http://www.block4.com/index.php?id=10" title="Notstandskomitee at Block 4" name="Notstandskomitee at Block 4">Notstandskomitee</a><br/>
 <a href="http://www.myspace.com/akustikkoppler" title="Akustikkoppler on myspace" name="Akustikkoppler on myspace">Akustikkoppler</a><br/><br />

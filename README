@@ -1,4 +1,4 @@
-Minicomputer v. 1.0
+Minicomputer v. 1.1
 Industrial Grade Digital Synthesizer
 
 by Malte Steiner
@@ -7,13 +7,13 @@ email: steiner@block4.com
 
 Minicomputer is a standalone Linux softwaresynthesizer for
 creating experimental electronic sounds as its often used 
-in Industrial music.
+in but not limited to Industrial music, Glitch, IDM and other electronic genres.
 
-This is a 1.0 version and may contain some bugs but 
+This is a 1.1 version and may contain some bugs but 
 already worked in studio for my project 'Akustikkoppler' 
 and live for 'Notstandskomitee'.
 
-Minicomputer is free open source software.
+Minicomputer is free open source software under the GPL3 license.
 
 Its split into the engine and an editor.
 

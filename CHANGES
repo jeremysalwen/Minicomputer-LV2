@@ -1,0 +1,11 @@
+1.1 9.March.2008
+- new: parameter -port for specifying the OSC port so more than one instance can be run easily
+
+- fix: color bug at the editor, should be now the default colors
+- fix: zombification bug which happens with newer Jack versions
+- fix: new, nonblocking midi thread at the engine
+
+- todo: implement nonblocking midi thread at the editor too
+
+1.0 19.Feb.2008 initial public release
+
