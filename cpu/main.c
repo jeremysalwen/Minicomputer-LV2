@@ -188,9 +188,9 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 	 * 5 = target
 	 * 6 = state
 	 */
-	int i = EGstate[voice][number]; 
 	if (EGtrigger[voice][number] != 1)
 	{
+	int i = EGstate[voice][number]; 
 		if (i == 1){ // attack
 			 EG[voice][number][6] += EG[voice][number][1];
 			 if (EG[voice][number][6]>=1.0f)
@@ -1079,11 +1079,12 @@ static void *midiprocessor(void *handle) {
 		}// end of switch
 	snd_seq_free_event(ev);
 	}
-	usleep(5);// absolutly necessary, otherwise this thread would block the whole computer
+	usleep(1000);// absolutly necessary, otherwise this thread would block the whole computer
 	}// end of first while, emptying the seqdata queue
  //} while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
  printf("midi thread stopped\n");
  fflush(stdout);
+return 0;
 }// end of midiprocessor
 int main(int argc, char **argv) {
 printf("minicomputer version %s\n",_VERSION);

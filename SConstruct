@@ -16,9 +16,15 @@ if ARGUMENTS.get('k7', 0):
 	env.Append(CCFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
 	guienv.Append(CPPFLAGS = ['-march=athlon-xp','-mtune=athlon-xp'])
 
+
 # env.Append(CCFLAGS = '  -O3 -mfpmath=sse -msse -msse2  -fverbose-asm  -ffast-math -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -Wall -fmessage-length=0')
 
-env.Append(CCFLAGS = ['-O3','-msse','-fwhole-program','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops','-fprefetch-loop-arrays','-mfpmath=sse'])
+env.Append(CCFLAGS = ['-g','-O3','-msse','-fwhole-program','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops','-fprefetch-loop-arrays','-mfpmath=sse'])
+
+if ARGUMENTS.get('pentium-m', 0):
+	env = Environment(CCFLAGS = [''])
+	#env.Append(CCFLAGS = ['-march=pentium-m','-mtune=pentium-m'])
+	#guienv.Append(CPPFLAGS = ['-march=pentium-m','-mtune=pentium-m'])
 conf = Configure(env)
 
 if not conf.CheckLibWithHeader('jack', 'jack/jack.h','c'):
