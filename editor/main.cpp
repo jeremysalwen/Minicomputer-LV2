@@ -247,6 +247,20 @@ int main(int argc, char **argv)
   printf("\n\nosc port %s\n",oport);
   sprintf(midiName,"miniEditor%s",oport);// store globally a unique name
 // -------------------------------------------------------------------
+#ifdef _BUNDLE
+//------------------------- start engine -----------------------------
+	char engineName[32];// the name of the core program + given port, if any.
+	if (strcmp(oport,"7770")==0) // is default port?
+	{
+		sprintf(engineName,"./minicomputer &");
+	}
+	else // no default so add parameter
+	{
+		sprintf(engineName,"./minicomputer%s &",oport);
+	}
+	
+	system(engineName);// actual start
+#endif
 // ------------------------ midi init ---------------------------------
   pthread_t midithread;
   seq_handle = open_seq();

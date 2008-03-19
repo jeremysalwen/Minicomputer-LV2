@@ -5,6 +5,9 @@
 // OSC Port 
 #define _OSCPORT "7770"
 
+// start/stop editor with engine
+#define _BUNDLE
+
 // debug output
 //#define _DEBUG
 
@@ -25,6 +28,6 @@
 #define _MULTISETTINGS 6
 
 // the version number as string
-#define _VERSION "1.1"
+#define _VERSION "1.2"
 
 #endif

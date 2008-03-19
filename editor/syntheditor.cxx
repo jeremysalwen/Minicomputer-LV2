@@ -2976,7 +2976,8 @@ int Fenster::handle (int event)
 }
 
 void close_cb( Fl_Widget* o, void*) {
-
+	printf("stop editor");
+	fflush(stdout);
    exit(0);
 }
 
