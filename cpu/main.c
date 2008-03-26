@@ -981,7 +981,9 @@ static void *midiprocessor(void *handle) {
  	fflush(stdout);
 	#endif
 	//do {
-	   while ((quit==0) && (snd_seq_event_input(seq_handle, &ev)))
+	   while (quit==0)
+	   {
+	   while (snd_seq_event_input(seq_handle, &ev))
 	   {
 		if (ev != NULL)
 		{
@@ -1079,9 +1081,10 @@ static void *midiprocessor(void *handle) {
 		}// end of switch
 	snd_seq_free_event(ev);
 	}
-	usleep(1000);// absolutly necessary, otherwise this thread would block the whole computer
+	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	}// end of first while, emptying the seqdata queue
- //} while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
+	usleep(2000);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
+ }// while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
  printf("midi thread stopped\n");
  fflush(stdout);
 return 0;
