@@ -29,6 +29,7 @@
 // some common definitions
 #include "../common.h" 
 
+//#define _MIDIBLOCK 1
 #define _MODCOUNT 32
 #define _WAVECOUNT 32
 #define _CHOICEMAX 16
@@ -77,8 +78,13 @@ snd_seq_t *open_seq() {
   snd_seq_t *seq_handle;
   int portid;
 
+#ifdef _MIDIBLOCK
+  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,0) < 0) 
+#else
 // open Alsa for input, nonblocking mode so it returns
-  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,SND_SEQ_NONBLOCK) < 0) {
+  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,SND_SEQ_NONBLOCK) < 0) 
+#endif
+ {
     fprintf(stderr, "Error opening ALSA sequencer.\n");
     exit(1);
   }
@@ -980,9 +986,12 @@ static void *midiprocessor(void *handle) {
 	printf("start\n");
  	fflush(stdout);
 	#endif
-	//do {
+	#ifdef _MIDIBLOCK
+	do {
+	#else
 	   while (quit==0)
 	   {
+	#endif
 	   while (snd_seq_event_input(seq_handle, &ev))
 	   {
 		if (ev != NULL)
@@ -1037,37 +1046,44 @@ static void *midiprocessor(void *handle) {
 					}
 			break;       
 			}
+			
 			case SND_SEQ_EVENT_CONTROLLER:
 			{
+				unsigned int c = ev->data.control.channel;
 			#ifdef _DEBUG      
 				fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
-				ev->data.control.channel,  ev->data.control.param,ev->data.control.value);
+				c,  ev->data.control.param,ev->data.control.value);
 			#endif		
-				if  (ev->data.control.param==1)   
-					modulator[ev->data.control.channel][ 16]=(float)ev->data.control.value*0.007874f; // /127.f;
-				else 
-				if  (ev->data.control.param==12)   
-					modulator[ev->data.control.channel][ 17]=(float)ev->data.control.value*0.007874f;// /127.f;
+				if  (c <_MULTITEMP)
+				{
+					if  (ev->data.control.param==1)   
+						modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
+					else 
+					if  (ev->data.control.param==12)   
+						modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
+				}
 				break;
 			}
 			case SND_SEQ_EVENT_PITCHBEND:
 			{
+				unsigned int c = ev->data.control.channel;
 			#ifdef _DEBUG      
 				fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
-				ev->data.control.channel, ev->data.control.value);
+				c, ev->data.control.value);
 			#endif		
-				if (ev->data.control.channel<_MULTITEMP)
-					modulator[ev->data.control.channel][2]=(float)ev->data.control.value*0.0001221f; // /8192.f;
+				if (c<_MULTITEMP)
+					modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
 			break;
 			}   
 			case SND_SEQ_EVENT_CHANPRESS:
 			{
+				unsigned int c = ev->data.control.channel;
 				#ifdef _DEBUG      
 				fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
-				ev->data.control.channel, ev->data.control.value);
+				c, ev->data.control.value);
 				#endif		
-				if (ev->data.control.channel<_MULTITEMP)
-					modulator[ev->data.control.channel][ 15]=(float)ev->data.control.value*0.007874f;
+				if (c<_MULTITEMP)
+					modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
 			break;
 			}
 			#ifdef _DEBUG      
@@ -1080,11 +1096,17 @@ static void *midiprocessor(void *handle) {
 			#endif		
 		}// end of switch
 	snd_seq_free_event(ev);
-	}
-	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
+	} // end of if
+#ifdef _MIDIBLOCK
+   }
+ } while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
+#else
+	usleep(10);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	}// end of first while, emptying the seqdata queue
-	usleep(2000);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
- }// while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
+
+	usleep(20);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
+  }
+#endif
  printf("midi thread stopped\n");
  fflush(stdout);
 return 0;
@@ -1220,10 +1242,10 @@ int i;
 
 	/* shutdown cont. */
 	jack_client_close(client);
-
+#ifndef _MIDIBLOCK
 	/* waiting for the midi thread to shutdown carefully */
 	pthread_join(midithread,NULL);
-	
+#endif	
 	/* release Alsa Midi connection */
 	snd_seq_close(seq_handle);
 
