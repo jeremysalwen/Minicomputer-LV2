@@ -253,11 +253,11 @@ int main(int argc, char **argv)
 	char engineName[32];// the name of the core program + given port, if any.
 	if (strcmp(oport,"7770")==0) // is default port?
 	{
-		sprintf(engineName,"./minicomputer &");
+		sprintf(engineName,"minicomputerCPU &");
 	}
 	else // no default so add parameter
 	{
-		sprintf(engineName,"./minicomputer%s &",oport);
+		sprintf(engineName,"minicomputerCPU -port %s &",oport);
 	}
 	
 	system(engineName);// actual start
@@ -353,9 +353,7 @@ int main(int argc, char **argv)
 
 	
 		//lo_send(t, "/a/b/c/d", "f",10.f);
-    int result = Fl::run();
-	printf("quiiit\n");
-	fflush(stdout);
+ int result = Fl::run();
  lo_send(t, "/Minicomputer/quit", "i",1);
  sleep(1);
 	return result;

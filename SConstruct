@@ -62,11 +62,12 @@ guienv.Append(CPPFLAGS = ['-O3','-Wall','-fmessage-length=0'])
 print"-                     2/2:compiling"
 print"-                     building the engine:"
 
-env.Program('minicomputer','cpu/main.c');
+env.Program('minicomputerCPU','cpu/main.c');
 
 print""
 print"-                     building the editor:"
 
-guienv.Program('miniEditor',['editor/main.cpp','editor/Memory.cpp','editor/syntheditor.cxx']);
+guienv.Program('minicomputer',['editor/main.cpp','editor/Memory.cpp','editor/syntheditor.cxx']);
 
-
+env.Alias(target="install", source=env.Install(dir="/usr/local/bin", source="minicomputer"));
+env.Alias(target="install", source=env.Install(dir="/usr/local/bin", source="minicomputerCPU"));
