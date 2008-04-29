@@ -128,10 +128,10 @@ if (poll(pfd, npfd, 100000) > 0)
       {
 		int channel = ev->data.control.channel;
 		int value = ev->data.control.value;
-#ifdef _DEBUG      
+//#ifdef _DEBUG      
         fprintf(stderr, "Programchange event on Channel %2d: %2d %5d       \r",
                 channel,  ev->data.control.param,value);
-#endif		
+//#endif		
 	// see if its the control channel
 	if (ev->data.control.channel == 8)
 	{ // perform multi program change

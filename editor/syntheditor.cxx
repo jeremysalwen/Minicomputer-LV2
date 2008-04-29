@@ -17,7 +17,7 @@
  */
 
 #include "syntheditor.h"
-
+#define _DEBUG
 static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
 // gcc -o synthEditor2 syntheditor.cxx -lfltk -llo
  Fl_Widget* Knob[8][_PARACOUNT];
