@@ -15,7 +15,7 @@
 //#define _PREFETCH
 
 // vectorize calculations
-//#define _VECTOR
+#define _VECTOR
 
 // 'old' binary fileformat, switched off per default
 //#define _BINFILE

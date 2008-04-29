@@ -71,7 +71,7 @@ class Fenster:public Fl_Double_Window
 	public:
 	Fenster(int w, int h, const char* t);
 	Fenster(int w, int h);
-    	//~Fenster();
+    	~Fenster();
 	int handle (int event);
 	
 };

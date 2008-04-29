@@ -100,6 +100,7 @@ void reloadSoundNames()
   }
 }*/
 /** handling the midi messages in an extra thread
+ * the editor only reacts on program changes, note ons and the rest have to go directly to the synthcore, it means midi keyboards need to be connected to the core too
  */
 static void *midiprocessor(void *handle) {
 	struct sched_param param;
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
   }*/
   //printf("weiter...\n");
   // check color settings in arguments and add some if missing
-  bool needcolor=true;
+  bool needcolor=true; // true means user didnt give some so I need to take care myself
   int i;
   char OscPort[] = _OSCPORT; // default value for OSC port
   char *oport = OscPort;
@@ -352,5 +353,10 @@ int main(int argc, char **argv)
 
 	
 		//lo_send(t, "/a/b/c/d", "f",10.f);
-    return Fl::run();
+    int result = Fl::run();
+	printf("quiiit\n");
+	fflush(stdout);
+ lo_send(t, "/Minicomputer/quit", "i",1);
+ sleep(4);
+	return result;
 }

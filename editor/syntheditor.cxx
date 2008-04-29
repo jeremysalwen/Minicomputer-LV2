@@ -17,7 +17,6 @@
  */
 
 #include "syntheditor.h"
-#define _DEBUG
 static Fl_RGB_Image image_miniMini(idata_miniMini, 191, 99, 3, 0);
 // gcc -o synthEditor2 syntheditor.cxx -lfltk -llo
  Fl_Widget* Knob[8][_PARACOUNT];
@@ -1501,9 +1500,9 @@ Fenster* UserInterface::make_window() {
     o->user_data((void*)(this));
 	for (int i=0;i<17;++i) {
 #ifdef _DEBUG
-		printf("%i \n",i);
+	printf("%i \n",i);
 #endif
-		auswahl[currentsound][i]=NULL;
+	auswahl[currentsound][i]=NULL;
      	fflush(stdout);
     }
     for (int i=0;i<_PARACOUNT;++i) {
@@ -2919,6 +2918,17 @@ Fenster::Fenster(int w, int h): Fl_Double_Window(w,h)
 {
 }
 /**
+ * using the destructor to shutdown synthcore
+ */
+Fenster::~Fenster()
+{
+	
+	printf("guittt");
+	fflush(stdout);
+	if (transmit) lo_send(t, "/Minicomputer/close", "i",1);
+	//~Fl_Double_Window();
+}
+/**
  * overload the eventhandler for some custom shortcuts
  * @param event
  * @return 1 when all is right
@@ -2974,10 +2984,10 @@ int Fenster::handle (int event)
 		return Fl_Double_Window::handle(event);
         }
 }
-
+/*
 void close_cb( Fl_Widget* o, void*) {
 	printf("stop editor");
 	fflush(stdout);
    exit(0);
-}
+}*/
 

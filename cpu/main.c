@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+// a way to compile it was:
+//  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
+
 #include <jack/jack.h>
 //#include <jack/midiport.h> // later we use the jack midi ports to, but not this time
 #include <signal.h>
@@ -58,6 +61,9 @@ snd_seq_t *open_seq();
 snd_seq_t *seq_handle;
 int npfd;
 struct pollfd *pfd;
+/* a flag which will be set by our signal handler when 
+ * it's time to exit */
+int quit = 0;
 
 #ifdef _VECTOR  
 	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
@@ -99,7 +105,6 @@ snd_seq_t *open_seq() {
 }
 
 
-//  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 static inline void error(int num, const char *m, const char *path); 
 static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
 static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
@@ -827,9 +832,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 	return 0;// thanks to Sean Bolton who was the first pointing to a bug when I returned 1
 }// end of process function
 
-/* a flag which will be set by our signal handler when 
- * it's time to exit */
-int quit = 0;
+
 
 /* the signal handler */
 void signalled(int signal) {
@@ -992,12 +995,53 @@ static void *midiprocessor(void *handle) {
 	   while (quit==0)
 	   {
 	#endif
-	   while (snd_seq_event_input(seq_handle, &ev))
+	   while ((snd_seq_event_input(seq_handle, &ev)) && (quit==0))
 	   {
 		if (ev != NULL)
 		{
 		switch (ev->type) 
-		{
+		{	// first check the controllers
+			// they usually comes in hordes
+			case SND_SEQ_EVENT_CONTROLLER:
+			{
+				unsigned int c = ev->data.control.channel;
+			#ifdef _DEBUG      
+				fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
+				c,  ev->data.control.param,ev->data.control.value);
+			#endif		
+				if  (c <_MULTITEMP)
+				{
+					if  (ev->data.control.param==1)   
+						modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
+					else 
+					if  (ev->data.control.param==12)   
+						modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
+				}
+				break;
+			}
+			case SND_SEQ_EVENT_PITCHBEND:
+			{
+				unsigned int c = ev->data.control.channel;
+			#ifdef _DEBUG      
+				fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
+				c, ev->data.control.value);
+			#endif		
+				if (c<_MULTITEMP)
+					modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
+			break;
+			}   
+			case SND_SEQ_EVENT_CHANPRESS:
+			{
+				unsigned int c = ev->data.control.channel;
+				#ifdef _DEBUG      
+				fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
+				c, ev->data.control.value);
+				#endif		
+				if (c<_MULTITEMP)
+					modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
+			break;
+			}
+
 			case SND_SEQ_EVENT_NOTEON:
 			{   
 				unsigned int c = ev->data.note.channel;
@@ -1047,45 +1091,6 @@ static void *midiprocessor(void *handle) {
 			break;       
 			}
 			
-			case SND_SEQ_EVENT_CONTROLLER:
-			{
-				unsigned int c = ev->data.control.channel;
-			#ifdef _DEBUG      
-				fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
-				c,  ev->data.control.param,ev->data.control.value);
-			#endif		
-				if  (c <_MULTITEMP)
-				{
-					if  (ev->data.control.param==1)   
-						modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
-					else 
-					if  (ev->data.control.param==12)   
-						modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
-				}
-				break;
-			}
-			case SND_SEQ_EVENT_PITCHBEND:
-			{
-				unsigned int c = ev->data.control.channel;
-			#ifdef _DEBUG      
-				fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
-				c, ev->data.control.value);
-			#endif		
-				if (c<_MULTITEMP)
-					modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
-			break;
-			}   
-			case SND_SEQ_EVENT_CHANPRESS:
-			{
-				unsigned int c = ev->data.control.channel;
-				#ifdef _DEBUG      
-				fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
-				c, ev->data.control.value);
-				#endif		
-				if (c<_MULTITEMP)
-					modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
-			break;
-			}
 			#ifdef _DEBUG      
 			default:
 			{
@@ -1101,11 +1106,11 @@ static void *midiprocessor(void *handle) {
    }
  } while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
 #else
-	usleep(10);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
+	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	}// end of first while, emptying the seqdata queue
 
-	usleep(20);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
-  }
+	usleep(2000);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
+} // end of while(quit==0)
 #endif
  printf("midi thread stopped\n");
  fflush(stdout);
@@ -1149,7 +1154,7 @@ int i;
     	// create the thread and tell it to use Midi::work as thread function
 	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
 	
-	// ------------------------ OSC Init ------------------------------------   
+// ------------------------ OSC Init ------------------------------------   
 	/* start a new server on port definied where oport points to */
 	lo_server_thread st = lo_server_thread_new(oport, error);
 
@@ -1161,7 +1166,7 @@ int i;
     	lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, NULL);
 
     	/* add method that will match the path /quit with no args */
-  	//  lo_server_thread_add_method(st, "/quit", "", quit_handler, NULL);
+  	lo_server_thread_add_method(st, "/Minicomputer/quit", "i", quit_handler, NULL);
 	
 	lo_server_thread_start(st);
    
@@ -1191,10 +1196,13 @@ int i;
 	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	
-	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	
+	// would like to create mix ports last because qjackctrl tend to connect automatic the last ports
+	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+
 	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
 	/* jack is callback based. That means we register 
 	 * a callback function (see process() above)
@@ -1227,14 +1235,14 @@ int i;
 	
 	/* wait until this app receives a SIGINT (i.e. press 
 	 * ctrl-c in the terminal) see signalled() above */
-	while (!quit) 
+	while (quit==0) 
 	{
 	// operate midi
 		 /* let's not waste cycles by busy waiting */
 		sleep(1);
+		//printf("quit:%i %i\n",quit,done);
 	
 	}
-	
 	/* so we shall quit, eh? ok, cleanup time. otherwise 
 	 * jack would probably produce an xrun
 	 * on shutdown */
@@ -1243,6 +1251,8 @@ int i;
 	/* shutdown cont. */
 	jack_client_close(client);
 #ifndef _MIDIBLOCK
+	printf("wait for midithread\n");	
+	fflush(stdout);
 	/* waiting for the midi thread to shutdown carefully */
 	pthread_join(midithread,NULL);
 #endif	
@@ -1250,6 +1260,8 @@ int i;
 	snd_seq_close(seq_handle);
 
 	/* done !! */
+	printf("close minicomputer\n");	
+	fflush(stdout);
 	return 0;
 }
 // ******************************************** OSC handling for editors ***********************
@@ -1388,9 +1400,8 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
 {
     done = 1;
     quit = 1;
-    printf("quitting\n\n");
+    printf("about to sutdown minicomputer core \n");
     fflush(stdout);
-
     return 0;
 }
 
