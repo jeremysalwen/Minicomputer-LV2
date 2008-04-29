@@ -357,6 +357,6 @@ int main(int argc, char **argv)
 	printf("quiiit\n");
 	fflush(stdout);
  lo_send(t, "/Minicomputer/quit", "i",1);
- sleep(4);
+ sleep(1);
 	return result;
 }

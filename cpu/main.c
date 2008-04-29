@@ -843,14 +843,19 @@ void signalled(int signal) {
 void init ()
 {
 	unsigned int i,k;
-	for (k=0;k<_MULTITEMP;k++)
+	for (k=0;k<_MULTITEMP;k++)// k is here the voice number
 	{
-		EG[k][0][1]=0.01f;
-		EG[k][0][2]=0.01f;
-		EG[k][0][3]=1.0f;
-		EG[k][0][4]=0.0001f;
-		EGtrigger[k][0]=0;
+		for (i=0;i<8;i++) // i is the number of envelope
+		{
+		EG[k][i][1]=0.01f;
+		EG[k][i][2]=0.01f;
+		EG[k][i][3]=1.0f;
+		EG[k][i][4]=0.0001f;
+		EGtrigger[k][i]=0;
   
+		EGrepeat[k][i]=0;
+		EGstate[k][i]=4; // released
+		}
 		parameter[k][30]=100.f;
 		parameter[k][31]=0.5f;
 		parameter[k][33]=100.f; 
@@ -989,6 +994,7 @@ static void *midiprocessor(void *handle) {
 	printf("start\n");
  	fflush(stdout);
 	#endif
+	unsigned int c = _MULTITEMP; // channel of incomming data
 	#ifdef _MIDIBLOCK
 	do {
 	#else
@@ -1004,7 +1010,7 @@ static void *midiprocessor(void *handle) {
 			// they usually comes in hordes
 			case SND_SEQ_EVENT_CONTROLLER:
 			{
-				unsigned int c = ev->data.control.channel;
+				c = ev->data.control.channel;
 			#ifdef _DEBUG      
 				fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
 				c,  ev->data.control.param,ev->data.control.value);
@@ -1021,7 +1027,7 @@ static void *midiprocessor(void *handle) {
 			}
 			case SND_SEQ_EVENT_PITCHBEND:
 			{
-				unsigned int c = ev->data.control.channel;
+				c = ev->data.control.channel;
 			#ifdef _DEBUG      
 				fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
 				c, ev->data.control.value);
@@ -1032,7 +1038,7 @@ static void *midiprocessor(void *handle) {
 			}   
 			case SND_SEQ_EVENT_CHANPRESS:
 			{
-				unsigned int c = ev->data.control.channel;
+				c = ev->data.control.channel;
 				#ifdef _DEBUG      
 				fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
 				c, ev->data.control.value);
@@ -1044,7 +1050,7 @@ static void *midiprocessor(void *handle) {
 
 			case SND_SEQ_EVENT_NOTEON:
 			{   
-				unsigned int c = ev->data.note.channel;
+				c = ev->data.note.channel;
 			#ifdef _DEBUG      
 				fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
 				c, ev->data.note.note);
@@ -1072,7 +1078,7 @@ static void *midiprocessor(void *handle) {
 			// ...so its necessary that here follow the noteoff routine
 			case SND_SEQ_EVENT_NOTEOFF: 
 			{
-				unsigned int c = ev->data.note.channel;
+				c = ev->data.note.channel;
 				#ifdef _DEBUG      
 					fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
 					c, ev->data.note.note);
@@ -1106,7 +1112,7 @@ static void *midiprocessor(void *handle) {
    }
  } while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
 #else
-	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
+	usleep(100);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	}// end of first while, emptying the seqdata queue
 
 	usleep(2000);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
