@@ -1,4 +1,4 @@
-Minicomputer v. 1.1
+Minicomputer v. 1.2
 Industrial Grade Digital Synthesizer
 
 by Malte Steiner
@@ -9,7 +9,7 @@ Minicomputer is a standalone Linux softwaresynthesizer for
 creating experimental electronic sounds as its often used 
 in but not limited to Industrial music, Glitch, IDM and other electronic genres.
 
-This is a 1.1 version and may contain some bugs but 
+This is a 1.2 version and may contain some bugs but 
 already worked in studio for my project 'Akustikkoppler' 
 and live for 'Notstandskomitee'.
 
@@ -31,16 +31,43 @@ and
 
 Take care, it can be harsh! Use it on your own risk, you have been warnend!
 
+----------------------------- starting Minicomputer ------------------------
+
+after the installation simply type 
+
+minicomputer 
+
+and it will start the editor application and the synthesis core. By closing the editor window the core engine will be stopped too.
+
+Per default both programs communicate via OSC at the port 7770. If you like to have another one or want several instances you can define the port with the -port parameter:
+
+minicomputer -port 434334
+
+It will be shown at the name in QJackctrl so you know which instances belongs together.
+
+
 ----------------------------- building Minicomputer ------------------------
 
 For building Minicomputer just type
 
 scons
 
-for building it. Yet missed is an installation routine so put the to files anywhere you need them.
 Cleaning the buildfiles but the new created programfiles TOO, is done by typing 
 
 scons -c
+
+Installation as root into /usr/local/bin can be done with 
+
+scons install
+
+deinstallation is done as root:
+
+scons -c install
+
+
+So far the target directory is hardcoded in SConstruct file, its the last two lines.
+Data is kept in .miniComputer/ directory in your home folder. For starting you can install the presets with the installpresets.sh script as the user you want to use it later. Be careful this overwrites of course your settings if you have any previous but they are backed up for security.
+
 
 The buildprocess accept parameters for refining architecture optimization:
 
