@@ -8,6 +8,10 @@
 // start/stop editor with engine
 #define _BUNDLE
 
+// disable this when you experience sluggish midi reaction
+#define _MIDIBLOCK 1
+
+
 // debug output
 //#define _DEBUG
 

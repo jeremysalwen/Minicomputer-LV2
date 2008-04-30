@@ -32,7 +32,6 @@
 // some common definitions
 #include "../common.h" 
 
-//#define _MIDIBLOCK 1
 #define _MODCOUNT 32
 #define _WAVECOUNT 32
 #define _CHOICEMAX 16
