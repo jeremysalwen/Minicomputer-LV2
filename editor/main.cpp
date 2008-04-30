@@ -355,6 +355,9 @@ int main(int argc, char **argv)
 		//lo_send(t, "/a/b/c/d", "f",10.f);
  int result = Fl::run();
  lo_send(t, "/Minicomputer/quit", "i",1);
- sleep(1);
+ /* waiting for the midi thread to shutdown carefully */
+	pthread_cancel(midithread);
+	/* release Alsa Midi connection */
+	snd_seq_close(seq_handle);
 	return result;
 }
