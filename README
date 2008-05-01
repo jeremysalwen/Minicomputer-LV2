@@ -9,8 +9,7 @@ Minicomputer is a standalone Linux softwaresynthesizer for
 creating experimental electronic sounds as its often used 
 in but not limited to Industrial music, Glitch, IDM and other electronic genres.
 
-This is a 1.2 version and may contain some bugs but 
-already worked in studio for my project 'Akustikkoppler' 
+This may contain some bugs but already worked in studio for my project 'Akustikkoppler' 
 and live for 'Notstandskomitee'.
 
 Minicomputer is free open source software under the GPL3 license.
@@ -71,13 +70,13 @@ Data is kept in .miniComputer/ directory in your home folder. For starting you c
 
 The buildprocess accept parameters for refining architecture optimization:
 
-- 64bit=1
+ 64bit=1
 forces a build for 64bit platforms with the -m64 option
 
-- k8=1
+ k8=1
 optimizes for AMD K8 cpus, giving the compilers the -march=k8 -mtune=k8 settings
 
--k7=1
+ k7=1
 optimizes for AMD Athlon XP cpus
 
 So a k8 64bit build looks like

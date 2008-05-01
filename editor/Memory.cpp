@@ -59,6 +59,9 @@ Memory::Memory()
 		        	cout<<kommand<<endl;
 			}
 		}
+		#ifdef _DEBUG
+		cout<<"command:"<<kommand<<" folder:"<<folder;
+		#endif
 	//}
 
 }
@@ -177,7 +180,7 @@ for (int i=0;i<512;++i)
 
 File.close();
 	sprintf(kommand,"%s/minicomputerMemory.txt",folder);
-	if (access(kommand, R_OK) != 0) // check if there a previous file which need to be backed up
+	if (access(kommand, R_OK) == 0) // check if there a previous file which need to be backed up
 	{
 		sprintf(kommand,"mv %s/minicomputerMemory.txt %s/minicomputerMemory.txt.bak",folder,folder);
   		system(kommand);// make a backup
@@ -483,7 +486,7 @@ for (i=0;i<128;++i)// write the whole 128 multis
 File.close();// done
 	
 	sprintf(kommand,"%s/minicomputerMulti.txt",folder);
-	if (access(kommand, R_OK) != 0) // check if there a previous file which need to be backed up
+	if (access(kommand, R_OK) == 0) // check if there a previous file which need to be backed up
  	{
 		sprintf(kommand,"mv %s/minicomputerMulti.txt %s/minicomputerMulti.txt.bak",folder,folder);
   		system(kommand);// make a backup of the original file
