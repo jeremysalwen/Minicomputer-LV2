@@ -1,13 +1,15 @@
 name: Neues Projekt
-files: /home/herrsteiner/Projects/workspace/minicomputer/doc/web/index.html
-basedir: /home/herrsteiner/Projects/workspace/minicomputer/doc/web/
+files: /home/herrsteiner/workspace/minicomputer/doc/web/index.html
+basedir: /home/herrsteiner/workspace/minicomputer/doc/web/
 webdir: 
 template: 
 word_wrap: 0
 urllist: minicomputerDemo1.mp3
 urllist: http://jackaudio.org/
 urllist: http://www.block4.com
-savedir: /home/herrsteiner/Projects/workspace/minicomputer/doc/web
+recent_files: /home/herrsteiner/workspace/minicomputer/doc/web/index.html
+opendir: /home/herrsteiner/workspace/minicomputer/doc/web
+savedir: /home/herrsteiner/workspace/minicomputer/doc/web
 view_html_toolbar: 1
 view_custom_menu: 1
 view_main_toolbar: 1

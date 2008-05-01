@@ -22,7 +22,7 @@ audio demos, only one sound at a time, no further effects:<br />
 <a href="minicomputer3.mp3" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo3 MP3</a> | <a href="minicomputer3.ogg" title="audiodemo of Minicomputer softwaresynthesizer" name="audiodemo of Minicomputer softwaresynthesizer">demo3 OGG</a><br />
 <a href="http://sourceforge.net/projects/minicomputer/" title="Minicomputer projectsite at sourceforge" name="Minicomputer projectsite at sourceforge">Projectsite at Sourceforge</a><br/ >
 </b><br /></div>
-<div align="center" style="left: 10px; width:250px;padding:10px; top:400px; position: absolute; "><table width=100%><tr><td><a href="http://sourceforge.net"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=203751&amp;type=3" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a></td>
+<div align="center" style="left: 10px; width:250px;padding:10px; top:450px; position: absolute; "><table width=100%><tr><td><a href="http://sourceforge.net"><img src="http://sflogo.sourceforge.net/sflogo.php?group_id=203751&amp;type=3" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a></td>
 <td>&nbsp;</td><td><a href="http://sourceforge.net/donate/index.php?group_id=203751"><img src="http://images.sourceforge.net/images/project-support.jpg" width="88" height="32" border="0" alt="Support This Project" /> </a></td>
 </tr></table><br /><br /><br />
 <a href="http://www.block4.com" title="Block 4 media art + development" name="Block 4 media art + development"><img src="b4.gif" width="108" height="120" border="0" name="Block 4 media art + development" alt="Block 4 media art + development"></a>
@@ -34,23 +34,21 @@ creating experimental electronic sounds as its often used
 in but not limited to Industrial music, IDM, EBM, Glitch, sound design and minimal electronic. It is monophonic but can produce up to 8 different sounds at the same time.<br />
 It uses <a href="http://jackaudio.org/" title="Jack audio for Linux" name="Jack audio for Linux">Jack</a> as realtime audio infrastructure and can be controlled via Midi.<br /><br />
 Minicomputer is free open source software distributed under GPL 3 written by Malte Steiner 2007/2008.<br /><br />
-Its a version 1.0 release but runs stable for me live and in studio.<br /><br />If you experienced wrong colors in the editor so it doesnt look like in the screenshot, try to start it with following parameters<br/>
-./miniEditor -bg grey -fg black<br/>Some users reported a reverse colorscheme, done by their window managers.<br /><b>update 1.1 is out now and should fix the color bug amoung others:</b><br/>
-1.1 9.March.2008<br />
-- new: parameter -port for specifying the OSC port so more than one instance can be run easily<br />
+Version 1.2 contains an installer/deinstaller and a smoother user experience<br /><br /><b>update 1.2:</b><br/>
+1.May.2008<br />
+- new: installer/deinstaller<br />
+- new: installerscript for presets<br />
+- new: unified behaviour, editor is called now minicomputer and when started by user, launches the core and shuts it down too<br /><br />
+- fix: improved midihandling while using less cpu cycles<br />
+- fix: backup of memory files should work now<br />
 <br />
-- fix: color bug at the editor, should be now the default colors<br />
-- fix: zombification bug which happens with newer Jack versions<br />
-- fix: new, nonblocking midi thread at the engine<br />
 <br />
-- todo: implement nonblocking midi thread at the editor too<br />
-<br />
-<br /><br />
 Projects already using it are<br /><br />
 <a href="http://www.block4.com/index.php?id=10" title="Notstandskomitee at Block 4" name="Notstandskomitee at Block 4">Notstandskomitee</a><br/>
 <a href="http://www.myspace.com/akustikkoppler" title="Akustikkoppler on myspace" name="Akustikkoppler on myspace">Akustikkoppler</a><br/><br />
-Minicomputer will be presented at <a href="http://lac.linuxaudio.org/" title="Linux Audio Conference" name="Linux Audio Conference">LAC 2008</a> at the club night 29.2. and<br />
-<a href="http://musik.messefrankfurt.com/global/en/home.html" title="Frankfurter Musikmesse" name="Frankfurter Musikmesse">Frankfurter Musikmesse</a> 2008 12.-15.3. at the booth <b>B66</b> in <b>hall 5.1</b> by <a href="http://www.synthesizer-magazin.de/" title="Synthesizer Magazin" name="Synthesizer Magazin">Synthesizer Magazin</a>
+Minicomputer was used for example by Notstandskomitee at <a href="http://lac.linuxaudio.org/" title="Linux Audio Conference" name="Linux Audio Conference">LAC 2008</a> at the club night 29.2.2008 and shown at<br />
+<a href="http://musik.messefrankfurt.com/global/en/home.html" title="Frankfurter Musikmesse" name="Frankfurter Musikmesse">Frankfurter Musikmesse</a> 2008 12.-15.3. at the booth <b>B66</b> in <b>hall 5.1</b> by <a href="http://www.synthesizer-magazin.de/" title="Synthesizer Magazin" name="Synthesizer Magazin">Synthesizer Magazin</a><br>
+Sonic State took a videoride over the booth and Minicomputer is in it:<a href="http://www.sonicstate.com/news/shownews.cfm?newsid=6327">http://www.sonicstate.com/news/shownews.cfm?newsid=6327</a>
 <br />
 <br />
 The application is split into 2 programms, the engine written in C and an editor written in C++.<br />
