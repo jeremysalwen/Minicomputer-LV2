@@ -3,6 +3,7 @@
 - new: installerscript for presets
 - new: unified behaviour, editor is called now minicomputer and when started by user, launches the core and shuts it down too
 - fix: improved midihandling while using less cpu cycles
+- fix: backup of memory files should work now
 
 1.1 9.March.2008
 - new: parameter -port for specifying the OSC port so more than one instance can be run easily
