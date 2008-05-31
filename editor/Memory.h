@@ -1,7 +1,7 @@
 /** Minicomputer
  * industrial grade digital synthesizer
  * editorsoftware
- * Copyright 2007 Malte Steiner
+ * Copyright 2007, 2008 Malte Steiner
  * This file is part of Minicomputer, which is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -22,14 +22,15 @@
 #include <iostream> //iostream
 #include <fstream> //fstream
 #include <sstream> //sstream
-#include <string> //string
+// thanks to Leslie P. Polzer pointing me out to include cstring and more for gcc 4.3 onwards
+#include <cstring> //string
 //#include <boost/archive/text_oarchive.hpp>
 //#include <boost/archive/text_iarchive.hpp>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
-    #include <unistd.h>
-    #include <errno.h> 
+//    #include <unistd.h>
+#include <cerrno> 
 #include "../common.h"
 using namespace std;
 //#include "patch.h"

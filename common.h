@@ -9,7 +9,7 @@
 #define _BUNDLE
 
 // disable this when you experience sluggish midi reaction
-#define _MIDIBLOCK 1
+//#define _MIDIBLOCK 1
 
 
 // debug output
@@ -32,6 +32,6 @@
 #define _MULTISETTINGS 6
 
 // the version number as string
-#define _VERSION "1.2"
+#define _VERSION "1.2.1"
 
 #endif

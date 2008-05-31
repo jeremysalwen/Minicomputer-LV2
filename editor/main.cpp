@@ -15,10 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+// thanks to Leslie P. Polzer pointing me out to include cstring and more for gcc 4.3 onwards
+#include <cstdio>
+#include <cstdlib>
+//#include <unistd.h>
+#include <cstring>
 #include <lo/lo.h>
 #include <alsa/asoundlib.h>
 #include <pthread.h>
@@ -109,7 +110,7 @@ static void *midiprocessor(void *handle) {
 	pthread_getschedparam(pthread_self(), &policy, &param);
 
 	policy = SCHED_FIFO;
-	param.sched_priority = 95;
+	//param.sched_priority = 95;
 
 	pthread_setschedparam(pthread_self(), policy, &param);
 

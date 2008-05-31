@@ -392,12 +392,12 @@ int process(jack_nframes_t nframes, void *arg) {
 		modulator [currentvoice][11]=1.f-egCalc(currentvoice,4);
 		modulator [currentvoice][12]=1.f-egCalc(currentvoice,5);
 		modulator [currentvoice][13]=1.f-egCalc(currentvoice,6);
-	}
+	//}
 	/**
 	 * calc the main audio signal
 	 */
-	for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
-	{
+	//for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
+	//{
 		// get the parameter settings
 		float * param = parameter[currentvoice];
 		// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
@@ -1006,7 +1006,7 @@ static void *midiprocessor(void *handle) {
 		{
 		switch (ev->type) 
 		{	// first check the controllers
-			// they usually comes in hordes
+			// they usually come in hordes
 			case SND_SEQ_EVENT_CONTROLLER:
 			{
 				c = ev->data.control.channel;
@@ -1106,8 +1106,10 @@ static void *midiprocessor(void *handle) {
 			#endif		
 		}// end of switch
 	snd_seq_free_event(ev);
+	//usleep(100);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	} // end of if
 #ifdef _MIDIBLOCK
+	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
    }
  } while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
 #else

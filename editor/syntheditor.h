@@ -45,10 +45,11 @@
 #include <FL/Enumerations.H>
 #include <FL/fl_draw.H>
 //#include <FL/Fl_Chart.H>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+// thanks to Leslie P. Polzer pointing me out to include cstring and more for gcc 4.3 onwards
+#include <cstdio>
+#include <cstdlib>
+//#include <unistd.h>
+#include <cstring>
 #include <math.h>
 #include <lo/lo.h>
 #include <FL/Fl_Image.H>
