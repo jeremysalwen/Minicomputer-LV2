@@ -67,6 +67,11 @@ class Fl_SteinerKnob:public Fl_Dial
 	int altx;
 };
 */
+/** custom class for window, derieved from Fl_Double_Window
+ *
+ * \callgraph
+ * \callergraph
+ */
 class Fenster:public Fl_Double_Window
 {
 	public:

@@ -31,7 +31,7 @@
 #include <pthread.h>
 // some common definitions
 #include "../common.h" 
-
+// defines
 #define _MODCOUNT 32
 #define _WAVECOUNT 32
 #define _CHOICEMAX 16
@@ -39,6 +39,8 @@
 #define TableSize 4096
 #define tabM 4095
 #define tabF 4096.f
+
+// variables
 float delayBuffer[_MULTITEMP][96000] __attribute__((aligned (16)));
 float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 float parameter[_MULTITEMP][_PARACOUNT] __attribute__((aligned (16)));
@@ -63,55 +65,6 @@ struct pollfd *pfd;
 /* a flag which will be set by our signal handler when 
  * it's time to exit */
 int quit = 0;
-
-#ifdef _VECTOR  
-	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
-	union f4vector 
-	{
-		v4sf v;// __attribute__((aligned (16)));
-		float f[4];// __attribute__((aligned (16)));
-	};
-#endif
-
-//void midi_action(snd_seq_t *seq_handle);
-
-/**
- * function to create Alsa Midiport
- */
-snd_seq_t *open_seq() {
-
-  snd_seq_t *seq_handle;
-  int portid;
-
-#ifdef _MIDIBLOCK
-  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,0) < 0) 
-#else
-// open Alsa for input, nonblocking mode so it returns
-  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,SND_SEQ_NONBLOCK) < 0) 
-#endif
- {
-    fprintf(stderr, "Error opening ALSA sequencer.\n");
-    exit(1);
-  }
-  snd_seq_set_client_name(seq_handle, jackName);
-  if ((portid = snd_seq_create_simple_port(seq_handle, jackName,
-            SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
-            SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
-    fprintf(stderr, "Error creating sequencer port.\n");
-    exit(1);
-  }
-  return(seq_handle);
-}
-
-
-static inline void error(int num, const char *m, const char *path); 
-static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
-static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
-
-static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
-
-
-
 jack_port_t* inbuf;
 jack_client_t *client;
 
@@ -123,6 +76,55 @@ int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 int done = 0;
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
+
+// I experiment with optimization
+#ifdef _VECTOR  
+	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
+	union f4vector 
+	{
+		v4sf v;// __attribute__((aligned (16)));
+		float f[4];// __attribute__((aligned (16)));
+	};
+#endif
+
+//void midi_action(snd_seq_t *seq_handle);
+
+/** \brief function to create Alsa Midiport
+ *
+ * \return handle on alsa seq
+ */
+snd_seq_t *open_seq() {
+
+  snd_seq_t *seq_handle;
+  int portid;
+// switch for blocking behaviour for experimenting which one is better
+#ifdef _MIDIBLOCK
+  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,0) < 0) 
+#else
+// open Alsa for input, nonblocking mode so it returns
+  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,SND_SEQ_NONBLOCK) < 0) 
+#endif
+ {
+    fprintf(stderr, "Error opening ALSA sequencer.\n");
+    exit(1);
+ }
+  snd_seq_set_client_name(seq_handle, jackName);
+  if ((portid = snd_seq_create_simple_port(seq_handle, jackName,
+            SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
+            SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
+    fprintf(stderr, "Error creating sequencer port.\n");
+    exit(1);
+  }
+  return(seq_handle);
+}
+
+// some forward declarations
+static inline void error(int num, const char *m, const char *path); 
+static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
+static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
+static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data);
+
+
 /* inlined manually
 static inline float Oscillator(float frequency,int wave,float *phase)
 {
@@ -311,10 +313,17 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 }
 //float d0,d1,d2,c1;
 
-/* this is the heart of the client. the process callback. 
+/** @brief the audio processing function from jack
+ * 
+ * this is the heart of the client. the process callback. 
  * this will be called by jack every process cycle.
  * jack provides us with a buffer for every output port, 
- * which we can happily write into.*/
+ * which we can happily write into.
+ *
+ * @param nframes
+ * @param *arg pointer to additional arguments
+ * @return integer 0 when everything is ok
+ */
 int process(jack_nframes_t nframes, void *arg) {
 
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
@@ -833,11 +842,17 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 
 
 
-/* the signal handler */
+/** @brief the signal handler 
+ *
+ * its used here only for quitting
+ * @param the signal
+ */
 void signalled(int signal) {
 	quit = 1;
 }
-/** initialization, preparing for instance the waveforms
+/** @brief initialization
+ *
+ * preparing for instance the waveforms
  */
 void init ()
 {
@@ -969,7 +984,9 @@ void init ()
 
 } // end of initialization
 
-/** handling the midi messages in an extra thread
+/** @brief handling the midi messages in an extra thread
+ *
+ * @param pointer/handle of alsa midi
  */
 static void *midiprocessor(void *handle) {
 	struct sched_param param;
@@ -1121,14 +1138,22 @@ static void *midiprocessor(void *handle) {
 #endif
  printf("midi thread stopped\n");
  fflush(stdout);
-return 0;
+return 0;// its insisited on this although it should be a void function
 }// end of midiprocessor
+
+/** @brief the classic c main function
+ *
+ * @param argc the amount of arguments we get from the commandline
+ * @param pointer to array of the arguments
+ * @return int the result, should be 0 if program terminates nicely
+ */
 int main(int argc, char **argv) {
 printf("minicomputer version %s\n",_VERSION);
 // ------------------------ decide the oscport number -------------------------
 char OscPort[] = _OSCPORT; // default value for OSC port
 char *oport = OscPort;// pointer of the OSC port string
 int i;
+// process the arguments
   if (argc > 1)
   {
   	for (i = 0;i<argc;++i)
@@ -1165,14 +1190,14 @@ int i;
 	/* start a new server on port definied where oport points to */
 	lo_server_thread st = lo_server_thread_new(oport, error);
 
-	/* add method that will match any path and args */
+	/* add method that will match /Minicomputer/choice with three integers */
 	lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, NULL);
 
-	/* add method that will match the path /foo/bar, with two numbers, coerced     
-	 * to float and int */
+	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
+	 */
     	lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, NULL);
 
-    	/* add method that will match the path /quit with no args */
+    	/* add method that will match the path Minicomputer/quit with one integer */
   	lo_server_thread_add_method(st, "/Minicomputer/quit", "i", quit_handler, NULL);
 	
 	lo_server_thread_start(st);
@@ -1272,14 +1297,31 @@ int i;
 	return 0;
 }
 // ******************************************** OSC handling for editors ***********************
+//!\name OSC routines
+//!{ 
+/** @brief OSC error handler 
+ *
+ * @param num errornumber
+ * @param pointer msg errormessage
+ * @param pointer path where it occured
+ */
 static inline void error(int num, const char *msg, const char *path)
 {
     printf("liblo server error %d in path %s: %s\n", num, path, msg);
     fflush(stdout);
 }
 
-/* catch any incoming messages and display them. returning 1 means that the
- * message has not been fully handled and the server should try other methods */
+/** catch any incoming messages and display them. returning 1 means that the
+ * message has not been fully handled and the server should try other methods 
+ *
+ * @param pointer path osc path
+ * @param pointer types
+ * @param argv pointer to array of arguments 
+ * @param argc amount of arguments
+ * @param pointer data
+ * @param pointer user_data
+ * @return int 0 if everything is ok, 1 means message is not fully handled
+ * */
 static inline int generic_handler(const char *path, const char *types, lo_arg **argv,
 		    int argc, void *data, void *user_data)
 {
@@ -1293,7 +1335,16 @@ static inline int generic_handler(const char *path, const char *types, lo_arg **
     
 }
 
-
+/** specific message handler
+ *
+ * @param pointer path osc path
+ * @param pointer types
+ * @param argv pointer to array of arguments 
+ * @param argc amount of arguments
+ * @param pointer data
+ * @param pointer user_data
+ * @return int 0 if everything is ok, 1 means message is not fully handled
+ */
 static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
@@ -1402,6 +1453,16 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
     return 0;
 }
 
+/** message handler for quit messages
+ *
+ * @param pointer path osc path
+ * @param pointer types
+ * @param argv pointer to array of arguments 
+ * @param argc amount of arguments
+ * @param pointer data
+ * @param pointer user_data
+ * @return int 0 if everything is ok, 1 means message is not fully handled
+ */
 static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
 		 void *data, void *user_data)
 {
@@ -1411,4 +1472,4 @@ static inline int quit_handler(const char *path, const char *types, lo_arg **arg
     fflush(stdout);
     return 0;
 }
-
+//!}

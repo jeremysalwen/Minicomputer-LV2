@@ -37,6 +37,8 @@ lo_address t;
 Memory Speicher;
 UserInterface Schaltbrett;
 /** open an Alsa Midiport for accepting programchanges and later more...
+ *
+ * @return handle to Alsaseq
  */
 snd_seq_t *open_seq() {
 
@@ -100,13 +102,15 @@ void reloadSoundNames()
   	Schaltbrett.soundchoice[7]->add(Speicher.getName(0,i).c_str());
   }
 }*/
-/** handling the midi messages in an extra thread
+/** @brief handling the midi messages in an extra thread
+ *
  * the editor only reacts on program changes, note ons and the rest have to go directly to the synthcore, it means midi keyboards need to be connected to the core too
+ * @param handle to alsaseq
  */
 static void *midiprocessor(void *handle) {
 	struct sched_param param;
 	int policy;
-  snd_seq_t *seq_handle = (snd_seq_t *)handle;
+	snd_seq_t *seq_handle = (snd_seq_t *)handle;
 	pthread_getschedparam(pthread_self(), &policy, &param);
 
 	policy = SCHED_FIFO;
@@ -186,6 +190,12 @@ if (poll(pfd, npfd, 100000) > 0)
   return 0;// why the compiler insists to have this here? Its a void function so what??
 }
 
+/** @brief the main routine
+ *
+ * @param argc the amount of arguments
+ * @param pointer to array with arguments
+ * @return integer, 0 when terminated correctly
+ */
 int main(int argc, char **argv)
 {
   printf("minieditor version %s\n",_VERSION);
@@ -357,8 +367,8 @@ int main(int argc, char **argv)
  int result = Fl::run();
  lo_send(t, "/Minicomputer/quit", "i",1);
  /* waiting for the midi thread to shutdown carefully */
-	pthread_cancel(midithread);
-	/* release Alsa Midi connection */
-	snd_seq_close(seq_handle);
-	return result;
+ pthread_cancel(midithread);
+/* release Alsa Midi connection */
+ snd_seq_close(seq_handle);
+ return result;
 }
