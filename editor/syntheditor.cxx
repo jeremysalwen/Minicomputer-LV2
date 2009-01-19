@@ -2249,7 +2249,7 @@ Fenster* UserInterface::make_window() {
           o->labelsize(8);
           o->argument(61);
           o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
           
 		  o->callback((Fl_Callback*)callback);
 		  Knob[i][o->argument()] = o;
@@ -2292,7 +2292,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Dial* o = new Fl_Dial(648, 96, 25, 25, "D");
           o->labelsize(8);o->argument(66);
 	  o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 96, 25, 25, "S");
@@ -2327,7 +2327,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Dial* o = new Fl_Dial(648, 153, 25, 25, "D");
           o->labelsize(8);o->argument(71);
 	  o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 153, 25, 25, "S");
@@ -2362,7 +2362,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Dial* o = new Fl_Dial(648, 210, 25, 25, "D");
           o->labelsize(8);o->argument(76);
 	  o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 210, 25, 25, "S");
@@ -2397,7 +2397,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Dial* o = new Fl_Dial(648, 269, 25, 25, "D");
           o->labelsize(8);o->argument(81);
 	  o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 269, 25, 25, "S");
@@ -2434,7 +2434,7 @@ Fenster* UserInterface::make_window() {
         { Fl_Dial* o = new Fl_Dial(648, 330, 25, 25, "D");
           o->labelsize(8);o->argument(86);
 	  o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		  o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
         }
         { Fl_Dial* o = new Fl_Dial(678, 330, 25, 25, "S");
@@ -2620,7 +2620,7 @@ Fenster* UserInterface::make_window() {
       { Fl_Dial* o = new Fl_Dial(874, 103, 25, 25, "D");
         o->labelsize(8);o->argument(103); 
         o->minimum(0.15);
-          o->maximum(0.02);
+          o->maximum(0.01);
 		o->callback((Fl_Callback*)callback);Knob[i][o->argument()] = o;
       }
       { Fl_Dial* o = new Fl_Dial(904, 103, 25, 25, "S");
@@ -2811,7 +2811,7 @@ Fenster* UserInterface::make_window() {
       o->labelcolor(FL_BACKGROUND2_COLOR);
       char Textausgabe[400];
       char version[] = _VERSION;
-      sprintf(Textausgabe,"<html><body><i><center>version %s</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007/2008<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com<br>http://minicomputer.sourceforge.net</center></body></html>",version);
+      sprintf(Textausgabe,"<html><body><i><center>version %s</center></i><br><p><br>a standalone industrial grade softwaresynthesizer for Linux<br><p><br>developed by Malte Steiner 2007-2009<p>distributed as free open source software under GPL3 licence<br><p>contact:<br><center>steiner@block4.com<br>http://www.block4.com<br>http://minicomputer.sourceforge.net</center></body></html>",version);
     	o->value(Textausgabe);
     }	
     o->end(); 
