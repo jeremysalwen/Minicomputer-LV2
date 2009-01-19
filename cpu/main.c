@@ -47,6 +47,7 @@ float parameter[_MULTITEMP][_PARACOUNT] __attribute__((aligned (16)));
 float modulator[_MULTITEMP][_MODCOUNT] __attribute__((aligned (16)));
 float midi2freq [128],midif[_MULTITEMP] __attribute__((aligned (16)));
 float EG[_MULTITEMP][8][8] __attribute__((aligned (16))); // 7 8
+float EGFaktor[_MULTITEMP][8] __attribute__((aligned (16)));
 float phase[_MULTITEMP][4] __attribute__((aligned (16)));//=0.f;
 unsigned int choice[_MULTITEMP][_CHOICEMAX] __attribute__((aligned (16)));
 int EGrepeat[_MULTITEMP][8] __attribute__((aligned (16)));
@@ -72,6 +73,7 @@ float temp=0.f,lfo;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
 float tabX = 4096.f / 48000.0f;
 float srate = 3.145f/ 48000.f;
+float srDivisor = 1.f / 48000.f;
 int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 int done = 0;
@@ -168,7 +170,11 @@ static inline void egStart (unsigned int voice,unsigned int number)
 	EG[voice][number][0] = 1.f; // triggerd
 	EG[voice][number][5] = 1.f; // target
         EG[voice][number][7] = 0.0f;// state
-        EGstate[voice][number] = 0;// state
+        EGstate[voice][number] = 0;// state  
+	if ((number == 0)||(number>4))
+		EGFaktor[voice][number] = 1.f; // triggerd
+	else
+		EGFaktor[voice][number] = 0.f;
 		 //printf("start %i", voice);
 }
 /**
@@ -204,18 +210,32 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 	{
 	int i = EGstate[voice][number]; 
 		if (i == 1){ // attack
+		       // if (EGFaktor[voice][number]>0.00f) EGFaktor[voice][number] -= 0.002f;
+			
+			if ((number==0)||(number>4))
+			 EG[voice][number][6] += EG[voice][number][1]+EGFaktor[voice][number];
+			else 
 			 EG[voice][number][6] += EG[voice][number][1];
-			 if (EG[voice][number][6]>=1.0f)
+
+			 if (EG[voice][number][6]>=1.0f)// Attackphase is finished
 			 {
 			 	EG[voice][number][6]=1.0f;
 			 	EGstate[voice][number]=2;
+				if ((number==0)||(number>4))
+					EGFaktor[voice][number] = 1.f; // triggerd
+				else
+					EGFaktor[voice][number] = 0.f;
+
 			 }
 		}
 		else if (i == 2)
 		{ // decay
 			if (EG[voice][number][6]>EG[voice][number][3])
 			{
-				EG[voice][number][6] -= EG[voice][number][2];
+				if ((number==0)||(number>4))
+				 EG[voice][number][6] -= 100000.f*EG[voice][number][2]*srDivisor*EGFaktor[voice][number];
+				else
+				 EG[voice][number][6] -= EG[voice][number][2];
 			}
 			else 
 			{
@@ -225,6 +245,10 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 				}
 				else
 				{
+					if ((number==0)||(number>4))
+						EGFaktor[voice][number] = 1.f; // triggerd
+					else
+						EGFaktor[voice][number] = 0.f;
 					egStop(voice,number);// continue to release
 				}
 			}
@@ -247,7 +271,12 @@ static inline float egCalc (unsigned int voice, unsigned int number)
 		{
 		    /* release */
 		    
+		    if (EGFaktor[voice][number]>0.025f) EGFaktor[voice][number] -= 0.002f;
+		if ((number==0)||(number>4))
+		    EG[voice][number][6] -= (100000.f*EG[voice][number][4])*srDivisor*EGFaktor[voice][number];//*EG[number][6];
+		else
 		    EG[voice][number][6] -= EG[voice][number][4];//*EG[number][6];
+
 		    if (EG[voice][number][6]<0.0f) 
 		    {	
 		    	EG[voice][number][6]=0.0f;
@@ -1246,7 +1275,7 @@ int i;
 	sampleRate = (float) jack_get_sample_rate (client); 
 	tabX = 4096.f / sampleRate;
 	srate = 3.145f/ sampleRate;
-	
+	srDivisor = 1.f / sampleRate;
 	// depending on it the delaybuffer
 	maxDelayTime = (int)sampleRate;
 	delayBufferSize = maxDelayTime*2;
