@@ -1049,6 +1049,30 @@ static void *midiprocessor(void *handle) {
 					else 
 					if  (ev->data.control.param==12)   
 						modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==2)   
+						modulator[c][ 20]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==3)   
+						modulator[c][ 21]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==4)   
+						modulator[c][ 22]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==5)   
+						modulator[c][ 23]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==14)   
+						modulator[c][ 24]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==15)   
+						modulator[c][ 25]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==16)   
+						modulator[c][ 26]=ev->data.control.value*0.007874f;// /127.f;
+					else 
+					if  (ev->data.control.param==17)   
+						modulator[c][ 27]=ev->data.control.value*0.007874f;// /127.f;
 				}
 				break;
 			}

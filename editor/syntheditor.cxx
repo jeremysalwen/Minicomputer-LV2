@@ -1370,6 +1370,14 @@ Fl_Menu_Item UserInterface::menu_amod[] = {
  {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 2", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 4", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 5", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 14", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 15", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 16", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 17", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 // redundant for now...
@@ -1394,6 +1402,14 @@ Fl_Menu_Item UserInterface::menu_fmod[] = {
  {"cc 12", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"delay", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {"midi note", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 2", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 4", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 5", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 6", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 14", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 15", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 16", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
+ {"cc 17", 0,  0, 0, 0, FL_NORMAL_LABEL, 0, 8, 0},
  {0,0,0,0,0,0,0,0,0}
 };
 /**
