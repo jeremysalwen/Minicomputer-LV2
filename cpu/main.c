@@ -164,7 +164,7 @@ static inline float Oscillator(float frequency,int wave,float *phase)
  * @param the number of envelope generator
  */
 
-static inline void egStart (unsigned int voice,unsigned int number)
+static inline void egStart (const unsigned int voice,const unsigned int number)
 {
 	EGtrigger[voice][number]=1;
 	EG[voice][number][0] = 1.f; // triggerd
@@ -180,7 +180,7 @@ static inline void egStart (unsigned int voice,unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
  */
-static inline void egStop (unsigned int voice,unsigned int number)
+static inline void egStop (const unsigned int voice,const unsigned int number)
 {
 	// if (EGrepeat[voice][number] == 0) 
 	EGtrigger[voice][number] = 0; // triggerd
@@ -192,7 +192,7 @@ static inline void egStop (unsigned int voice,unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
 */
-static inline float egCalc (unsigned int voice, unsigned int number)
+static inline float egCalc (const unsigned int voice,const unsigned int number)
 {
 	/* EG[x] x:
 	 * 0 = trigger
@@ -339,8 +339,6 @@ int process(jack_nframes_t nframes, void *arg) {
 
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
 	float osc1,osc2,delayMod;
-	unsigned int currentvoice = 0;
-	unsigned int index;
 
 	// an union for a nice float to int casting trick which should be fast
 	typedef union
@@ -386,7 +384,7 @@ int process(jack_nframes_t nframes, void *arg) {
 	*/
 
 	/* main loop */
-	for (index = 0; index < nframes; ++index) 
+	for (register unsigned int index = 0; index < nframes; ++index) 
 	{
 	/* this function returns a pointer to the buffer where 
      * we can write our frames samples */
@@ -400,18 +398,19 @@ int process(jack_nframes_t nframes, void *arg) {
 	 * I dont know if its better to separate the calculation blocks, so I try it
 	 * first calculating the envelopes
 	 */
-	for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
+	for (register unsigned int currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 	{		
 //	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 //		buffer[index]=0.0f;
 
 	// calc the modulators
-		modulator [currentvoice][8] =1.f-egCalc(currentvoice,1);
-		modulator [currentvoice][9] =1.f-egCalc(currentvoice,2);
-		modulator [currentvoice][10]=1.f-egCalc(currentvoice,3);
-		modulator [currentvoice][11]=1.f-egCalc(currentvoice,4);
-		modulator [currentvoice][12]=1.f-egCalc(currentvoice,5);
-		modulator [currentvoice][13]=1.f-egCalc(currentvoice,6);
+	float * mod = modulator [currentvoice];
+		mod[8] =1.f-egCalc(currentvoice,1);
+		mod[9] =1.f-egCalc(currentvoice,2);
+		mod[10]=1.f-egCalc(currentvoice,3);
+		mod[11]=1.f-egCalc(currentvoice,4);
+		mod[12]=1.f-egCalc(currentvoice,5);
+		mod[13]=1.f-egCalc(currentvoice,6);
 	//}
 	/**
 	 * calc the main audio signal
@@ -472,13 +471,13 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
                 }
 //modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
 // write the oscillator 3 output to modulators
-		modulator [currentvoice][14] = table[choice[currentvoice][12]][iP3] ;
+		mod[14] = table[choice[currentvoice][12]][iP3] ;
 
 // --------------- calculate the parameters and modulations of main oscillators 1 and 2
 		tf = param[1];
 		tf *=param[2];
 		ta1 = param[9];
-		ta1 *= modulator[currentvoice][choice[currentvoice][2]]; // osc1 first ampmod
+		ta1 *= mod[choice[currentvoice][2]]; // osc1 first ampmod
 
 		#ifdef _PREFETCH
 		__builtin_prefetch(&phase[currentvoice][1],0,2);
@@ -487,9 +486,9 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 
 		//tf+=(midif[currentvoice]*parameter[currentvoice][2]*parameter[currentvoice][3]);
 		tf+=(midif[currentvoice]*(1.0f-param[2])*param[3]);
-		ta1+= param[11]*modulator[currentvoice][choice[currentvoice][3]];// osc1 second ampmod
-		tf+=(param[4]*param[5])*modulator[currentvoice][choice[currentvoice][0]];
-		tf+=param[7]*modulator[currentvoice][choice[currentvoice][1]];
+		ta1+= param[11]*mod[choice[currentvoice][3]];// osc1 second ampmod
+		tf+=(param[4]*param[5])*mod[choice[currentvoice][0]];
+		tf+=param[7]*mod[choice[currentvoice][1]];
 		//tf/=3.f;		
 		//ta/=2.f;
 		//static inline float Oscillator(float frequency,int wave,float *phase)
@@ -539,23 +538,23 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 	        osc1 = table[choice[currentvoice][4]][iP1] ;
 //}
 //osc1 = Oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
-		modulator[currentvoice][3]=osc1*(param[13]*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
+		mod[3]=osc1*(param[13]*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 // ------------------------ calculate oscillator 2 ---------------------
 // first the modulations and frequencys
 		tf2 = param[16];
 		tf2 *=param[17];
 		ta2 = param[23];
-		ta2 *=modulator[currentvoice][choice[currentvoice][8]]; // osc2 first amp mod
+		ta2 *=mod[choice[currentvoice][8]]; // osc2 first amp mod
 		//tf2+=(midif[currentvoice]*parameter[currentvoice][17]*parameter[currentvoice][18]);
 		tf2+=(midif[currentvoice]*(1.0f-param[17])*param[18]);
 		ta3 = param[25];
-		ta3 *=modulator[currentvoice][choice[currentvoice][9]];// osc2 second amp mod
-		tf2+=param[15]*param[19]*modulator[currentvoice][choice[currentvoice][6]];
-		tf2+=param[21]*modulator[currentvoice][choice[currentvoice][7]];
+		ta3 *=mod[choice[currentvoice][9]];// osc2 second amp mod
+		tf2+=param[15]*param[19]*mod[choice[currentvoice][6]];
+		tf2+=param[21]*mod[choice[currentvoice][7]];
 		//tf/=3.f;		
 		//ta/=2.f;
-		modulator[currentvoice][4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
+		mod[4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 
 		// then generate the actual phase:
 		phase[currentvoice][2]+= tabX * tf2;
@@ -580,7 +579,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
                 }
 	        osc2 = table[choice[currentvoice][5]][iP2] ;
 		//osc2 = Oscillator(tf2,choice[currentvoice][5],&phase[currentvoice][2]);
-		modulator[currentvoice][4] *= osc2;// osc2 fm out
+		mod[4] *= osc2;// osc2 fm out
 
 		// ------------------------------------- mix the 2 oscillators pre filter
 		//temp=(parameter[currentvoice][14]-parameter[currentvoice][14]*ta1);
@@ -591,8 +590,8 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		temp+=anti_denormal;
 
 // ------------- calculate the filter settings ------------------------------
-		mf =  (1.f-(param[38]*modulator[currentvoice][ choice[currentvoice][10]]));
-		mf+= (1.f-(param[48]*modulator[currentvoice][ choice[currentvoice][11]]));
+		mf =  (1.f-(param[38]*mod[ choice[currentvoice][10]]));
+		mf+= (1.f-(param[48]*mod[ choice[currentvoice][11]]));
 		mo = param[56]*mf;
 
 
@@ -788,12 +787,12 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		high[currentvoice][2] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][2] - (reso*band[currentvoice][2]);
 		band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
 
-		modulator[currentvoice] [7] = (low[currentvoice][0]*v[currentvoice][0])+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
+		mod [7] = (low[currentvoice][0]*v[currentvoice][0])+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
 
 		//---------------------------------- amplitude shaping
 
-		result = (1.f-modulator[currentvoice][ choice[currentvoice][13]]*param[100] );///_MULTITEMP;
-		result *= modulator[currentvoice][7];
+		result = (1.f-mod[ choice[currentvoice][13]]*param[100] );///_MULTITEMP;
+		result *= mod[7];
 		result *= egCalc(currentvoice,0);// the final shaping envelope
 
 		// --------------------------------- delay unit
@@ -803,7 +802,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
     
 			//printf("clear %d : %d : %d\n",currentvoice,delayI[currentvoice],delayJ[currentvoice]);
 		}
-		delayMod = 1.f-(param[110]* modulator[currentvoice][choice[currentvoice][14]]);
+		delayMod = 1.f-(param[110]* mod[choice[currentvoice][14]]);
 
 		delayJ[currentvoice] = delayI[currentvoice] - ((param[111]* maxDelayTime)*delayMod);
 
@@ -830,7 +829,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			fflush(stdout);
 		}
 		*/
-		modulator[currentvoice][18]= tdelay;
+		mod[18]= tdelay;
 		result += tdelay * param[113];
 		delayI[currentvoice]=delayI[currentvoice]+1;
 

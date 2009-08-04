@@ -16,7 +16,7 @@
 //#define _DEBUG
 
 // prefetch support with intrinsics
-#define _PREFETCH
+//#define _PREFETCH
 
 // vectorize calculations
 //#define _VECTOR
