@@ -1033,6 +1033,7 @@ static void *midiprocessor(void *handle) {
 	   {
 		if (ev != NULL)
 		{
+		if (ev->type != 36)
 		switch (ev->type) 
 		{	// first check the controllers
 			// they usually come in hordes
@@ -1159,7 +1160,7 @@ static void *midiprocessor(void *handle) {
 			#endif		
 		}// end of switch
 	snd_seq_free_event(ev);
-	//usleep(100);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
+	usleep(10);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	} // end of if
 #ifdef _MIDIBLOCK
 	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
