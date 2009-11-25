@@ -609,6 +609,8 @@ static void rollerCallback(Fl_Widget* o, void*)
 	Fl::lock();
 		int Faktor = (int)((Fl_Valuator* )o)->value();
 		schoice[currentsound]->value((Speicher.getName(0,Faktor)).c_str());//Speicher.multis[currentmulti].sound[currentsound]);// set gui
+		schoice[currentsound]->position(0);
+
 		memDisplay[currentsound]->value(Faktor);// set gui
 	Fl::awake();
 	Fl::unlock();
@@ -625,6 +627,7 @@ static void multiRollerCallback(Fl_Widget* o, void*)
 	Fl::lock();
 		int Faktor = (int)((Fl_Valuator* )o)->value();
 		Multichoice->value(Speicher.multis[Faktor].name);// set gui
+		Multichoice->position(0);// put cursor in the beginning, otherwise the begin of the string might be invisible
 		multiDisplay->value(Faktor);
 	Fl::awake();
 	Fl::unlock();
