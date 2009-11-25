@@ -1,5 +1,6 @@
 1.4
 - fix: names of patches and multis where displayed only the last letters which are usually blanks
+- fix: change so that it can be now compiled without being in C99 mode
 
 1.3 19.Januar 2009
 - improved: envelopes, now more exponential behaviour, changed range of decay knobs

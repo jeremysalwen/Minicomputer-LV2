@@ -384,7 +384,8 @@ int process(jack_nframes_t nframes, void *arg) {
 	*/
 
 	/* main loop */
-	for (register unsigned int index = 0; index < nframes; ++index) 
+	register unsigned int index;
+	for (index = 0; index < nframes; ++index) 
 	{
 	/* this function returns a pointer to the buffer where 
      * we can write our frames samples */
@@ -398,7 +399,8 @@ int process(jack_nframes_t nframes, void *arg) {
 	 * I dont know if its better to separate the calculation blocks, so I try it
 	 * first calculating the envelopes
 	 */
-	for (register unsigned int currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
+	register unsigned int currentvoice;
+	for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 	{		
 //	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 //		buffer[index]=0.0f;
