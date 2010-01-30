@@ -117,6 +117,40 @@ snd_seq_t *open_seq() {
     fprintf(stderr, "Error creating sequencer port.\n");
     exit(1);
   }
+// filter out mididata which is not processed anyway, thanks to Karsten Wiese for the hint
+ 	snd_seq_client_info_t * info;	 
+
+
+	snd_seq_client_info_malloc(&info);
+	if ( snd_seq_get_client_info	( seq_handle,
+info) != 0){
+	
+    fprintf(stderr, "Error getting info for eventfiltersetup.\n");
+    exit(1);
+}
+// its a bit strange, you set what you want to get, not what you want filtered out...
+// actually Karsten told me so but I got misguided by the term filter
+	
+// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_SYSEX);	
+// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_TICK);	
+
+ snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_NOTEON);	
+ snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_NOTEOFF);	
+ snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_PITCHBEND);	
+ snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CONTROLLER);	
+ snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CHANPRESS);	
+
+// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CLOCK);	
+// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_SONGPOS);	
+// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_QFRAME);	
+	if ( snd_seq_set_client_info	( seq_handle,
+info) != 0){
+	
+    fprintf(stderr, "Error setting info for eventfiltersetup.\n");
+    exit(1);
+}	
+ snd_seq_client_info_free(info);
+
   return(seq_handle);
 }
 
