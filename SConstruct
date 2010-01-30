@@ -21,6 +21,12 @@ if ARGUMENTS.get('k7', 0):
 
 env.Append(CCFLAGS = ['-g','-O3','-msse','-fwhole-program','-ftree-vectorize','-ffast-math', '-funit-at-a-time', '-fpeel-loops', '-ftracer','-funswitch-loops','-fprefetch-loop-arrays','-mfpmath=sse'])
 
+if ARGUMENTS.get('native', 0):
+	env.Append(CCFLAGS = ['-march=native','-mtune=native'])
+	guienv.Append(CPPFLAGS = ['-march=native','-mtune=native'])
+if ARGUMENTS.get('core2', 0):
+	env.Append(CCFLAGS = ['-march=core2','-mtune=core2'])
+	guienv.Append(CPPFLAGS = ['-march=core2','-mtune=core2'])
 if ARGUMENTS.get('pentium-m', 0):
 	env = Environment(CCFLAGS = [''])
 	#env.Append(CCFLAGS = ['-march=pentium-m','-mtune=pentium-m'])
