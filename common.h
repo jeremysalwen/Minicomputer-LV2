@@ -32,6 +32,6 @@
 #define _MULTISETTINGS 6
 
 // the version number as string
-#define _VERSION "1.4"
+#define _VERSION "1.41"
 
 #endif

@@ -1,3 +1,6 @@
+1.41 31.Januar 2010
+- now really fix: names of patches and multis where displayed only the last letters which are usually blanks
+
 1.4 30.Januar 2010
 - fix: names of patches and multis where displayed only the last letters which are usually blanks
 - fix: change so that it can be now compiled without being in C99 mode

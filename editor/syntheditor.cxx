@@ -705,6 +705,7 @@ Fl_File_Chooser *fc = new Fl_File_Chooser(".","TEXT Files (*.txt)\t",Fl_File_Cho
 		Speicher.importSound(fc->value(),(int)memDisplay[currentsound]->value());//schoice[currentsound]->menubutton()->value());	
 		// ok, now we have a new sound saved but we should update the userinterface
 		schoice[currentsound]->value(Speicher.getName(0,(int)memDisplay[currentsound]->value()).c_str());
+		schoice[currentsound]->position(0);
 	  	/*
 		int i;
 		for (i = 0;i<8;++i)
@@ -1178,6 +1179,7 @@ static void loadmulti(Fl_Widget* o, void* e)
 			fflush(stdout);
 		#endif
 		schoice[i]->value(Speicher.getName(0,Speicher.multis[currentmulti].sound[i]).c_str());// set gui
+		schoice[i]->position(0);// set back the cursor to pos 0 to show name from the beginning
 		#ifdef _DEBUG
 			printf("schoice gesetzt\n");
 			fflush(stdout);
@@ -1336,6 +1338,7 @@ void UserInterface::changeSound(int channel,int pgm)
 		int t = currentsound;
 		currentsound = channel;
 		schoice[channel]->value(Speicher.getName(0,pgm).c_str());
+		schoice[channel]->position(0);
 		//schoice[channel]->damage(FL_DAMAGE_ALL);
 		//schoice[channel]->redraw();
 		Rollers[channel]->value(pgm);// set gui
