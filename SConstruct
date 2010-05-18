@@ -27,6 +27,9 @@ if ARGUMENTS.get('native', 0):
 if ARGUMENTS.get('core2', 0):
 	env.Append(CCFLAGS = ['-march=core2','-mtune=core2'])
 	guienv.Append(CPPFLAGS = ['-march=core2','-mtune=core2'])
+if ARGUMENTS.get('atom', 0):
+	env.Append(CCFLAGS = ['-march=atom','-mtune=atom'])
+	guienv.Append(CPPFLAGS = ['-march=atom','-mtune=atom'])
 if ARGUMENTS.get('pentium-m', 0):
 	env = Environment(CCFLAGS = [''])
 	#env.Append(CCFLAGS = ['-march=pentium-m','-mtune=pentium-m'])
