@@ -32,6 +32,6 @@
 #define _MULTISETTINGS 6
 
 // the version number as string
-#define _VERSION "1.41"
-
+#define _VERSION "1.42"
+enum MIDIMODES {_MULTI,_SINGLE,_SPLIT,_6TO2};
 #endif

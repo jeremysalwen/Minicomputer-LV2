@@ -1,7 +1,7 @@
 /** Minicomputer
  * industrial grade digital synthesizer
  *
- * Copyright 2007,2008 Malte Steiner
+ * Copyright 2007,2008,2009,2010 Malte Steiner
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -41,6 +41,7 @@
 #define tabF 4096.f
 
 // variables
+enum MIDIMODES midimode = _MULTI; // the old behaviour
 float delayBuffer[_MULTITEMP][96000] __attribute__((aligned (16)));
 float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 float parameter[_MULTITEMP][_PARACOUNT] __attribute__((aligned (16)));
@@ -1144,8 +1145,12 @@ static void *midiprocessor(void *handle) {
 				fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
 				c, ev->data.note.note);
 			#endif		
-				if (c <_MULTITEMP)
+				if (c <_MULTITEMP){
+				switch (midimode)
 				{
+					default:
+					case _MULTI:
+					{
 					if (ev->data.note.velocity>0)
 					{
 						lastnote[c]=ev->data.note.note;	
@@ -1162,6 +1167,10 @@ static void *midiprocessor(void *handle) {
                
 						break;// not the best method but it breaks only when a note on is
 					}// if velo == 0 it should be handled as noteoff...
+					}
+					break;
+		
+				}
 				}
 			}      
 			// ...so its necessary that here follow the noteoff routine
