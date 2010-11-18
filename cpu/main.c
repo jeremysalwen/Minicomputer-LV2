@@ -1081,39 +1081,48 @@ static void *midiprocessor(void *handle) {
 				fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
 				c,  ev->data.control.param,ev->data.control.value);
 			#endif		
-				if  (c <_MULTITEMP)
+				switch (midimode)
 				{
-					if  (ev->data.control.param==1)   
+					default:
+					case _MULTI:
+					{
+
+					if  (c <_MULTITEMP)
+					{
+						if  (ev->data.control.param==1)   
 						modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
-					else 
-					if  (ev->data.control.param==12)   
-						modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==2)   
-						modulator[c][ 20]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==3)   
-						modulator[c][ 21]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==4)   
-						modulator[c][ 22]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==5)   
-						modulator[c][ 23]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==14)   
-						modulator[c][ 24]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==15)   
-						modulator[c][ 25]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==16)   
-						modulator[c][ 26]=ev->data.control.value*0.007874f;// /127.f;
-					else 
-					if  (ev->data.control.param==17)   
-						modulator[c][ 27]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==12)   
+							modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==2)   
+							modulator[c][ 20]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==3)   
+							modulator[c][ 21]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==4)   
+							modulator[c][ 22]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==5)   
+							modulator[c][ 23]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==14)   
+							modulator[c][ 24]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==15)   
+							modulator[c][ 25]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==16)   
+							modulator[c][ 26]=ev->data.control.value*0.007874f;// /127.f;
+						else 
+						if  (ev->data.control.param==17)   
+							modulator[c][ 27]=ev->data.control.value*0.007874f;// /127.f;
+					}
 				}
 				break;
+				}
+			break;
 			}
 			case SND_SEQ_EVENT_PITCHBEND:
 			{
@@ -1122,8 +1131,16 @@ static void *midiprocessor(void *handle) {
 				fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
 				c, ev->data.control.value);
 			#endif		
-				if (c<_MULTITEMP)
-					modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
+				switch (midimode)
+				{
+					default:
+					case _MULTI:
+					{
+
+						if (c<_MULTITEMP) modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
+					}
+					break;
+				}
 			break;
 			}   
 			case SND_SEQ_EVENT_CHANPRESS:
@@ -1132,9 +1149,18 @@ static void *midiprocessor(void *handle) {
 				#ifdef _DEBUG      
 				fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
 				c, ev->data.control.value);
-				#endif		
-				if (c<_MULTITEMP)
-					modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
+				#endif	
+				switch (midimode)
+				{
+					default:
+					case _MULTI:
+					{
+	
+						if (c<_MULTITEMP)
+						modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
+					}
+					break;
+				}
 			break;
 			}
 
@@ -1145,12 +1171,12 @@ static void *midiprocessor(void *handle) {
 				fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
 				c, ev->data.note.note);
 			#endif		
-				if (c <_MULTITEMP){
 				switch (midimode)
 				{
 					default:
 					case _MULTI:
 					{
+					if (c <_MULTITEMP){
 					if (ev->data.note.velocity>0)
 					{
 						lastnote[c]=ev->data.note.note;	
@@ -1168,9 +1194,9 @@ static void *midiprocessor(void *handle) {
 						break;// not the best method but it breaks only when a note on is
 					}// if velo == 0 it should be handled as noteoff...
 					}
+					}
 					break;
 		
-				}
 				}
 			}      
 			// ...so its necessary that here follow the noteoff routine
@@ -1181,17 +1207,25 @@ static void *midiprocessor(void *handle) {
 					fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
 					c, ev->data.note.note);
 				#endif		
-				if  (c <_MULTITEMP)
-					if (lastnote[c]==ev->data.note.note)
-               				{
-	       					egStop(c,0);  
-               					if (EGrepeat[c][1] == 0) egStop(c,1);  
-						if (EGrepeat[c][2] == 0) egStop(c,2); 
-						if (EGrepeat[c][3] == 0) egStop(c,3); 
-						if (EGrepeat[c][4] == 0) egStop(c,4);  
-						if (EGrepeat[c][5] == 0) egStop(c,5);  
-						if (EGrepeat[c][6] == 0) egStop(c,6);
+				switch (midimode)
+				{
+					default:
+					case _MULTI:
+					{
+						if  (c <_MULTITEMP)
+							if (lastnote[c]==ev->data.note.note)
+               					{
+	       						egStop(c,0);  
+	               					if (EGrepeat[c][1] == 0) egStop(c,1);  
+							if (EGrepeat[c][2] == 0) egStop(c,2); 
+							if (EGrepeat[c][3] == 0) egStop(c,3); 
+							if (EGrepeat[c][4] == 0) egStop(c,4);  
+							if (EGrepeat[c][5] == 0) egStop(c,5);  
+							if (EGrepeat[c][6] == 0) egStop(c,6);
+						}
 					}
+					break;
+				}
 			break;       
 			}
 			
