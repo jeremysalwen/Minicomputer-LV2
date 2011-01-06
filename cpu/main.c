@@ -1150,16 +1150,6 @@ int i;
 
 	printf("osc port %s\n",oport);
 	sprintf(jackName,"Minicomputer%s",oport);// store globally a unique name
-
-// ------------------------ midi init ---------------------------------
-	pthread_t midithread;
-	seq_handle = open_seq();
-	npfd = snd_seq_poll_descriptors_count(seq_handle, POLLIN);
-	pfd = (struct pollfd *)alloca(npfd * sizeof(struct pollfd));
-	snd_seq_poll_descriptors(seq_handle, pfd, npfd, POLLIN);
-    
-    	// create the thread and tell it to use Midi::work as thread function
-	int err = pthread_create(&midithread, NULL, midiprocessor,seq_handle);
 	
 // ------------------------ OSC Init ------------------------------------   
 	/* start a new server on port definied where oport points to */
