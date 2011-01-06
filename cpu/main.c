@@ -18,27 +18,6 @@
 // a way to compile it was:
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 
-#include <jack/jack.h>
-//#include <jack/midiport.h> // later we use the jack midi ports to, but not this time
-#include <signal.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <lo/lo.h>
-#include <string.h>
-#include <alsa/asoundlib.h>
-#include <pthread.h>
-// some common definitions
-#include "../common.h" 
-// defines
-#define _MODCOUNT 32
-#define _WAVECOUNT 32
-#define _CHOICEMAX 16
-#define _MULTITEMP 8
-#define TableSize 4096
-#define tabM 4095
-#define tabF 4096.f
 
 // variables
 enum MIDIMODES midimode = _MULTI; // the old behaviour
