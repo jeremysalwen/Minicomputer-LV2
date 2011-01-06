@@ -90,71 +90,6 @@ static const float anti_denormal = 1e-20;// magic number to get rid of denormali
 	};
 #endif
 
-//void midi_action(snd_seq_t *seq_handle);
-
-/** \brief function to create Alsa Midiport
- *
- * \return handle on alsa seq
- */
-snd_seq_t *open_seq() {
-
-  snd_seq_t *seq_handle;
-  int portid;
-// switch for blocking behaviour for experimenting which one is better
-#ifdef _MIDIBLOCK
-  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,0) < 0) 
-#else
-// open Alsa for input, nonblocking mode so it returns
-  if (snd_seq_open(&seq_handle, "hw", SND_SEQ_OPEN_INPUT,SND_SEQ_NONBLOCK) < 0) 
-#endif
- {
-    fprintf(stderr, "Error opening ALSA sequencer.\n");
-    exit(1);
- }
-  snd_seq_set_client_name(seq_handle, jackName);
-  if ((portid = snd_seq_create_simple_port(seq_handle, jackName,
-            SND_SEQ_PORT_CAP_WRITE|SND_SEQ_PORT_CAP_SUBS_WRITE,
-            SND_SEQ_PORT_TYPE_APPLICATION)) < 0) {
-    fprintf(stderr, "Error creating sequencer port.\n");
-    exit(1);
-  }
-// filter out mididata which is not processed anyway, thanks to Karsten Wiese for the hint
- 	snd_seq_client_info_t * info;	 
-
-
-	snd_seq_client_info_malloc(&info);
-	if ( snd_seq_get_client_info	( seq_handle,
-info) != 0){
-	
-    fprintf(stderr, "Error getting info for eventfiltersetup.\n");
-    exit(1);
-}
-// its a bit strange, you set what you want to get, not what you want filtered out...
-// actually Karsten told me so but I got misguided by the term filter
-	
-// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_SYSEX);	
-// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_TICK);	
-
- snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_NOTEON);	
- snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_NOTEOFF);	
- snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_PITCHBEND);	
- snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CONTROLLER);	
- snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CHANPRESS);	
-
-// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_CLOCK);	
-// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_SONGPOS);	
-// snd_seq_client_info_event_filter_add	( info, SND_SEQ_EVENT_QFRAME);	
-	if ( snd_seq_set_client_info	( seq_handle,
-info) != 0){
-	
-    fprintf(stderr, "Error setting info for eventfiltersetup.\n");
-    exit(1);
-}	
- snd_seq_client_info_free(info);
-
-  return(seq_handle);
-}
-
 // some forward declarations
 static inline void error(int num, const char *m, const char *path); 
 static inline int generic_handler(const char *path, const char *types, lo_arg **argv, int argc, void *data, void *user_data); 
@@ -370,7 +305,7 @@ static inline float egCalc (const unsigned int voice,const unsigned int number)
  * @param *arg pointer to additional arguments
  * @return integer 0 when everything is ok
  */
-int process(jack_nframes_t nframes, void *arg) {
+void process(void *arg,jack_nframes_t nframes) {
 
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
 	float osc1,osc2,delayMod;
@@ -891,14 +826,6 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 
 
 
-/** @brief the signal handler 
- *
- * its used here only for quitting
- * @param the signal
- */
-void signalled(int signal) {
-	quit = 1;
-}
 /** @brief initialization
  *
  * preparing for instance the waveforms
@@ -1569,23 +1496,3 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
     return 0;
 }
 
-/** message handler for quit messages
- *
- * @param pointer path osc path
- * @param pointer types
- * @param argv pointer to array of arguments 
- * @param argc amount of arguments
- * @param pointer data
- * @param pointer user_data
- * @return int 0 if everything is ok, 1 means message is not fully handled
- */
-static inline int quit_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data)
-{
-    done = 1;
-    quit = 1;
-    printf("about to sutdown minicomputer core \n");
-    fflush(stdout);
-    return 0;
-}
-//!}
