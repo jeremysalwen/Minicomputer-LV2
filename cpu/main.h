@@ -22,26 +22,34 @@
 
 
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
+typedef struct _engine {
+	float delayBuffer[96000] __attribute__((aligned (16)));
+	float parameter[_PARACOUNT] __attribute__((aligned (16)));
+	float modulator[_MODCOUNT] __attribute__((aligned (16)));
+	float EG[8][8] __attribute__((aligned (16))); // 7 8
+	float EGFaktor[8] __attribute__((aligned (16)));
+	float phase[4] __attribute__((aligned (16)));//=0.f;
+	unsigned int choice[_CHOICEMAX] __attribute__((aligned (16)));
+	int EGrepeat[8] __attribute__((aligned (16)));
+	unsigned int EGtrigger[8] __attribute__((aligned (16)));
+	unsigned int EGstate[8] __attribute__((aligned (16)));	
+	float midif[_MULTITEMP]  __attribute__((aligned (16)));
+	float high[4],band[4],low[4],f[4],q[4],v[4],faktor[4];
+
+	jack_port_t   *port; // _multitemp * ports + 2 mix and 2 aux
+
+	unsigned int lastnote;
+	int delayI,delayJ;
+} engine;
 
 typedef struct _minicomputer {
+	engine engines[_MULTITEMP];
 // variables
-float delayBuffer[_MULTITEMP][96000] __attribute__((aligned (16)));
 float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
-float parameter[_MULTITEMP][_PARACOUNT] __attribute__((aligned (16)));
-float modulator[_MULTITEMP][_MODCOUNT] __attribute__((aligned (16)));
-float midi2freq [128],midif[_MULTITEMP] __attribute__((aligned (16)));
-float EG[_MULTITEMP][8][8] __attribute__((aligned (16))); // 7 8
-float EGFaktor[_MULTITEMP][8] __attribute__((aligned (16)));
-float phase[_MULTITEMP][4] __attribute__((aligned (16)));//=0.f;
-unsigned int choice[_MULTITEMP][_CHOICEMAX] __attribute__((aligned (16)));
-int EGrepeat[_MULTITEMP][8] __attribute__((aligned (16)));
-unsigned int EGtrigger[_MULTITEMP][8] __attribute__((aligned (16)));
-unsigned int EGstate[_MULTITEMP][8] __attribute__((aligned (16)));
-float high[_MULTITEMP][4],band[_MULTITEMP][4],low[_MULTITEMP][4],f[_MULTITEMP][4],q[_MULTITEMP][4],v[_MULTITEMP][4],faktor[_MULTITEMP][4];
-jack_port_t   *port[_MULTITEMP + 4]; // _multitemp * ports + 2 mix and 2 aux
-unsigned int lastnote[_MULTITEMP];
-int delayI[_MULTITEMP],delayJ[_MULTITEMP];
 
+float midi2freq [128]  __attribute__((aligned (16)));
+
+jack_port_t *ports[4]; //2 mix and 2 aux;
 
 float temp=0.f,lfo;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
