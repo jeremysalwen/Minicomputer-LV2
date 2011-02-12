@@ -19,17 +19,6 @@
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 
 
-// I experiment with optimization
-#ifdef _VECTOR  
-	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
-	union f4vector 
-	{
-		v4sf v;// __attribute__((aligned (16)));
-		float f[4];// __attribute__((aligned (16)));
-	};
-#endif
-
-
 /**  FIXED
  * start the envelope generator
  * called by a note on event for that voice
@@ -588,33 +577,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			}
 			}
 			}
-			
-/** @brief initialization
- *
- * preparing for instance the waveforms
- */
-void init (minicomputer* mini)
-{
-
-	// ------------------------ OSC Init ------------------------------------   
-	/* start a new server on port definied where oport points to */
-	lo_server_thread st = lo_server_thread_new(oport, error);
-
-	/* add method that will match /Minicomputer/choice with three integers */
-	lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, mini);
-
-	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
-	 */
-    lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, mini);
-
-    /* add method that will match the path Minicomputer/quit with one integer */
-  	lo_server_thread_add_method(st, "/Minicomputer/quit", "i", quit_handler, mini);
-	
-	lo_server_thread_start(st);
-// ---------------------Original Init ----------------------------------------------
-	for (unsigned int k=0;k<_MULTITEMP;k++)// k is here the voice number
-	{
-		engine* voice=mini->engines +k;
+void initEngine(engine* voice) {
 		float** EG=voice->EG;
 		float* EGtrigger=voice->EGtrigger;
 		float* parameter=voice->parameter;
@@ -650,13 +613,30 @@ void init (minicomputer* mini)
 			low[i]=0;
 			high[i]=0;
 		}
+}
+void initEngines(minicomputer* mini) {
+	minicomputer* mini= malloc(sizeof(minicomputer));
+	memset(mini->noteson,0,sizeof(mini->noteson));
+	mini->inuse=NULL;
+	mini->freeblocks.previous=(minicomputer*)&mini->freeblocks;
+	mini->freeblocks.next=(minicomputer*)&mini->freeblocks;
+	unsigned int numvoices=8;
+	for(unsigned int i=0; i<numvoices; i++) {
+		engineblock* e=malloc(sizeof(engineblock));
+		initEngine(&e->e);
+		e->next=mini->freeblocks.next;
+		e->next.previous=e;
+		mini->freeblocks.next=e;
+		e->previous=(minicomputer*)mini->freeblocks;
 	}
+}
+
+void waveTableInit() {
 	float PI=3.145;
 	float increment = (float)(PI*2) / (float)TableSize;
 	float x = 0.0f;
 	float tri = -0.9f;
 
-	float** table=mini->table;
 	// calculate wavetables
 	for (i=0; i<TableSize; i++)
 	{
@@ -734,11 +714,40 @@ void init (minicomputer* mini)
 	table[6][8] = 0.6f;
 	table[6][9] = 0.2f;
 
-	float* midi2freq=mini->midi2freq;
 	// miditable for notes to frequency
 	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
+}
 
-		/* we register the output ports and tell jack these are 
+void initOSC(minicomputer* mini) {
+	// ------------------------ OSC Init ------------------------------------   
+	/* start a new server on port definied where oport points to */
+	mini->st = lo_server_thread_new(oport, error);
+
+	/* add method that will match /Minicomputer/choice with three integers */
+	lo_server_thread_add_method(mini->st, "/Minicomputer/choice", "iii", generic_handler, mini);
+
+	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
+	 */
+    lo_server_thread_add_method(mini->st, "/Minicomputer", "iif", foo_handler, mini);
+
+    /* add method that will match the path Minicomputer/quit with one integer */
+  	lo_server_thread_add_method(mini->st, "/Minicomputer/quit", "i", quit_handler, mini);
+	
+	lo_server_thread_start(mini->st);
+}
+/** @brief initialization
+ *
+ * preparing for instance the waveforms
+ */
+LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features) 
+{
+	minicomputer* mini= malloc(sizeof(minicomputer));
+	initEngines(mini);
+	initOSC(mini);
+	static pthread_once_t initialized = PTHREAD_ONCE_INIT;
+    pthread_once(&initialized, waveTableInit);
+
+	/* we register the output ports and tell jack these are 
 	 * terminal ports which means we don't 
 	 * have any input ports from which we could somhow 
 	 * feed our output */
@@ -881,38 +890,46 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 							fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
 							        c,evt[1]);
 #endif	
-								mini->modulator[ 15]=(float)evt[1]*0.007874f;
+							mini->modulator[ 15]=(float)evt[1]*0.007874f;
 							break;
 						case MIDI_NOTEON:
-							
+
 #ifdef _DEBUG      
 							fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
 							        c, ev->data.note.note);
 #endif		
-										if (ev->data.note.velocity>0)
-										{
-											engine* use=use_note_minicomputer(mini,evt[1]);
-											use->lastnote=evt[1];
-											use->midif=midi2freq[evt[1]];// lookup the frequency
-											mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
-											mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
-											egStart(e,0);// start the engines!
-											float* EGrepeat=use->EGrepeat;
-											if (EGrepeat[1] == 0)egStart(use,1);
-											if (EGrepeat[2] == 0)egStart(use,2);
-											if (EGrepeat[3] == 0)egStart(use,3);
-											if (EGrepeat[4] == 0) egStart(use,4);
-											if (EGrepeat[5] == 0) egStart(use,5);
-											if (EGrepeat[6] == 0) egStart(use,6);
-
-											break;// not the best method but it breaks only when a note on is
-										}// if velo == 0 it should be handled as noteoff...
+							if (ev->data.note.velocity>0)
+						{
+							engine* use=use_note_minicomputer(mini,evt[1]);
+							if(use) {
+								use->lastnote=evt[1];
+								use->midif=midi2freq[evt[1]];// lookup the frequency
+								mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
+								//TODO:  Should a global parameter be set by a single note's velocity?
+								mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
+								egStart(use,0);// start the engines!
+								float* EGrepeat=use->EGrepeat;
+								if (EGrepeat[1] == 0) egStart(use,1);
+								if (EGrepeat[2] == 0) egStart(use,2);
+								if (EGrepeat[3] == 0) egStart(use,3);
+								if (EGrepeat[4] == 0) egStart(use,4);
+								if (EGrepeat[5] == 0) egStart(use,5);
+								if (EGrepeat[6] == 0) egStart(use,6);
+							} else {
+#ifdef _DEBUG      
+								fprintf(stderr, "Ran out of synth voices!     \r",         
+								        c, evt[1]);
+#endif		
+							}
+							break;// not the best method but it breaks only when a note on is
+						}// if velo == 0 it should be handled as noteoff...
 							// ...so its necessary that here follow the noteoff routine
 						case SND_SEQ_EVENT_NOTEOFF: 
 #ifdef _DEBUG      
 							fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
 							        c, evt[1]);
-#endif							engine* voice=mini->noteson[c]->engine;
+#endif							
+							engine* voice=&mini->noteson[c]->e;
 							if (voice)
 						{
 							egStop(voice,0);  
@@ -928,14 +945,13 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 #ifdef _DEBUG      
 						default:
 							fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
-							       c, evt[1]);
+							        c, evt[1]);
 #endif		
 					}// end of switch
 				}
 			}
 	}
 	lv2_event_increment(in_iterator);
-}
 }
 
 // ******************************************** OSC handling for editors ***********************
@@ -1098,4 +1114,10 @@ LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 	default:
 		return NULL;
 	}
+}
+
+void cleanupMinicomputer(LV2_Handle instance) {
+	minicomputer* mini=(minicomputer*)instance;
+	lo_server_thread_free(mini->st); 	
+	free(instance);
 }

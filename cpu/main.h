@@ -32,6 +32,16 @@
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
 
 
+// I experiment with optimization
+#ifdef _VECTOR  
+	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
+	union f4vector 
+	{
+		v4sf v;// __attribute__((aligned (16)));
+		float f[4];// __attribute__((aligned (16)));
+	};
+#endif
+
 typedef struct _engine {
 	float delayBuffer[96000] __attribute__((aligned (16)));
 	float parameter[_PARACOUNT] __attribute__((aligned (16)));
@@ -56,10 +66,15 @@ typedef struct _listheader {
 	_engineblock * next;
 	_engineblock * previous;
 } listheader;
+
 typedef struct _engineblock {
 	listheader h;
 	engine e;
 }engineblock;
+
+
+static float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
+static float midi2freq [128]  __attribute__((aligned (16)));
 
 typedef struct _minicomputer {
 	engineblock noteson[NUM_MIDI];
@@ -67,11 +82,6 @@ typedef struct _minicomputer {
 	engineblock* inuse;
 	
 	// variables
-	float modulator[_MODCOUNT] __attribute__((aligned (16)));
-	
-	float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
-
-	float midi2freq [128]  __attribute__((aligned (16)));
 	float * MixLeft_p;
 	float *MixRight_p;
 	float *Aux1_p;
@@ -90,6 +100,10 @@ typedef struct _minicomputer {
 	float srDivisor = 1.f / 48000.f*100000.f;
 	int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 	unsigned int bufsize;
+
+	float modulator[_MODCOUNT] __attribute__((aligned (16)));
+
+	lo_server_thread st;
 } minicomputer;
 
 #define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"
