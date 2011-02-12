@@ -5,8 +5,10 @@
 #include <math.h>
 #include <lo/lo.h>
 #include <string.h>
+#include <lv2.h>
 // some common definitions
 #include "../common.h" 
+
 // defines
 #define _MODCOUNT 32
 #define _WAVECOUNT 32
@@ -32,7 +34,7 @@ typedef struct _engine {
 	float midif[_MULTITEMP]  __attribute__((aligned (16)));
 	float high[4],band[4],low[4],f[4],q[4],v[4],faktor[4];
 
-	jack_port_t   *port; // _multitemp * ports + 2 mix and 2 aux
+	float  *port; // _multitemp * ports + 2 mix and 2 aux
 
 	unsigned int lastnote;
 	int delayI,delayJ;
@@ -44,8 +46,10 @@ engine engines[_MULTITEMP];
 float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 
 float midi2freq [128]  __attribute__((aligned (16)));
-
-jack_port_t *ports[4]; //2 mix and 2 aux;
+	float * MixLeft_p;
+	float *MixRight_p;
+	float *Aux1_p;
+	float *Aux2_p;
 
 float temp=0.f,lfo;
 float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
