@@ -65,7 +65,7 @@ static inline void egStop (engine* voice,const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
 */
-static inline float egCalc (engine* voice,const unsigned int number)
+static inline float egCalc (engine* voice, const unsigned int number)
 {
 	float** EG=voice->EG;
 	float * EGFaktor=voice->EGFaktor;
@@ -638,6 +638,23 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
  */
 void init (minicomputer* mini)
 {
+
+	// ------------------------ OSC Init ------------------------------------   
+	/* start a new server on port definied where oport points to */
+	lo_server_thread st = lo_server_thread_new(oport, error);
+
+	/* add method that will match /Minicomputer/choice with three integers */
+	lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, NULL);
+
+	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
+	 */
+    lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, NULL);
+
+    /* add method that will match the path Minicomputer/quit with one integer */
+  	lo_server_thread_add_method(st, "/Minicomputer/quit", "i", quit_handler, NULL);
+	
+	lo_server_thread_start(st);
+// ---------------------Original Init ----------------------------------------------
 	for (unsigned int k=0;k<_MULTITEMP;k++)// k is here the voice number
 	{
 		engine* voice=mini->engines +k;
@@ -759,20 +776,59 @@ void init (minicomputer* mini)
 	table[6][7] = 0.9f;
 	table[6][8] = 0.6f;
 	table[6][9] = 0.2f;
-	/*
-		float pi = 3.145f;
-		float oscfreq = 1000.0; //%Oscillator frequency in Hz
-		c1 = 2 * cos(2 * pi * oscfreq / Fs);
-		//Initialize the unit delays
-		d1 = sin(2 * pi * oscfreq / Fs);  
-		d2 = 0;*/
-
-
 
 	float* midi2freq=mini->midi2freq;
 	// miditable for notes to frequency
 	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 
+		/* we register the output ports and tell jack these are 
+	 * terminal ports which means we don't 
+	 * have any input ports from which we could somhow 
+	 * feed our output */
+	port[0] = jack_port_register(client, "output1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[1] = jack_port_register(client, "output2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[2] = jack_port_register(client, "output3", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[3] = jack_port_register(client, "output4", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[4] = jack_port_register(client, "output5", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[5] = jack_port_register(client, "output6", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	
+	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	
+	// would like to create mix ports last because qjackctrl tend to connect automatic the last ports
+	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
+
+	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
+	/* jack is callback based. That means we register 
+	 * a callback function (see process() above)
+	 * which will then get called by jack once per process cycle */
+	jack_set_process_callback(client, process, 0);
+	bufsize = jack_get_buffer_size(client);
+
+	// handling the sampling frequency
+	sampleRate = (float) jack_get_sample_rate (client); 
+	tabX = 4096.f / sampleRate;
+	srate = 3.145f/ sampleRate;
+	srDivisor = 1.f / sampleRate * 100000.f;
+	// depending on it the delaybuffer
+	maxDelayTime = (int)sampleRate;
+	delayBufferSize = maxDelayTime*2;
+	// generate the delaybuffers for each voice
+	int k;
+	for (k=0; k<_MULTITEMP;++k)
+	{
+		//float dbuffer[delayBufferSize];
+		//delayBuffer[k]=dbuffer;
+		delayI[k]=0;
+		delayJ[k]=0;
+	}
+	#ifdef _DEBUG
+	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
+	#endif
+	
 } // end of initialization
 
 /** @brief handling the midi messages in an extra thread
@@ -780,34 +836,13 @@ void init (minicomputer* mini)
  * @param pointer/handle of alsa midi
  */
 static void *midiprocessor(void *handle) {
-	struct sched_param param;
-	int policy;
-	snd_seq_t *seq_handle = (snd_seq_t *)handle;
-	pthread_getschedparam(pthread_self(), &policy, &param);
 
-	policy = SCHED_FIFO;
-	param.sched_priority = 95;
-
-	pthread_setschedparam(pthread_self(), policy, &param);
-
-	/*
-		if (poll(pfd, npfd, 100000) > 0) 
-		{
-		  midi_action(seq_handle);
-		} */
-		
 	snd_seq_event_t *ev;
  	#ifdef _DEBUG
 	printf("start\n");
  	fflush(stdout);
 	#endif
 	unsigned int c = _MULTITEMP; // channel of incomming data
-	#ifdef _MIDIBLOCK
-	do {
-	#else
-	   while (quit==0)
-	   {
-	#endif
 	   while ((snd_seq_event_input(seq_handle, &ev)) && (quit==0))
 	   {
 		if (ev != NULL)
@@ -981,169 +1016,11 @@ static void *midiprocessor(void *handle) {
 			#endif		
 		}// end of switch
 	snd_seq_free_event(ev);
-	usleep(10);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
 	} // end of if
-#ifdef _MIDIBLOCK
-	usleep(1000);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
-   }
- } while ((quit==0) && (done==0));// doing it as long we are running was  (snd_seq_event_input_pending(seq_handle, 0) > 0);
-#else
-	usleep(100);// absolutly necessary, otherwise stream of mididata would block the whole computer, sleep for 1ms == 1000 microseconds
-	}// end of first while, emptying the seqdata queue
 
-	usleep(2000);// absolutly necessary, otherwise this thread would block the whole computer, sleep for 2ms == 2000 microseconds
-} // end of while(quit==0)
 #endif
- printf("midi thread stopped\n");
- fflush(stdout);
-return 0;// its insisited on this although it should be a void function
 }// end of midiprocessor
 
-/** @brief the classic c main function
- *
- * @param argc the amount of arguments we get from the commandline
- * @param pointer to array of the arguments
- * @return int the result, should be 0 if program terminates nicely
- */
-int main(int argc, char **argv) {
-printf("minicomputer version %s\n",_VERSION);
-// ------------------------ decide the oscport number -------------------------
-char OscPort[] = _OSCPORT; // default value for OSC port
-char *oport = OscPort;// pointer of the OSC port string
-int i;
-// process the arguments
-  if (argc > 1)
-  {
-  	for (i = 0;i<argc;++i)
-	{
-		if (strcmp(argv[i],"-port")==0) // got a OSC port argument
-		{
-			++i;// looking for the next entry
-			if (i<argc)
-			{
-				int tport = atoi(argv[i]);
-				if (tport > 0) oport = argv[i]; // overwrite the default for the OSCPort
-			}
-			else break; // we are through
-		}
-	}
-  }
-
-
-
-	printf("osc port %s\n",oport);
-	sprintf(jackName,"Minicomputer%s",oport);// store globally a unique name
-	
-// ------------------------ OSC Init ------------------------------------   
-	/* start a new server on port definied where oport points to */
-	lo_server_thread st = lo_server_thread_new(oport, error);
-
-	/* add method that will match /Minicomputer/choice with three integers */
-	lo_server_thread_add_method(st, "/Minicomputer/choice", "iii", generic_handler, NULL);
-
-	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
-	 */
-    	lo_server_thread_add_method(st, "/Minicomputer", "iif", foo_handler, NULL);
-
-    	/* add method that will match the path Minicomputer/quit with one integer */
-  	lo_server_thread_add_method(st, "/Minicomputer/quit", "i", quit_handler, NULL);
-	
-	lo_server_thread_start(st);
-   
-	/* setup our signal handler signalled() above, so 
-	 * we can exit cleanly (see end of main()) */
-	signal(SIGINT, signalled);
-
-	init();
-	/* naturally we need to become a jack client
-	 * prefered with a unique name, so lets add the OSC port to it*/
-	client = jack_client_new(jackName);
-	if (!client) {
-		printf("couldn't connect to jack server. Either it's not running or the client name is already taken\n");
-		exit(1);
-	}
-
-	/* we register the output ports and tell jack these are 
-	 * terminal ports which means we don't 
-	 * have any input ports from which we could somhow 
-	 * feed our output */
-	port[0] = jack_port_register(client, "output1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[1] = jack_port_register(client, "output2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[2] = jack_port_register(client, "output3", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[3] = jack_port_register(client, "output4", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[4] = jack_port_register(client, "output5", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[5] = jack_port_register(client, "output6", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	
-	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	
-	// would like to create mix ports last because qjackctrl tend to connect automatic the last ports
-	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-
-	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-	/* jack is callback based. That means we register 
-	 * a callback function (see process() above)
-	 * which will then get called by jack once per process cycle */
-	jack_set_process_callback(client, process, 0);
-	bufsize = jack_get_buffer_size(client);
-
-	// handling the sampling frequency
-	sampleRate = (float) jack_get_sample_rate (client); 
-	tabX = 4096.f / sampleRate;
-	srate = 3.145f/ sampleRate;
-	srDivisor = 1.f / sampleRate * 100000.f;
-	// depending on it the delaybuffer
-	maxDelayTime = (int)sampleRate;
-	delayBufferSize = maxDelayTime*2;
-	// generate the delaybuffers for each voice
-	int k;
-	for (k=0; k<_MULTITEMP;++k)
-	{
-		//float dbuffer[delayBufferSize];
-		//delayBuffer[k]=dbuffer;
-		delayI[k]=0;
-		delayJ[k]=0;
-	}
-	#ifdef _DEBUG
-	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
-	#endif
-	/* tell jack that we are ready to do our thing */
-	jack_activate(client);
-	
-	/* wait until this app receives a SIGINT (i.e. press 
-	 * ctrl-c in the terminal) see signalled() above */
-	while (quit==0) 
-	{
-	// operate midi
-		 /* let's not waste cycles by busy waiting */
-		sleep(1);
-		//printf("quit:%i %i\n",quit,done);
-	
-	}
-	/* so we shall quit, eh? ok, cleanup time. otherwise 
-	 * jack would probably produce an xrun
-	 * on shutdown */
-	jack_deactivate(client);
-
-	/* shutdown cont. */
-	jack_client_close(client);
-#ifndef _MIDIBLOCK
-	printf("wait for midithread\n");	
-	fflush(stdout);
-	/* waiting for the midi thread to shutdown carefully */
-	pthread_join(midithread,NULL);
-#endif	
-	/* release Alsa Midi connection */
-	snd_seq_close(seq_handle);
-
-	/* done !! */
-	printf("close minicomputer\n");	
-	fflush(stdout);
-	return 0;
-}
 // ******************************************** OSC handling for editors ***********************
 //!\name OSC routines
 //!{ 
@@ -1288,7 +1165,6 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
    	 case 105:EG[voice][0][4]=argv[2]->f;break;
    	 
    }
-   //float g=parameter[30]*parameter[56]+parameter[33]*(1.0f-parameter[56]);
 #ifdef _DEBUG
    printf("%i %i %f \n",voice,i,argv[2]->f);
 #endif   
