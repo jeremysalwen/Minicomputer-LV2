@@ -918,17 +918,18 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 #ifdef _DEBUG      
 							fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
 							        c, ev->data.note.note);
-#endif		
-										if (mini->engines[c]->lastnote==ev->data.note.note)
-									{
-										egStop(c,0);  
-										if (EGrepeat[c][1] == 0) egStop(c,1);  
-										if (EGrepeat[c][2] == 0) egStop(c,2); 
-										if (EGrepeat[c][3] == 0) egStop(c,3); 
-										if (EGrepeat[c][4] == 0) egStop(c,4);  
-										if (EGrepeat[c][5] == 0) egStop(c,5);  
-										if (EGrepeat[c][6] == 0) egStop(c,6);
-									}
+#endif							engine* voice=mini->noteson[c]->engine;
+							if (voice)
+						{
+							egStop(voice,0);  
+							float* EGrepeat=voice->EGrepeat;
+							if (EGrepeat[1] == 0) egStop(voice,1);  
+							if (EGrepeat[2] == 0) egStop(voice,2); 
+							if (EGrepeat[3] == 0) egStop(voice,3); 
+							if (EGrepeat[4] == 0) egStop(voice,4);  
+							if (EGrepeat[5] == 0) egStop(voice,5);  
+							if (EGrepeat[6] == 0) egStop(voice,6);
+						}
 							break;      
 #ifdef _DEBUG      
 						default:
@@ -941,12 +942,7 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 	}
 	lv2_event_increment(in_iterator);
 }
-#ifdef _DEBUG
-	printf("start\n");
-	fflush(stdout);
-#endif
-
-}// end of midiprocessor
+}
 
 // ******************************************** OSC handling for editors ***********************
 //!\name OSC routines
