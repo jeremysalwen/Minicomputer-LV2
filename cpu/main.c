@@ -66,14 +66,14 @@ static inline float Oscillator(float frequency,int wave,float *phase)
  * @param the number of envelope generator
  */
 
-static inline void egStart (const unsigned int voice,const unsigned int number)
+static inline void egStart (engine* voice,const unsigned int number)
 {
-	EGtrigger[voice][number]=1;
-	EG[voice][number][0] = 1.f; // triggerd
-	EG[voice][number][5] = 1.f; // target
-        EG[voice][number][7] = 0.0f;// state
-        EGstate[voice][number] = 0;// state  
-	EGFaktor[voice][number] = 0.f;
+	voice->EGtrigger[number]=1;
+	voice->EG[number][0] = 1.f; // triggerd
+	voice->EG[number][5] = 1.f; // target
+    voice->EG[number][7] = 0.0f;// state
+    voice->EGstate[number] = 0;// state  
+	voice->EGFaktor[number] = 0.f;
 		 //printf("start %i", voice);
 }
 /**
@@ -82,11 +82,11 @@ static inline void egStart (const unsigned int voice,const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
  */
-static inline void egStop (const unsigned int voice,const unsigned int number)
+static inline void egStop (engine* voice,const unsigned int number)
 {
 	// if (EGrepeat[voice][number] == 0) 
-	EGtrigger[voice][number] = 0; // triggerd
-	EGstate[voice][number] = 0; // target
+	voice->EGtrigger[number] = 0; // triggerd
+	voice->EGstate[number] = 0; // target
 	// printf("stop %i", voice);
 }
 /**
@@ -94,8 +94,13 @@ static inline void egStop (const unsigned int voice,const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
 */
-static inline float egCalc (const unsigned int voice,const unsigned int number)
+static inline float egCalc (engine* voice,const unsigned int number)
 {
+	float** EG=voice->EG;
+	float * EGFaktor=voice->EGFaktor;
+	float* EGstate=voice->EGState;
+	float* EGrepeat=voice->EGRepeat;
+	float* EGtrigger=voice->EGTrigger;
 	/* EG[x] x:
 	 * 0 = trigger
 	 * 1 = attack
@@ -105,47 +110,47 @@ static inline float egCalc (const unsigned int voice,const unsigned int number)
 	 * 5 = target
 	 * 6 = state
 	 */
-	if (EGtrigger[voice][number] != 1)
+	if (EGtrigger[number] != 1)
 	{
-	int i = EGstate[voice][number]; 
+	int i = EGstate[number]; 
 		if (i == 1){ // attack
-		         if (EGFaktor[voice][number]<1.00f) EGFaktor[voice][number] += 0.002f;
+		         if (EGFaktor[number]<1.00f) EGFaktor[number] += 0.002f;
 			
-			 EG[voice][number][6] += EG[voice][number][1]*srDivisor*EGFaktor[voice][number];
+			 EG[number][6] += EG[number][1]*srDivisor*EGFaktor[number];
 
-			 if (EG[voice][number][6]>=1.0f)// Attackphase is finished
+			 if (EG[number][6]>=1.0f)// Attackphase is finished
 			 {
-			 	EG[voice][number][6]=1.0f;
-			 	EGstate[voice][number]=2;
-					EGFaktor[voice][number] = 1.f; // triggerd
+			 	EG[number][6]=1.0f;
+			 	EGstate[number]=2;
+					EGFaktor[number] = 1.f; // triggerd
 
 			 }
 		}
 		else if (i == 2)
 		{ // decay
-			if (EG[voice][number][6]>EG[voice][number][3])
+			if (EG[number][6]>EG[number][3])
 			{
-				 EG[voice][number][6] -= EG[voice][number][2]*srDivisor*EGFaktor[voice][number];
+				 EG[number][6] -= EG[number][2]*srDivisor*EGFaktor[number];
 			}
 			else 
 			{
-				if (EGrepeat[voice][number]==0)
+				if (EGrepeat[number]==0)
 				{
-					EGstate[voice][number]=3; // stay on sustain
+					EGstate[number]=3; // stay on sustain
 				}
 				else
 				{
-					EGFaktor[voice][number] = 1.f; // triggerd
+					EGFaktor[number] = 1.f; // triggerd
 					egStop(voice,number);// continue to release
 				}
 			}
 			// what happens if sustain = 0? envelope should go in stop mode when decay reached ground
-			if (EG[voice][number][6]<0.0f) 
+			if (EG[number][6]<0.0f) 
 		    	{	
-		    		EG[voice][number][6]=0.0f;
-		    		if (EGrepeat[voice][number]==0)
+		    		EG[number][6]=0.0f;
+		    		if (EGrepeat[number]==0)
 				{
-					EGstate[voice][number]=4; // released
+					EGstate[number]=4; // released
 				}
 				else
 				{
@@ -154,19 +159,19 @@ static inline float egCalc (const unsigned int voice,const unsigned int number)
 		    	}
 
 		} // end of decay
-		else if ((i == 0) && (EG[voice][number][6]>0.0f))
+		else if ((i == 0) && (EG[number][6]>0.0f))
 		{
 		    /* release */
 		    
-		    if (EGFaktor[voice][number]>0.025f) EGFaktor[voice][number] -= 0.002f;
-		    EG[voice][number][6] -= EG[voice][number][4]*srDivisor*EGFaktor[voice][number];//*EG[number][6];
+		    if (EGFaktor[number]>0.025f) EGFaktor[number] -= 0.002f;
+		    EG[number][6] -= EG[number][4]*srDivisor*EGFaktor[number];//*EG[number][6];
 
-		    if (EG[voice][number][6]<0.0f) 
+		    if (EG[number][6]<0.0f) 
 		    {	
-		    	EG[voice][number][6]=0.0f;
-		    	if (EGrepeat[voice][number]==0)
+		    	EG[number][6]=0.0f;
+		    	if (EGrepeat[number]==0)
 				{
-					EGstate[voice][number]=4; // released
+					EGstate[number]=4; // released
 				}
 				else
 				{
@@ -206,7 +211,7 @@ static inline float egCalc (const unsigned int voice,const unsigned int number)
 				}
 			    else
 			    {*/
-					EGtrigger[voice][number] = 0;
+					EGtrigger[number] = 0;
 				//	EGstate[voice][number] = 1;
 		/*	    }
 				
@@ -216,13 +221,13 @@ static inline float egCalc (const unsigned int voice,const unsigned int number)
 	//	{
 	//		EG[voice][number][0] = 0.f;
 			
-		EG[voice][number][0] = 1.f; // triggerd
-		EGstate[voice][number] = 1; // target
+		EG[number][0] = 1.f; // triggerd
+		EGstate[number] = 1; // target
             //EG[voice][number][6] = 0.0f;// state
 	//	}
 		
 	}
-	return EG[voice][number][6];
+	return EG[number][6];
 }
 //float d0,d1,d2,c1;
 
