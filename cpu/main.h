@@ -18,6 +18,13 @@
 #define tabM 4095
 #define tabF 4096.f
 
+#define MIDI_COMMANDMASK 0xF0
+#define MIDI_CHANNELMASK 0x0F
+
+#define MIDI_NOTEON 0x90
+#define MIDI_NOTEOFF 0x80
+#define MIDI_CONTROL 0xB0
+#define MIDI_PITCHBEND 0xE0
 
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
 typedef struct _engine {
@@ -50,6 +57,12 @@ typedef struct _minicomputer {
 	float *MixRight_p;
 	float *Aux1_p;
 	float *Aux2_p;
+	
+	LV2_Event_Buffer *MidiIn;
+	LV2_Event_Iterator in_iterator;
+
+	LV2_Event_Feature* event_ref;
+	int midi_event_id;
 
 	float temp=0.f,lfo;
 	float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
@@ -57,7 +70,7 @@ typedef struct _minicomputer {
 	float srate = 3.145f/ 48000.f;
 	float srDivisor = 1.f / 48000.f*100000.f;
 	int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
-	jack_nframes_t 	bufsize;
+	unsigned int bufsize;
 } minicomputer;
 
 #define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"

@@ -786,93 +786,76 @@ void init (minicomputer* mini)
  *
  * @param pointer/handle of alsa midi
  */
-inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
+inline void handlemidi(LV2_Event_Feature* event_ref, LV2_Event_Iterator *in_iterator, int midi_event_id, unsigned int maxindex) {
+unsigned int c = _MULTITEMP; // channel of incomming data
 
-	snd_seq_event_t *ev;
-#ifdef _DEBUG
-	printf("start\n");
-	fflush(stdout);
-#endif
-	unsigned int c = _MULTITEMP; // channel of incomming data
-	while ((snd_seq_event_input(seq_handle, &ev)) && (quit==0))
-	{
-		if (ev != NULL)
-		{
-			if (ev->type != 36)
-				switch (ev->type) 
-			{	// first check the controllers
-				// they usually come in hordes
-				case SND_SEQ_EVENT_CONTROLLER:
-				{
-					c = ev->data.control.channel;
+	while(lv2_event_is_valid(in_iterator)) {
+			uint8_t* data;
+			LV2_Event* event= lv2_event_get(in_iterator,&data);
+			if (event->type == 0) {
+				mini->event_ref->lv2_event_unref(event_ref->callback_data, event);
+			} else if(event->type==mini->midi_event_id) {
+				if(event->frames > maxindex) {
+					break;
+				} else {
+					const uint8_t* evt=(uint8_t*)data;
+					unit8_t command=MIDI_COMMANDMASK & evt[0];
+					switch (command) 
+					{	// first check the controllers
+						// they usually come in hordes
+						case MIDI_CONTROL:
+							c = evt[0]&MIDI_CHANNELMASK;
 #ifdef _DEBUG      
-					fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
-					        c,  ev->data.control.param,ev->data.control.value);
+							fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
+							        c,  ev->data.control.param,ev->data.control.value);
 #endif		
-					switch (midimode)
-					{
-						default:
-						case _MULTI:
-						{
-
 							if  (c <_MULTITEMP)
-							{
-								if  (ev->data.control.param==1)   
+						{
+							switch(evt[1]) {
+								case 1:
 									modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
-								else 
-									if  (ev->data.control.param==12)   
+									break;
+								case 12:
 									modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==2)   
+									break;
+								case 2:
 									modulator[c][ 20]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==3)   
+									break;
+								case 3:
 									modulator[c][ 21]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==4)   
+									break;
+								case 4:  
 									modulator[c][ 22]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==5)   
+									break;
+								case 5: 
 									modulator[c][ 23]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==14)   
+									break;
+								case 14:  
 									modulator[c][ 24]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==15)   
+									break;
+								case 15:
 									modulator[c][ 25]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==16)   
+									break;
+								case 16: 
 									modulator[c][ 26]=ev->data.control.value*0.007874f;// /127.f;
-								else 
-									if  (ev->data.control.param==17)   
+									break;
+								case 17:  
 									modulator[c][ 27]=ev->data.control.value*0.007874f;// /127.f;
+									break;
 							}
 						}
-							break;
-					}
-					break;
-				}
-				case SND_SEQ_EVENT_PITCHBEND:
-				{
-					c = ev->data.control.channel;
+						case MIDI_PITCHBEND:
+							c = evt[0]&MIDI_CHANNELMASK;
 #ifdef _DEBUG      
-					fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
-					        c, ev->data.control.value);
+							fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
+							        c, ev->data.control.value);
 #endif		
-					switch (midimode)
-					{
-						default:
-						case _MULTI:
-						{
-
-							if (c<_MULTITEMP) modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
-						}
+							if (c<_MULTITEMP) {
+								modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
+							}
 							break;
-					}
-					break;
-				}   
-				case SND_SEQ_EVENT_CHANPRESS:
-				{
+						case SND_SEQ_EVENT_CHANPRESS:
+						{
 					c = ev->data.control.channel;
 #ifdef _DEBUG      
 					fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
@@ -967,9 +950,16 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 #endif		
 			}// end of switch
 			snd_seq_free_event(ev);
-		} // end of if
 	}
+				}
+			}
+			lv2_event_increment(\in_iterator);
+		}
+#ifdef _DEBUG
+	printf("start\n");
+	fflush(stdout);
 #endif
+
 }// end of midiprocessor
 
 // ******************************************** OSC handling for editors ***********************
@@ -1124,11 +1114,8 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
     return 0;
 }
 
-
-
 LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 {
-
 	switch (index) {
 	case 0:
 		return miniDescriptor;
@@ -1136,4 +1123,3 @@ LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 		return NULL;
 	}
 }
-
