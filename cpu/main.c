@@ -784,43 +784,37 @@ void init (minicomputer* mini)
 
 
 engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
-	engineblock* result=mini->freeengines;
-	if(result) {
-		mini->freeengines=result->next;
-		mini->freeengines.previous=(engineblock*)&mini->freeengines; //using the fact that the next index is stored first;
-		result->previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
-		result->next=mini->inuse;
-		if(mini->inuse) {
-			mini->inuse->previous=result;
-		}
-		mini->inuse=result;
+	engineblock* result=mini->freeblocks.next;
+	if(result==&mini->freeblocks) {
+		return NULL;
 	}
+	mini->freeblocks.next=result->next;
+	result->next->previous=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
+	result->previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
+	result->next=mini->inuse;
+	if(mini->inuse) {
+		mini->inuse->previous=result;
+	}
+	mini->inuse=result;
 	mini->noteson[index]=result;
-	return &result.e;
+	return &result->e;
 }
 
-void free_note_minicomputer* mini, unsigned char index) {
+void free_note_minicomputer(minicomputer* mini, unsigned char index) {
 	engineblock* result=mini->noteson[index];
 	if(result) {
-		if(result->previous) {
-			result->previous->next=result->next;
-		}
-		if(result->next) {
-			result->next->previous=result->previous;
+		result->h.previous->h.next=result->h.next;
+		if(result->h.next) {
+			result->h.next->previous=result->h.previous;
 		}
 		mini->noteson[index]=NULL;
-		if(mini->freengines) {
-			mini->freengines->previous=result;
-		}
-		result->next=mini->freeengines;
-		result->previous=(engineblock*)&mini->freeengines; //using the fact that the next index is stored first;
-		mini->freeengines=result;
+		mini->freeblocks.previous->h.next=result;
+		result->next=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
+		result->previous=mini->freeblocks.previous;
+		mini->freeblocks.previous=result;
 	}	
 }
-/** @brief handling the midi messages in an extra thread
- *
- * @param pointer/handle of alsa midi
- */
+
 inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 	while(lv2_event_is_valid(&mini->in_iterator)) {
 			uint8_t* data;
@@ -917,7 +911,7 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 						case SND_SEQ_EVENT_NOTEOFF: 
 #ifdef _DEBUG      
 							fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
-							        c, ev->data.note.note);
+							        c, evt[1]);
 #endif							engine* voice=mini->noteson[c]->engine;
 							if (voice)
 						{
@@ -934,7 +928,7 @@ inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 #ifdef _DEBUG      
 						default:
 							fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
-							        ev->data.control.channel, evt[1]);
+							       c, evt[1]);
 #endif		
 					}// end of switch
 				}

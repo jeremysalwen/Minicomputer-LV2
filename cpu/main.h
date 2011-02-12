@@ -52,15 +52,18 @@ typedef struct _engine {
 	int delayI,delayJ;
 } engine;
 
-typedef struct _engineblock {
+typedef struct _listheader {
 	_engineblock * next;
 	_engineblock * previous;
+} listheader;
+typedef struct _engineblock {
+	listheader h;
 	engine e;
 }engineblock;
 
 typedef struct _minicomputer {
 	engineblock noteson[NUM_MIDI];
-	engineblock* freeengines;
+	listheader freeblocks;
 	engineblock* inuse;
 	
 	// variables
