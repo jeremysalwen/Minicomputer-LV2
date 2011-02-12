@@ -1,5 +1,3 @@
-#include <jack/jack.h>
-//#include <jack/midiport.h> // later we use the jack midi ports to, but not this time
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -7,8 +5,6 @@
 #include <math.h>
 #include <lo/lo.h>
 #include <string.h>
-#include <alsa/asoundlib.h>
-#include <pthread.h>
 // some common definitions
 #include "../common.h" 
 // defines
@@ -43,7 +39,7 @@ typedef struct _engine {
 } engine;
 
 typedef struct _minicomputer {
-	engine engines[_MULTITEMP];
+engine engines[_MULTITEMP];
 // variables
 float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 
@@ -59,3 +55,14 @@ float srDivisor = 1.f / 48000.f*100000.f;
 int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
 jack_nframes_t 	bufsize;
 } minicomputer;
+
+#define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"
+
+const LV2_Descriptor * miniDescriptor ={.URI=MINCOMPUTER_URI, 
+	.activate=NULL,
+	.cleanup=NULL,
+	.connect_port=connect_port_minicomputer, 
+	.deactivate=NULL, .activate=NULL, 
+	.instantiate=init,
+	.run=run_minicomputer, 
+	.extension_data=NULL};

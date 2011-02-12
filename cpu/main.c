@@ -54,12 +54,8 @@ static inline float Oscillator(float frequency,int wave,float *phase)
         return table[wave][i] ;
 }
 */
-//inline float filter (float input,float f, float q)
-//{
-//
-//
-//}
-/**
+
+/**  FIXED
  * start the envelope generator
  * called by a note on event for that voice
  * @param the voice number
@@ -76,7 +72,7 @@ static inline void egStart (engine* voice,const unsigned int number)
 	voice->EGFaktor[number] = 0.f;
 		 //printf("start %i", voice);
 }
-/**
+/** FIXED
  * set the envelope to release mode
  * should be called by a related noteoff event
  * @param the voice number
@@ -89,7 +85,7 @@ static inline void egStop (engine* voice,const unsigned int number)
 	voice->EGstate[number] = 0; // target
 	// printf("stop %i", voice);
 }
-/**
+/** FIXED
  * calculate the envelope, done in audiorate to avoide zippernoise
  * @param the voice number
  * @param the number of envelope generator
@@ -772,7 +768,7 @@ void init (minicomputer* mini)
 {
 	for (unsigned int k=0;k<_MULTITEMP;k++)// k is here the voice number
 	{
-		engine* voice=mini->voices[k];
+		engine* voice=mini->engines +k;
 		float** EG=voice->EG;
 		float* EGtrigger=voice->EGtrigger;
 		float* parameter=voice->parameter;
@@ -1431,5 +1427,18 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
    printf("%i %i %f \n",voice,i,argv[2]->f);
 #endif   
     return 0;
+}
+
+
+
+LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
+{
+
+	switch (index) {
+	case 0:
+		return miniDescriptor;
+	default:
+		return NULL;
+	}
 }
 
