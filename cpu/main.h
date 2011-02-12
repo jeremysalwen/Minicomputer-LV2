@@ -41,23 +41,23 @@ typedef struct _engine {
 } engine;
 
 typedef struct _minicomputer {
-engine engines[_MULTITEMP];
-// variables
-float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
+	engine engines[_MULTITEMP];
+	// variables
+	float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 
-float midi2freq [128]  __attribute__((aligned (16)));
+	float midi2freq [128]  __attribute__((aligned (16)));
 	float * MixLeft_p;
 	float *MixRight_p;
 	float *Aux1_p;
 	float *Aux2_p;
 
-float temp=0.f,lfo;
-float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
-float tabX = 4096.f / 48000.0f;
-float srate = 3.145f/ 48000.f;
-float srDivisor = 1.f / 48000.f*100000.f;
-int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
-jack_nframes_t 	bufsize;
+	float temp=0.f,lfo;
+	float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
+	float tabX = 4096.f / 48000.0f;
+	float srate = 3.145f/ 48000.f;
+	float srDivisor = 1.f / 48000.f*100000.f;
+	int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
+	jack_nframes_t 	bufsize;
 } minicomputer;
 
 #define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"

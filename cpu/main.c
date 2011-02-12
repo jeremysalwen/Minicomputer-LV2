@@ -55,7 +55,7 @@ static inline void egStart (engine* voice,const unsigned int number)
  */
 static inline void egStop (engine* voice,const unsigned int number)
 {
-	// if (EGrepeat[voice][number] == 0) 
+	// if (EGrepeat[number] == 0) 
 	voice->EGtrigger[number] = 0; // triggerd
 	voice->EGstate[number] = 0; // target
 	// printf("stop %i", voice);
@@ -200,7 +200,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	register unsigned int index;
 	for (index = 0; index < nframes; ++index) 
 	{
-
+		handlemidi(mini,index);
 		bufferMixLeft[index]=0.f;
 		bufferMixRight[index]=0.f;
 		bufferAux1[index]=0.f;
@@ -758,11 +758,7 @@ void init (minicomputer* mini)
 	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 
-	//inbuf = jack_port_register(client, "in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
-	/* jack is callback based. That means we register 
-	 * a callback function (see process() above)
-	 * which will then get called by jack once per process cycle */
-	jack_set_process_callback(client, process, 0);
+
 	bufsize = jack_get_buffer_size(client);
 
 	// handling the sampling frequency
@@ -777,8 +773,6 @@ void init (minicomputer* mini)
 	int k;
 	for (k=0; k<_MULTITEMP;++k)
 	{
-		//float dbuffer[delayBufferSize];
-		//delayBuffer[k]=dbuffer;
 		delayI[k]=0;
 		delayJ[k]=0;
 	}
@@ -792,7 +786,7 @@ void init (minicomputer* mini)
  *
  * @param pointer/handle of alsa midi
  */
-static void *midiprocessor(void *handle) {
+inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 
 	snd_seq_event_t *ev;
 #ifdef _DEBUG
@@ -1005,16 +999,16 @@ static inline void error(int num, const char *msg, const char *path)
  * @return int 0 if everything is ok, 1 means message is not fully handled
  * */
 static inline int generic_handler(const char *path, const char *types, lo_arg **argv,
-		    int argc, void *data, void *user_data)
+                                  int argc, void *data, void *user_data)
 {
+
 	if ( (argv[0]->i < _MULTITEMP) && (argv[1]->i < _CHOICEMAX) )
-  	{
-  			
-		choice[argv[0]->i][argv[1]->i]=argv[2]->i;
+	{	
+		((minicomputer*) user_data)->engines[argv[0]->i]->choice[argv[1]->i]=argv[2]->i;
 		return 0;
-    	}
-    	else return 1;
-    
+	}
+	else return 1;
+	
 }
 
 /** specific message handler
@@ -1036,90 +1030,92 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
    engine* voice=mini->engines[voice];
    int i =  argv[1]->i;
    if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT))  {
-   	parameter[i]=argv[2]->f;
+   	voice->parameter[i]=argv[2]->f;
    }
+	float ** EG=voice->EG;
+	float * EGrepeat=voice->EGrepeat;
    switch (i) {
    	 // reset the filters 
    	 case 0:{
-   	 	low[voice][0]	= 0.f;
-   	 	high[voice][0]	= 0.f;
-   	 	band[voice][0] = 0.f;
-   	 	low[voice][1]	= 0.f;
-   	 	high[voice][1]	= 0.f;
-   	 	band[voice][1] = 0.f;
-   	 	low[voice][2]	= 0.f;
-   	 	high[voice][2]	= 0.f;
-   	 	band[voice][2] = 0.f;
-   	 	phase[voice][1] = 0.f;
-   	 	phase[voice][2] = 0.f;
-   	 	phase[voice][3] = 0.f;
-		memset(delayBuffer[voice],0,sizeof(delayBuffer[voice]));
+   	 	voice->low[0]	= 0.f;
+   	 	voice->high[0]	= 0.f;
+   	 	voice->band[0] = 0.f;
+   	 	voice->low[1]	= 0.f;
+   	 	voice->high[1]	= 0.f;
+   	 	voice->band[1] = 0.f;
+   	 	voice->low[2]	= 0.f;
+   	 	voice->high[2]	= 0.f;
+   	 	voice->band[2] = 0.f;
+   	 	voice->phase[1] = 0.f;
+   	 	voice->phase[2] = 0.f;
+   	 	voice->phase[3] = 0.f;
+		memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
    	 break;}
    	 
-   	 case 60:EG[voice][1][1]=argv[2]->f;break;
-   	 case 61:EG[voice][1][2]=argv[2]->f;break;
-   	 case 62:EG[voice][1][3]=argv[2]->f;break;
-   	 case 63:EG[voice][1][4]=argv[2]->f;break;
+   	 case 60:EG[1][1]=argv[2]->f;break;
+   	 case 61:EG[1][2]=argv[2]->f;break;
+   	 case 62:EG[1][3]=argv[2]->f;break;
+   	 case 63:EG[1][4]=argv[2]->f;break;
    	 case 64:
    	 {
-   	 	EGrepeat[voice][1] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][1] > 0 ) egStart(voice,1);
+   	 	EGrepeat[1] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[1] > 0 ) egStart(voice,1);
    	 	break;
    	 }
-   	 case 65:EG[voice][2][1]=argv[2]->f;break;
-   	 case 66:EG[voice][2][2]=argv[2]->f;break;
-   	 case 67:EG[voice][2][3]=argv[2]->f;break;
-   	 case 68:EG[voice][2][4]=argv[2]->f;break;
+   	 case 65:EG[2][1]=argv[2]->f;break;
+   	 case 66:EG[2][2]=argv[2]->f;break;
+   	 case 67:EG[2][3]=argv[2]->f;break;
+   	 case 68:EG[2][4]=argv[2]->f;break;
    	  case 69:
    	 {
-   	 	EGrepeat[voice][2] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][2] > 0 ) egStart(voice,2);
+   	 	EGrepeat[2] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[2] > 0 ) egStart(voice,2);
    	 	break;
    	 }
-   	 case 70:EG[voice][3][1]=argv[2]->f;break;
-   	 case 71:EG[voice][3][2]=argv[2]->f;break;
-   	 case 72:EG[voice][3][3]=argv[2]->f;break;
-   	 case 73:EG[voice][3][4]=argv[2]->f;break;
+   	 case 70:EG[3][1]=argv[2]->f;break;
+   	 case 71:EG[3][2]=argv[2]->f;break;
+   	 case 72:EG[3][3]=argv[2]->f;break;
+   	 case 73:EG[3][4]=argv[2]->f;break;
    	  case 74:
    	 {
-   	 	EGrepeat[voice][3] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][3] > 0 ) egStart(voice,3);
+   	 	EGrepeat[3] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[3] > 0 ) egStart(voice,3);
    	 	break;
    	 }
-   	 case 75:EG[voice][4][1]=argv[2]->f;break;
-   	 case 76:EG[voice][4][2]=argv[2]->f;break;
-   	 case 77:EG[voice][4][3]=argv[2]->f;break;
-   	 case 78:EG[voice][4][4]=argv[2]->f;break; 
+   	 case 75:EG[4][1]=argv[2]->f;break;
+   	 case 76:EG[4][2]=argv[2]->f;break;
+   	 case 77:EG[4][3]=argv[2]->f;break;
+   	 case 78:EG[4][4]=argv[2]->f;break; 
    	  case 79:
    	 {
-   	 	EGrepeat[voice][4] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][4] > 0 ) egStart(voice,4);
+   	 	EGrepeat[4] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[4] > 0 ) egStart(voice,4);
    	 	break;
    	 }
-   	 case 80:EG[voice][5][1]=argv[2]->f;break;
-   	 case 81:EG[voice][5][2]=argv[2]->f;break;
-   	 case 82:EG[voice][5][3]=argv[2]->f;break;
-   	 case 83:EG[voice][5][4]=argv[2]->f;break;
+   	 case 80:EG[5][1]=argv[2]->f;break;
+   	 case 81:EG[5][2]=argv[2]->f;break;
+   	 case 82:EG[5][3]=argv[2]->f;break;
+   	 case 83:EG[5][4]=argv[2]->f;break;
    	  case 84:
    	 {
-   	 	EGrepeat[voice][5] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][5] > 0 ) egStart(voice,5);
+   	 	EGrepeat[5] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[5] > 0 ) egStart(voice,5);
    	 	break;
    	 }
-   	 case 85:EG[voice][6][1]=argv[2]->f;break;
-   	 case 86:EG[voice][6][2]=argv[2]->f;break;
-   	 case 87:EG[voice][6][3]=argv[2]->f;break;
-   	 case 88:EG[voice][6][4]=argv[2]->f;break;
+   	 case 85:EG[6][1]=argv[2]->f;break;
+   	 case 86:EG[6][2]=argv[2]->f;break;
+   	 case 87:EG[6][3]=argv[2]->f;break;
+   	 case 88:EG[6][4]=argv[2]->f;break;
    	  case 89:
    	 {
-   	 	EGrepeat[voice][6] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[voice][6] > 0 ) egStart(voice,6);
+   	 	EGrepeat[6] = (argv[2]->f>0) ? 1:0;
+   	 	if (EGrepeat[6] > 0 ) egStart(voice,6);
    	 	break;
    	 }
-   	 case 102:EG[voice][0][1]=argv[2]->f;break;
-   	 case 103:EG[voice][0][2]=argv[2]->f;break;
-   	 case 104:EG[voice][0][3]=argv[2]->f;break;
-   	 case 105:EG[voice][0][4]=argv[2]->f;break;
+   	 case 102:EG[0][1]=argv[2]->f;break;
+   	 case 103:EG[0][2]=argv[2]->f;break;
+   	 case 104:EG[0][3]=argv[2]->f;break;
+   	 case 105:EG[0][4]=argv[2]->f;break;
    	 
    }
 #ifdef _DEBUG
