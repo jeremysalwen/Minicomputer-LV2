@@ -309,17 +309,18 @@ void process(void *arg,jack_nframes_t nframes) {
 	register unsigned int currentvoice;
 	for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 	{		
+		engine* voice=engines+currentvoice;
 //	float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
 //		buffer[index]=0.0f;
 
 	// calc the modulators
-	float * mod = modulator [currentvoice];
-		mod[8] =1.f-egCalc(currentvoice,1);
-		mod[9] =1.f-egCalc(currentvoice,2);
-		mod[10]=1.f-egCalc(currentvoice,3);
-		mod[11]=1.f-egCalc(currentvoice,4);
-		mod[12]=1.f-egCalc(currentvoice,5);
-		mod[13]=1.f-egCalc(currentvoice,6);
+	float * mod = voice->modulator;
+		mod[8] =1.f-egCalc(voice,1);
+		mod[9] =1.f-egCalc(voice,2);
+		mod[10]=1.f-egCalc(voice,3);
+		mod[11]=1.f-egCalc(voice,4);
+		mod[12]=1.f-egCalc(voice,5);
+		mod[13]=1.f-egCalc(voice,6);
 	//}
 	/**
 	 * calc the main audio signal
@@ -327,11 +328,11 @@ void process(void *arg,jack_nframes_t nframes) {
 	//for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 	//{
 		// get the parameter settings
-		float * param = parameter[currentvoice];
+		float * param = voice->parameter;
 		// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
-		P1.f =  phase[currentvoice][1];
-		P2.f =  phase[currentvoice][2];
-		P3.f =  phase[currentvoice][3];
+		P1.f =  voice->phase[1];
+		P2.f =  voice->phase[2];
+		P3.f =  voice->phase[3];
 		P1.f += bias.f;
 		P2.f += bias.f;
 		P3.f += bias.f;
@@ -357,7 +358,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		if (iP3<0) iP3=tabM;
 
 	// create the next oscillator phase step for osc 3
-		phase[currentvoice][3]+= tabX * param[90];
+		voice->phase[3]+= tabX * param[90];
 		#ifdef _PREFETCH
 		__builtin_prefetch(&param[1],0,0);
 		__builtin_prefetch(&param[2],0,1);
@@ -368,18 +369,18 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		__builtin_prefetch(&param[11],0,0);
 		#endif
 		
-		if(phase[currentvoice][3]  >= tabF)
+		if(voice->phase[3]  >= tabF)
 		{
-   			phase[currentvoice][3]-= tabF;
+   			voice->phase[3]-= tabF;
 		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
 		}
-		if(phase[currentvoice][3]< 0.f)
+		if(voice->phase[3]< 0.f)
                 {
-                	phase[currentvoice][3]+= tabF;
+                	voice->phase[3]+= tabF;
         	//	if(*phase < 0.f) *phase = tabF-1;
                 }
 
-		unsigned int * choi = choice[currentvoice];
+		unsigned int * choi = voice->choice;
 //modulator [currentvoice][14]=Oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
 // write the oscillator 3 output to modulators
 		mod[14] = table[choi[12]][iP3] ;
@@ -391,12 +392,12 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		ta1 *= mod[choi[2]]; // osc1 first ampmod
 
 		#ifdef _PREFETCH
-		__builtin_prefetch(&phase[currentvoice][1],0,2);
-		__builtin_prefetch(&phase[currentvoice][2],0,2);
+		__builtin_prefetch(&voice->phase[1],0,2);
+		__builtin_prefetch(&voice->phase[2],0,2);
 		#endif
 
 		//tf+=(midif[currentvoice]*parameter[currentvoice][2]*parameter[currentvoice][3]);
-		tf+=(midif[currentvoice]*(1.0f-param[2])*param[3]);
+		tf+=(voice->midif*(1.0f-param[2])*param[3]);
 		ta1+= param[11]*mod[choi[3]];// osc1 second ampmod
 		tf+=(param[4]*param[5])*mod[choi[0]];
 		tf+=param[7]*mod[choi[1]];
@@ -412,17 +413,17 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 	//if (i>tabM) i=tabM;
 
 // generate phase of oscillator 1
-		phase[currentvoice][1]+= tabX * tf;
+		voice->phase[1]+= tabX * tf;
 	
 //	if (iP1<0) iP1=tabM;
 //	if (iP2<0) iP2=tabM;
 
-		if(phase[currentvoice][1]  >= tabF)
+		if(voice->phase[1]  >= tabF)
     		{
-   			phase[currentvoice][1]-= tabF;
+   			voice->phase[1]-= tabF;
 	   		  //if (param[115]>0.f) phase[currentvoice][2]= 0; // sync osc2 to 1
 			  // branchless sync:
-			phase[currentvoice][2]-= phase[currentvoice][2]*param[115];
+			voice->phase[1]-= voice->phase[2]*param[115];
 
 		// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
     		}
@@ -435,15 +436,15 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			__builtin_prefetch(&param[19],0,0);
 			__builtin_prefetch(&param[23],0,0);
 			__builtin_prefetch(&param[25],0,0);
-			__builtin_prefetch(&choice[currentvoice][6],0,0);
-			__builtin_prefetch(&choice[currentvoice][7],0,0);
-			__builtin_prefetch(&choice[currentvoice][8],0,0);
-			__builtin_prefetch(&choice[currentvoice][9],0,0);
+			__builtin_prefetch(&voice->choice[6],0,0);
+			__builtin_prefetch(&voice->choice[7],0,0);
+			__builtin_prefetch(&voice->choice[8],0,0);
+			__builtin_prefetch(&voice->choice[9],0,0);
 		#endif
 	
-		if(phase[currentvoice][1]< 0.f)
+		if(voice->phase[1]< 0.f)
                 {
-                	phase[currentvoice][1]+= tabF;
+                	voice->phase[1]+= tabF;
         	//	if(*phase < 0.f) *phase = tabF-1;
                 }
 	        osc1 = table[choi[4]][iP1] ;
@@ -458,7 +459,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		ta2 = param[23];
 		ta2 *=mod[choi[8]]; // osc2 first amp mod
 		//tf2+=(midif[currentvoice]*parameter[currentvoice][17]*parameter[currentvoice][18]);
-		tf2+=(midif[currentvoice]*(1.0f-param[17])*param[18]);
+		tf2+=(voice->midif*(1.0f-param[17])*param[18]);
 		ta3 = param[25];
 		ta3 *=mod[choi[9]];// osc2 second amp mod
 		tf2+=param[15]*param[19]*mod[choi[6]];
@@ -468,10 +469,10 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		mod[4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 
 		// then generate the actual phase:
-		phase[currentvoice][2]+= tabX * tf2;
-		if(phase[currentvoice][2]  >= tabF)
+		voice->phase[2]+= tabX * tf2;
+		if(voice->phase[2]  >= tabF)
 		{
-   			phase[currentvoice][2]-= tabF;
+   			voice->phase[2]-= tabF;
 			// if (*phase>=tabF) *phase = 0; //just in case of extreme fm
 		}
 
@@ -483,9 +484,9 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			__builtin_prefetch(&param[56],0,0);
 		#endif
 
-        	if(phase[currentvoice][2]< 0.f)
+        	if(voice->phase[2]< 0.f)
                 {
-                	phase[currentvoice][2]+= tabF;
+                	voice->phase[2]+= tabF;
         	//	if(*phase < 0.f) *phase = tabF-1;
                 }
 	        osc2 = table[choi[5]][iP2] ;
@@ -553,27 +554,27 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			//e.v = __builtin_ia32_mulps (d.v, b.v);
 
 			tf1 = c.f[0];
-			q[currentvoice][0]=c.f[1];
-			v[currentvoice][0]=c.f[2];
+			voice->q[0]=c.f[1];
+			voice->v[0]=c.f[2];
 			tf2 = c.f[3];
-			q[currentvoice][1] = e.f[0];
-			v[currentvoice][1] = e.f[1];
+			voice->q[1] = e.f[0];
+			voice->v[1] = e.f[1];
 			tf3 =  e.f[2];
-			q[currentvoice][2] = e.f[3];
+			voice->q[2] = e.f[3];
 
 		#else
 			tf1= param[30];
-			q[currentvoice][0] = param[31];
-			v[currentvoice][0] = param[32];
+			voice->q[0] = param[31];
+			voice->v[0] = param[32];
 			tf2= param[40];
 
-			q[currentvoice][1] = param[41];
-			v[currentvoice][1] = param[42];
+			voice->q[1] = param[41];
+			voice->v[1] = param[42];
 			tf3 =  param[50];
-			q[currentvoice][2] = param[51];
+			voice->q[2] = param[51];
 		#endif
 
-		v[currentvoice][2] = param[52];
+		voice->v[2] = param[52];
 
 		#ifdef _PREFETCH
 		__builtin_prefetch(&param[33],0,0);
@@ -590,16 +591,16 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		#ifndef _VECTOR
 			tf1*= morph;
 			tf2*= morph;
-			q[currentvoice][0] *= morph;
-			v[currentvoice][0] *= morph;
+			voice->q[0] *= morph;
+			voice->v[0] *= morph;
 
 			tf3 *=  morph;
-			v[currentvoice][1] *= morph;
-			q[currentvoice][1] *= morph;
-			q[currentvoice][2] *= morph;
+			voice->v[1] *= morph;
+			voice->q[1] *= morph;
+			voice->q[2] *= morph;
 		#endif
 
-		v[currentvoice][2] *= morph;
+		voice->v[2] *= morph;
 
 		#ifdef _VECTOR
 			a.f[0] = param[33]; a.f[1] =param[34]; a.f[2] = param[35]; a.f[3] = param[43];
@@ -613,11 +614,11 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			tf1+= c.f[0];
 			tf2+=c.f[3];
 			tf3 += e.f[2];
-			q[currentvoice][0] += c.f[1];//parameter[currentvoice][34]*mo;
-			q[currentvoice][1] += e.f[0];//parameter[currentvoice][44]*mo;
-			q[currentvoice][2] += e.f[3];//parameter[currentvoice][54]*mo;
-			v[currentvoice][0] += c.f[2];//parameter[currentvoice][35]*mo;
-			v[currentvoice][1] += e.f[1];//parameter[currentvoice][45]*mo;
+			voice->q[0] += c.f[1];//parameter[currentvoice][34]*mo;
+			voice->q[1] += e.f[0];//parameter[currentvoice][44]*mo;
+			voice->q[2] += e.f[3];//parameter[currentvoice][54]*mo;
+			voice->v[0] += c.f[2];//parameter[currentvoice][35]*mo;
+			voice->v[1] += e.f[1];//parameter[currentvoice][45]*mo;
 
 		#else
 			tf1+= param[33]*mo;
@@ -627,12 +628,12 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 
 
 		#ifndef _VECTOR
-			q[currentvoice][0] += param[34]*mo;
-			q[currentvoice][1] += param[44]*mo;
-			q[currentvoice][2] += param[54]*mo;
+			voice->q[0] += param[34]*mo;
+			voice->q[1] += param[44]*mo;
+			voice->q[2] += param[54]*mo;
 
-			v[currentvoice][0] += param[35]*mo;
-			v[currentvoice][1] += param[45]*mo;
+			voice->v[0] += param[35]*mo;
+			voice->v[1] += param[45]*mo;
 
 			tf1*=srate;
 			tf2*=srate;
@@ -648,7 +649,7 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			c.v = j.v * g.v; // tf * 2
 			//c.v = __builtin_ia32_mulps (a.v, g.v);
 
-			v[currentvoice][2] += c.f[0];//parameter[currentvoice][55]*mo;
+			voice->v[2] += c.f[0];//parameter[currentvoice][55]*mo;
 
 			//f[currentvoice][0] = c.f[1];//2.f * tf1;
 			//f[currentvoice][1] = c.f[2];//2.f * tf2;
@@ -656,83 +657,83 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 			//pow(c.v,3);
 			d.v = c.v - ((j.v * j.v * j.v) * h.v);
 
-			f[currentvoice][0] = d.f[1];//(tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
+			voice->f0] = d.f[1];//(tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
 
-			f[currentvoice][1] = d.f[2];//(tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
+			voice->f[1] = d.f[2];//(tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
 
-			f[currentvoice][2] = d.f[3];//(tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
+			voice->f[2] = d.f[3];//(tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
 		#else
-			v[currentvoice][2] += param[55]*mo;
+			voice->v[2] += param[55]*mo;
 
-			f[currentvoice][0] = 2.f * tf1;
-			f[currentvoice][1] = 2.f * tf2;
-			f[currentvoice][2] = 2.f * tf3; 
+			voice->f[0] = 2.f * tf1;
+			voice->f[1] = 2.f * tf2;
+			voice->f[2] = 2.f * tf3; 
 
-			f[currentvoice][0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
+			voice->f[0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
 
-			f[currentvoice][1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
+			voice->f[1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
 
-			f[currentvoice][2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
+			voice->f[2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
 		#endif
 //----------------------- actual filter calculation -------------------------
 		// first filter
-		float reso = q[currentvoice][0]; // for better scaling the volume with rising q
-		low[currentvoice][0] = low[currentvoice][0] + f[currentvoice][0] * band[currentvoice][0];
-		high[currentvoice][0] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][0] - (reso*band[currentvoice][0]);
+		float reso = voice->q[0]; // for better scaling the volume with rising q
+		voice->low[0] = voice->low[0] + voice->f[0] * voice->band[0];
+		voice->high[0] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[0] - (reso*voice->band[0]);
 		//high[currentvoice][0] = (reso *temp) - low[currentvoice][0] - (q[currentvoice][0]*band[currentvoice][0]);
-		band[currentvoice][0]= f[currentvoice][0] * high[currentvoice][0] + band[currentvoice][0];
+		voice->band[0]= voice->f[0] * voice->high[0] + voice->band[0];
 
-		reso = q[currentvoice][1];
+		reso = voice->q[1];
 		// second filter
-		low[currentvoice][1] = low[currentvoice][1] + f[currentvoice][1] * band[currentvoice][1];
-		high[currentvoice][1] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][1] - (reso*band[currentvoice][1]);
-		band[currentvoice][1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
+		voice->low[1] = voice->low[1] + voice->f[1] * voice->band[1];
+		voice->high[1] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[1] - (reso*voice->band[1]);
+		voice->band[1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
 		/*
 			low[currentvoice][1] = low[currentvoice][1] + f[currentvoice][1] * band[currentvoice][1];
 			high[currentvoice][1] = (q[currentvoice][1] * band[currentvoice][1]) - low[currentvoice][1] - (q[currentvoice][1]*band[currentvoice][1]);
 		band[currentvoice][1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
 		*/
 		// third filter
-		reso = q[currentvoice][2];
-		low[currentvoice][2] = low[currentvoice][2] + f[currentvoice][2] * band[currentvoice][2];
-		high[currentvoice][2] = ((reso + ((1.f-reso)*0.1f))*temp) - low[currentvoice][2] - (reso*band[currentvoice][2]);
-		band[currentvoice][2]= f[currentvoice][2] * high[currentvoice][2] + band[currentvoice][2];
+		reso = voice->q[2];
+		voice->low[2] = voice->low[2] + voice->f[2] * band[currentvoice][2];
+		voice->high[2] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[2] - (reso*voice->band[2]);
+		voice->band[2]= voice->f[2] * voice->high[currentvoice][2] + voice->ban[2];
 
-		mod [7] = (low[currentvoice][0]*v[currentvoice][0])+band[currentvoice][1]*v[currentvoice][1]+band[currentvoice][2]*v[currentvoice][2];
+		mod [7] = (voice->low[0]*voice->v[0])+voice->band[1]*voice->v[1]+voice->band[2]*voice->v[2];
 
 		//---------------------------------- amplitude shaping
 
 		result = (1.f-mod[ choi[13]]*param[100] );///_MULTITEMP;
 		result *= mod[7];
-		result *= egCalc(currentvoice,0);// the final shaping envelope
+		result *= egCalc(voice,0);// the final shaping envelope
 
 		// --------------------------------- delay unit
-		if( delayI[currentvoice] >= delayBufferSize )
+		if( voice->delayI>= delayBufferSize )
 		{
-			delayI[currentvoice] = 0;
+			voice->delayI = 0;
     
 			//printf("clear %d : %d : %d\n",currentvoice,delayI[currentvoice],delayJ[currentvoice]);
 		}
 		delayMod = 1.f-(param[110]* mod[choi[14]]);
 
-		delayJ[currentvoice] = delayI[currentvoice] - ((param[111]* maxDelayTime)*delayMod);
+		voice->delayJ = voice->delayI- ((param[111]* maxDelayTime)*delayMod);
 
-		if( delayJ[currentvoice]  < 0 )
+		if( voice->delayJ  < 0 )
 		{
-			delayJ[currentvoice]  += delayBufferSize;
+			voice->delayJ += delayBufferSize;
 		}
-		else if (delayJ[currentvoice]>delayBufferSize)
+		else if (voice->delayJ>delayBufferSize)
 		{
-			delayJ[currentvoice] = 0;
+			voice->delayJ= 0;
 		}
 
 		//if (delayI[currentvoice]>95000)
 		//printf("jab\n");
 
-		tdelay = result * param[114] + (delayBuffer[currentvoice] [ delayJ[currentvoice] ] * param[112] );
+		tdelay = result * param[114] + (voice->delayBuffer [ voice->delayJ ] * param[112] );
 		tdelay += anti_denormal;
 		//tdelay -= anti_denormal;
-		delayBuffer[currentvoice] [delayI[currentvoice] ] = tdelay;
+		voice->delayBuffer[voice->delayI ] = tdelay;
 		/*
 		if (delayI[currentvoice]>95000)
 		{
@@ -742,10 +743,10 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
 		*/
 		mod[18]= tdelay;
 		result += tdelay * param[113];
-		delayI[currentvoice]=delayI[currentvoice]+1;
+		voice->delayI=voice->delayI+1;
 
 		// --------------------------------- output
-		float *buffer = (float*) jack_port_get_buffer(port[currentvoice], nframes);
+		float *buffer = (float*) jack_port_get_buffer(voice->port, nframes);
 		buffer[index] = result * param[101];
 		bufferAux1[index] += result * param[108];
 		bufferAux2[index] += result * param[109];
