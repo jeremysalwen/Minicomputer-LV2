@@ -782,16 +782,49 @@ void init (minicomputer* mini)
 	
 } // end of initialization
 
+
+engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
+	engineblock* result=mini->freeengines;
+	if(result) {
+		mini->freeengines=result->next;
+		mini->freeengines.previous=(engineblock*)&mini->freeengines; //using the fact that the next index is stored first;
+		result->previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
+		result->next=mini->inuse;
+		if(mini->inuse) {
+			mini->inuse->previous=result;
+		}
+		mini->inuse=result;
+	}
+	mini->noteson[index]=result;
+	return &result.e;
+}
+
+void free_note_minicomputer* mini, unsigned char index) {
+	engineblock* result=mini->noteson[index];
+	if(result) {
+		if(result->previous) {
+			result->previous->next=result->next;
+		}
+		if(result->next) {
+			result->next->previous=result->previous;
+		}
+		mini->noteson[index]=NULL;
+		if(mini->freengines) {
+			mini->freengines->previous=result;
+		}
+		result->next=mini->freeengines;
+		result->previous=(engineblock*)&mini->freeengines; //using the fact that the next index is stored first;
+		mini->freeengines=result;
+	}	
+}
 /** @brief handling the midi messages in an extra thread
  *
  * @param pointer/handle of alsa midi
  */
-inline void handlemidi(LV2_Event_Feature* event_ref, LV2_Event_Iterator *in_iterator, int midi_event_id, unsigned int maxindex) {
-unsigned int c = _MULTITEMP; // channel of incomming data
-
-	while(lv2_event_is_valid(in_iterator)) {
+inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
+	while(lv2_event_is_valid(&mini->in_iterator)) {
 			uint8_t* data;
-			LV2_Event* event= lv2_event_get(in_iterator,&data);
+			LV2_Event* event= lv2_event_get(&mini->in_iterator,&data);
 			if (event->type == 0) {
 				mini->event_ref->lv2_event_unref(event_ref->callback_data, event);
 			} else if(event->type==mini->midi_event_id) {
@@ -800,161 +833,114 @@ unsigned int c = _MULTITEMP; // channel of incomming data
 				} else {
 					const uint8_t* evt=(uint8_t*)data;
 					unit8_t command=MIDI_COMMANDMASK & evt[0];
+					unsigned int c = evt[0]&MIDI_CHANNELMASK;
 					switch (command) 
 					{	// first check the controllers
 						// they usually come in hordes
 						case MIDI_CONTROL:
-							c = evt[0]&MIDI_CHANNELMASK;
-#ifdef _DEBUG      
+#ifdef _DEBUG 
 							fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
-							        c,  ev->data.control.param,ev->data.control.value);
+							        c,  evt[0,evt[1]);
 #endif		
-							if  (c <_MULTITEMP)
-						{
-							switch(evt[1]) {
-								case 1:
-									modulator[c][ 16]=ev->data.control.value*0.007874f; // /127.f;
-									break;
-								case 12:
-									modulator[c][ 17]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 2:
-									modulator[c][ 20]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 3:
-									modulator[c][ 21]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 4:  
-									modulator[c][ 22]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 5: 
-									modulator[c][ 23]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 14:  
-									modulator[c][ 24]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 15:
-									modulator[c][ 25]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 16: 
-									modulator[c][ 26]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-								case 17:  
-									modulator[c][ 27]=ev->data.control.value*0.007874f;// /127.f;
-									break;
-							}
-						}
+								switch(evt[1]) {
+									case 1:
+										mini->modulator[ 16]=evt[2]*0.007874f; // /127.f;
+										break;
+									case 12:
+										mini->modulator[ 17]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 2:
+										mini->modulator[ 20]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 3:
+										mini->modulator[ 21]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 4:  
+										mini->modulator[ 22]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 5: 
+										mini->modulator[ 23]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 14:  
+										mini->modulator[ 24]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 15:
+										mini->modulator[ 25]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 16: 
+										mini->modulator[ 26]=evt[2]*0.007874f;// /127.f;
+										break;
+									case 17:  
+										mini->modulator[ 27]=evt[2]*0.007874f;// /127.f;
+										break;
+								}
 						case MIDI_PITCHBEND:
-							c = evt[0]&MIDI_CHANNELMASK;
+							unsigned int value=evt[1]| (evt[2]<<8);
 #ifdef _DEBUG      
 							fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
-							        c, ev->data.control.value);
+							        c,value);
 #endif		
-							if (c<_MULTITEMP) {
-								modulator[c][2]=ev->data.control.value*0.0001221f; // /8192.f;
-							}
+								mini->modulator[2]=value*0.0001221f; // /8192.f;
 							break;
-						case SND_SEQ_EVENT_CHANPRESS:
-						{
-					c = ev->data.control.channel;
+						case MIDI_CHANPRESS:
 #ifdef _DEBUG      
-					fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
-					        c, ev->data.control.value);
+							fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
+							        c,evt[1]);
 #endif	
-					switch (midimode)
-					{
-						default:
-						case _MULTI:
-						{
-
-							if (c<_MULTITEMP)
-								modulator[c][ 15]=(float)ev->data.control.value*0.007874f;
-						}
+								mini->modulator[ 15]=(float)evt[1]*0.007874f;
 							break;
-					}
-					break;
-				}
-
-				case SND_SEQ_EVENT_NOTEON:
-				{   
-					c = ev->data.note.channel;
+						case MIDI_NOTEON:
+							
 #ifdef _DEBUG      
-					fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
-					        c, ev->data.note.note);
+							fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
+							        c, ev->data.note.note);
 #endif		
-					switch (midimode)
-					{
+										if (ev->data.note.velocity>0)
+										{
+											engine* use=use_note_minicomputer(mini,evt[1]);
+											use->lastnote=evt[1];
+											use->midif=midi2freq[evt[1]];// lookup the frequency
+											mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
+											mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
+											egStart(e,0);// start the engines!
+											float* EGrepeat=use->EGrepeat;
+											if (EGrepeat[1] == 0)egStart(use,1);
+											if (EGrepeat[2] == 0)egStart(use,2);
+											if (EGrepeat[3] == 0)egStart(use,3);
+											if (EGrepeat[4] == 0) egStart(use,4);
+											if (EGrepeat[5] == 0) egStart(use,5);
+											if (EGrepeat[6] == 0) egStart(use,6);
+
+											break;// not the best method but it breaks only when a note on is
+										}// if velo == 0 it should be handled as noteoff...
+							// ...so its necessary that here follow the noteoff routine
+						case SND_SEQ_EVENT_NOTEOFF: 
+#ifdef _DEBUG      
+							fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
+							        c, ev->data.note.note);
+#endif		
+										if (mini->engines[c]->lastnote==ev->data.note.note)
+									{
+										egStop(c,0);  
+										if (EGrepeat[c][1] == 0) egStop(c,1);  
+										if (EGrepeat[c][2] == 0) egStop(c,2); 
+										if (EGrepeat[c][3] == 0) egStop(c,3); 
+										if (EGrepeat[c][4] == 0) egStop(c,4);  
+										if (EGrepeat[c][5] == 0) egStop(c,5);  
+										if (EGrepeat[c][6] == 0) egStop(c,6);
+									}
+							break;      
+#ifdef _DEBUG      
 						default:
-						case _MULTI:
-						{
-							if (c <_MULTITEMP){
-								if (ev->data.note.velocity>0)
-								{
-									lastnote[c]=ev->data.note.note;	
-									midif[c]=midi2freq[ev->data.note.note];// lookup the frequency
-									modulator[c][19]=ev->data.note.note*0.007874f;// fill the value in as normalized modulator
-									modulator[c][1]=(float)1.f-(ev->data.note.velocity*0.007874f);// fill in the velocity as modulator
-									egStart(c,0);// start the engines!
-									if (EGrepeat[c][1] == 0)egStart(c,1);
-									if (EGrepeat[c][2] == 0)egStart(c,2);
-									if (EGrepeat[c][3] == 0)egStart(c,3);
-									if (EGrepeat[c][4] == 0) egStart(c,4);
-									if (EGrepeat[c][5] == 0) egStart(c,5);
-									if (EGrepeat[c][6] == 0) egStart(c,6);
-
-									break;// not the best method but it breaks only when a note on is
-								}// if velo == 0 it should be handled as noteoff...
-							}
-						}
-							break;
-
-					}
-				}      
-					// ...so its necessary that here follow the noteoff routine
-				case SND_SEQ_EVENT_NOTEOFF: 
-				{
-					c = ev->data.note.channel;
-#ifdef _DEBUG      
-					fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
-					        c, ev->data.note.note);
+							fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
+							        ev->data.control.channel, evt[1]);
 #endif		
-					switch (midimode)
-					{
-						default:
-						case _MULTI:
-						{
-							if  (c <_MULTITEMP)
-								if (lastnote[c]==ev->data.note.note)
-							{
-								egStop(c,0);  
-								if (EGrepeat[c][1] == 0) egStop(c,1);  
-								if (EGrepeat[c][2] == 0) egStop(c,2); 
-								if (EGrepeat[c][3] == 0) egStop(c,3); 
-								if (EGrepeat[c][4] == 0) egStop(c,4);  
-								if (EGrepeat[c][5] == 0) egStop(c,5);  
-								if (EGrepeat[c][6] == 0) egStop(c,6);
-							}
-						}
-							break;
-					}
-					break;       
-				}
-
-#ifdef _DEBUG      
-				default:
-				{
-
-					fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
-					        ev->data.control.channel, ev->data.control.value);
-				}
-#endif		
-			}// end of switch
-			snd_seq_free_event(ev);
-	}
+					}// end of switch
 				}
 			}
-			lv2_event_increment(\in_iterator);
-		}
+	}
+	lv2_event_increment(in_iterator);
+}
 #ifdef _DEBUG
 	printf("start\n");
 	fflush(stdout);

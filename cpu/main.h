@@ -18,6 +18,8 @@
 #define tabM 4095
 #define tabF 4096.f
 
+#define NUM_MIDI 127;
+
 #define MIDI_COMMANDMASK 0xF0
 #define MIDI_CHANNELMASK 0x0F
 
@@ -25,12 +27,15 @@
 #define MIDI_NOTEOFF 0x80
 #define MIDI_CONTROL 0xB0
 #define MIDI_PITCHBEND 0xE0
+#define MIDI_CHANPRESS 0xD0
 
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
+
+
 typedef struct _engine {
 	float delayBuffer[96000] __attribute__((aligned (16)));
 	float parameter[_PARACOUNT] __attribute__((aligned (16)));
-	float modulator[_MODCOUNT] __attribute__((aligned (16)));
+	
 	float EG[8][8] __attribute__((aligned (16))); // 7 8
 	float EGFaktor[8] __attribute__((aligned (16)));
 	float phase[4] __attribute__((aligned (16)));//=0.f;
@@ -47,9 +52,20 @@ typedef struct _engine {
 	int delayI,delayJ;
 } engine;
 
+typedef struct _engineblock {
+	_engineblock * next;
+	_engineblock * previous;
+	engine e;
+}engineblock;
+
 typedef struct _minicomputer {
-	engine engines[_MULTITEMP];
+	engineblock noteson[NUM_MIDI];
+	engineblock* freeengines;
+	engineblock* inuse;
+	
 	// variables
+	float modulator[_MODCOUNT] __attribute__((aligned (16)));
+	
 	float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 
 	float midi2freq [128]  __attribute__((aligned (16)));
