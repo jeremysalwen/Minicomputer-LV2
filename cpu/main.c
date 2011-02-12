@@ -1033,13 +1033,12 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
 	minicomputer* mini= (minicomputer*) data;
     /* example showing pulling the argument values out of the argv array */
    int voice =  argv[0]->i;
+   engine* voice=mini->engines[voice];
    int i =  argv[1]->i;
-   if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT)) 
-   {
-   	parameter[voice][i]=argv[2]->f;
-
-   switch (i)
-   {
+   if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT))  {
+   	parameter[i]=argv[2]->f;
+   }
+   switch (i) {
    	 // reset the filters 
    	 case 0:{
    	 	low[voice][0]	= 0.f;
