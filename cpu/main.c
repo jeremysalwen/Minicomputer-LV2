@@ -768,45 +768,53 @@ int iP3 = (int) phase[currentvoice][3];// hopefully this got optimized by compil
  *
  * preparing for instance the waveforms
  */
-void init ()
+void init (minicomputer* mini)
 {
-	unsigned int i,k;
-	for (k=0;k<_MULTITEMP;k++)// k is here the voice number
+	for (unsigned int k=0;k<_MULTITEMP;k++)// k is here the voice number
 	{
+		engine* voice=mini->voices[k];
+		float** EG=voice->EG;
+		float* EGtrigger=voice->EGtrigger;
+		float* parameter=voice->parameter;
+		float* modulator=voice->modulator;
+		float* low=voice->low;
+		float* high=voice->high;
 		for (i=0;i<8;i++) // i is the number of envelope
 		{
-		EG[k][i][1]=0.01f;
-		EG[k][i][2]=0.01f;
-		EG[k][i][3]=1.0f;
-		EG[k][i][4]=0.0001f;
-		EGtrigger[k][i]=0;
+		EG[i][1]=0.01f;
+		EG[i][2]=0.01f;
+		EG[i][3]=1.0f;
+		EG[i][4]=0.0001f;
+		EGtrigger[i]=0;
   
-		EGrepeat[k][i]=0;
-		EGstate[k][i]=4; // released
+		EGrepeat[i]=0;
+		EGstate[i]=4; // released
 		}
-		parameter[k][30]=100.f;
-		parameter[k][31]=0.5f;
-		parameter[k][33]=100.f; 
-		parameter[k][34]=0.5f;
-		parameter[k][40]=100.f;
-		parameter[k][41]=0.5f;
-		parameter[k][43]=100.f; 
-		parameter[k][44]=0.5f;
-		parameter[k][50]=100.f;
-		parameter[k][51]=0.5f;
-		parameter[k][53]=100.f; 
-		parameter[k][54]=0.5f;
-		modulator[k][0] =0.f;// the none modulator, doing nothing
-		for (i=0;i<3;++i) 
+		parameter[30]=100.f;
+		parameter[31]=0.5f;
+		parameter[33]=100.f; 
+		parameter[34]=0.5f;
+		parameter[40]=100.f;
+		parameter[41]=0.5f;
+		parameter[43]=100.f; 
+		parameter[44]=0.5f;
+		parameter[50]=100.f;
+		parameter[51]=0.5f;
+		parameter[53]=100.f; 
+		parameter[54]=0.5f;
+		modulator[0] =0.f;// the none modulator, doing nothing
+		for (unsigned int i=0;i<3;++i) 
 		{
-			low[k][i]=0;
-			high[k][i]=0;
+			low[i]=0;
+			high[i]=0;
 		}
 	}
 	float PI=3.145;
 	float increment = (float)(PI*2) / (float)TableSize;
 	float x = 0.0f;
 	float tri = -0.9f;
+
+	float** table=mini->table;
 	// calculate wavetables
 	for (i=0; i<TableSize; i++)
 	{
@@ -893,6 +901,7 @@ void init ()
 
 
 
+	float* midi2freq=mini->midi2freq;
 	// miditable for notes to frequency
 	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 
