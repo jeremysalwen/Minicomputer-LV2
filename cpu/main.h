@@ -6,6 +6,8 @@
 #include <lo/lo.h>
 #include <string.h>
 #include <lv2.h>
+#include "event-helpers.h"
+#include "uri-map.h"
 // some common definitions
 #include "../common.h" 
 
@@ -18,7 +20,7 @@
 #define tabM 4095
 #define tabF 4096.f
 
-#define NUM_MIDI 127;
+#define NUM_MIDI 127
 
 #define MIDI_COMMANDMASK 0xF0
 #define MIDI_CHANNELMASK 0x0F
@@ -62,9 +64,11 @@ typedef struct _engine {
 	int delayI,delayJ;
 } engine;
 
+struct _engineblock;
+
 typedef struct _listheader {
-	_engineblock * next;
-	_engineblock * previous;
+	struct _engineblock * next;
+	struct _engineblock * previous;
 } listheader;
 
 typedef struct _engineblock {
@@ -82,7 +86,7 @@ typedef struct _minicomputer {
 	engineblock* inuse;
 	
 	// variables
-	float * MixLeft_p;
+	float *MixLeft_p;
 	float *MixRight_p;
 	float *Aux1_p;
 	float *Aux2_p;
@@ -93,8 +97,8 @@ typedef struct _minicomputer {
 	LV2_Event_Feature* event_ref;
 	int midi_event_id;
 
-	float temp=0.f,lfo;
-	float sampleRate=48000.0f; // only default, going to be overriden by the actual, taken from jack
+	float temp=0.f;
+	float lfo;
 	float tabX = 4096.f / 48000.0f;
 	float srate = 3.145f/ 48000.f;
 	float srDivisor = 1.f / 48000.f*100000.f;
@@ -108,11 +112,12 @@ typedef struct _minicomputer {
 
 #define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"
 
-const LV2_Descriptor * miniDescriptor ={.URI=MINCOMPUTER_URI, 
+const LV2_Descriptor * miniDescriptor ={.URI=MINICOMPUTER_URI, 
 	.activate=NULL,
 	.cleanup=NULL,
 	.connect_port=connect_port_minicomputer, 
-	.deactivate=NULL, .activate=NULL, 
+	.deactivate=NULL,
+	.activate=NULL, 
 	.instantiate=init,
 	.run=run_minicomputer, 
 	.extension_data=NULL};

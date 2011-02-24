@@ -18,6 +18,7 @@
 // a way to compile it was:
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 
+#include "main.h"
 
 /**  FIXED
  * start the envelope generator
@@ -26,7 +27,7 @@
  * @param the number of envelope generator
  */
 
-static inline void egStart (engine* voice,const unsigned int number)
+static inline void egStart (engine* voice, const unsigned int number)
 {
 	voice->EGtrigger[number]=1;
 	voice->EG[number][0] = 1.f; // triggerd
@@ -574,16 +575,14 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			buffermixleft[index] += result * (1.f-param[107]);
 			buffermixright[index] += result * param[107];
 			}
-			}
-			}
-			}
-void initEngine(engine* voice) {
-		float** EG=voice->EG;
-		float* EGtrigger=voice->EGtrigger;
-		float* parameter=voice->parameter;
-		float* modulator=voice->modulator;
-		float* low=voice->low;
-		float* high=voice->high;
+			}}
+			void initEngine(engine* voice) {
+				float** EG=voice->EG;
+				float* EGtrigger=voice->EGtrigger;
+				float* parameter=voice->parameter;
+				float* modulator=voice->modulator;
+				float* low=voice->low;
+				float* high=voice->high;
 		for (i=0;i<8;i++) // i is the number of envelope
 		{
 		EG[i][1]=0.01f;
@@ -751,15 +750,6 @@ LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_ra
 	 * terminal ports which means we don't 
 	 * have any input ports from which we could somhow 
 	 * feed our output */
-	port[0] = jack_port_register(client, "output1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[1] = jack_port_register(client, "output2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[2] = jack_port_register(client, "output3", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[3] = jack_port_register(client, "output4", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[4] = jack_port_register(client, "output5", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[5] = jack_port_register(client, "output6", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[6] = jack_port_register(client, "output7", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[7] = jack_port_register(client, "output8", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	
 	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	
@@ -771,12 +761,11 @@ LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_ra
 	bufsize = jack_get_buffer_size(client);
 
 	// handling the sampling frequency
-	sampleRate = (float) jack_get_sample_rate (client); 
-	tabX = 4096.f / sampleRate;
-	srate = 3.145f/ sampleRate;
-	srDivisor = 1.f / sampleRate * 100000.f;
+	tabX = 4096.f / s_rate;
+	srate = 3.145f/ s_rate;
+	srDivisor = 1.f / s_rate * 100000.f;
 	// depending on it the delaybuffer
-	maxDelayTime = (int)sampleRate;
+	maxDelayTime = (int)s_rate;
 	delayBufferSize = maxDelayTime*2;
 	// generate the delaybuffers for each voice
 	int k;
