@@ -18,7 +18,7 @@
 // a way to compile it was:
 //  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 
-#include "main.h"
+#include "minicomputer.h"
 
 /**  FIXED
  * start the envelope generator

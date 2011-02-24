@@ -8,6 +8,7 @@
 #include <lv2.h>
 #include "event-helpers.h"
 #include "uri-map.h"
+
 // some common definitions
 #include "../common.h" 
 
@@ -35,9 +36,9 @@ static const float anti_denormal = 1e-20;// magic number to get rid of denormali
 
 
 // I experiment with optimization
-#ifdef _VECTOR  
+#ifdef _VECTOR
 	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
-	union f4vector 
+	union f4vector
 	{
 		v4sf v;// __attribute__((aligned (16)));
 		float f[4];// __attribute__((aligned (16)));
@@ -47,14 +48,14 @@ static const float anti_denormal = 1e-20;// magic number to get rid of denormali
 typedef struct _engine {
 	float delayBuffer[96000] __attribute__((aligned (16)));
 	float parameter[_PARACOUNT] __attribute__((aligned (16)));
-	
+
 	float EG[8][8] __attribute__((aligned (16))); // 7 8
 	float EGFaktor[8] __attribute__((aligned (16)));
 	float phase[4] __attribute__((aligned (16)));//=0.f;
 	unsigned int choice[_CHOICEMAX] __attribute__((aligned (16)));
 	int EGrepeat[8] __attribute__((aligned (16)));
 	unsigned int EGtrigger[8] __attribute__((aligned (16)));
-	unsigned int EGstate[8] __attribute__((aligned (16)));	
+	unsigned int EGstate[8] __attribute__((aligned (16)));
 	float midif[_MULTITEMP]  __attribute__((aligned (16)));
 	float high[4],band[4],low[4],f[4],q[4],v[4],faktor[4];
 
@@ -84,13 +85,13 @@ typedef struct _minicomputer {
 	engineblock noteson[NUM_MIDI];
 	listheader freeblocks;
 	engineblock* inuse;
-	
+
 	// variables
 	float *MixLeft_p;
 	float *MixRight_p;
 	float *Aux1_p;
 	float *Aux2_p;
-	
+
 	LV2_Event_Buffer *MidiIn;
 	LV2_Event_Iterator in_iterator;
 
@@ -115,9 +116,9 @@ typedef struct _minicomputer {
 const LV2_Descriptor * miniDescriptor ={.URI=MINICOMPUTER_URI, 
 	.activate=NULL,
 	.cleanup=NULL,
-	.connect_port=connect_port_minicomputer, 
+	.connect_port=connect_port_minicomputer,
 	.deactivate=NULL,
-	.activate=NULL, 
+	.activate=NULL,
 	.instantiate=init,
-	.run=run_minicomputer, 
+	.run=run_minicomputer,
 	.extension_data=NULL};
