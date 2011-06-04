@@ -55,13 +55,13 @@ static inline void egStop (engine* voice,const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
 */
-static inline float egCalc (engine* voice, const unsigned int number)
+static inline float egCalc (engine* voice, const unsigned int number, float srDivisor)
 {
-	float** EG=voice->EG;
-	float * EGFaktor=voice->EGFaktor;
-	float* EGstate=voice->EGState;
-	float* EGrepeat=voice->EGRepeat;
-	float* EGtrigger=voice->EGTrigger;
+	float  (*EG)[8][8]=&voice->EG;
+	float *EGFaktor=voice->EGFaktor;
+	unsigned int * EGstate=voice->EGstate;
+	unsigned int * EGrepeat=voice->EGrepeat;
+	unsigned int * EGtrigger=voice->EGtrigger;
 	/* EG[x] x:
 	 * 0 = trigger
 	 * 1 = attack
@@ -77,11 +77,11 @@ static inline float egCalc (engine* voice, const unsigned int number)
 		if (i == 1){ // attack
 		         if (EGFaktor[number]<1.00f) EGFaktor[number] += 0.002f;
 			
-			 EG[number][6] += EG[number][1]*srDivisor*EGFaktor[number];
+			 *EG[number][6] += *EG[number][1]*srDivisor*EGFaktor[number];
 
-			 if (EG[number][6]>=1.0f)// Attackphase is finished
+			 if (*EG[number][6]>=1.0f)// Attackphase is finished
 			 {
-			 	EG[number][6]=1.0f;
+			 	*EG[number][6]=1.0f;
 			 	EGstate[number]=2;
 					EGFaktor[number] = 1.f; // triggerd
 
@@ -89,9 +89,9 @@ static inline float egCalc (engine* voice, const unsigned int number)
 		}
 		else if (i == 2)
 		{ // decay
-			if (EG[number][6]>EG[number][3])
+			if (*EG[number][6]>*EG[number][3])
 			{
-				 EG[number][6] -= EG[number][2]*srDivisor*EGFaktor[number];
+				 *EG[number][6] -= *EG[number][2]*srDivisor*EGFaktor[number];
 			}
 			else 
 			{
@@ -106,9 +106,9 @@ static inline float egCalc (engine* voice, const unsigned int number)
 				}
 			}
 			// what happens if sustain = 0? envelope should go in stop mode when decay reached ground
-			if (EG[number][6]<0.0f) 
+			if (*EG[number][6]<0.0f) 
 		    	{	
-		    		EG[number][6]=0.0f;
+		    		*EG[number][6]=0.0f;
 		    		if (EGrepeat[number]==0)
 				{
 					EGstate[number]=4; // released
@@ -120,16 +120,16 @@ static inline float egCalc (engine* voice, const unsigned int number)
 		    	}
 
 		} // end of decay
-		else if ((i == 0) && (EG[number][6]>0.0f))
+		else if ((i == 0) && (*EG[number][6]>0.0f))
 		{
 		    /* release */
 		    
 		    if (EGFaktor[number]>0.025f) EGFaktor[number] -= 0.002f;
-		    EG[number][6] -= EG[number][4]*srDivisor*EGFaktor[number];//*EG[number][6];
+		    *EG[number][6] -=*EG[number][4]*srDivisor*EGFaktor[number];//*EG[number][6];
 
-		    if (EG[number][6]<0.0f) 
+		    if (*EG[number][6]<0.0f) 
 		    {	
-		    	EG[number][6]=0.0f;
+		    	*EG[number][6]=0.0f;
 		    	if (EGrepeat[number]==0)
 				{
 					EGstate[number]=4; // released
@@ -144,13 +144,164 @@ static inline float egCalc (engine* voice, const unsigned int number)
 	else
 	{
 		EGtrigger[number] = 0;
-		EG[number][0] = 1.f; // triggerd
+		*EG[number][0] = 1.f; // triggerd
 		EGstate[number] = 1; // target
 	}
-	return EG[number][6];
+	return *EG[number][6];
 }
 //float d0,d1,d2,c1;
 
+static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
+	engineblock* result=mini->freeblocks.next;
+
+	if(&result->h==&mini->freeblocks) {
+		return NULL;
+	}
+	listheader rh=result->h;
+	
+	mini->freeblocks.next=rh.next;
+	rh.next->h.previous=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
+	rh.previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
+	rh.next=mini->inuse;
+	if(mini->inuse) {
+		mini->inuse->h.previous=result;
+	}
+	mini->inuse=result;
+	mini->noteson[index]=result;
+	return &result->e;
+}
+
+
+static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
+	while(lv2_event_is_valid(&mini->in_iterator)) {
+		uint8_t* data;
+		LV2_Event* event= lv2_event_get(&mini->in_iterator,&data);
+		if (event->type == 0) {
+			mini->event_ref->lv2_event_unref(mini->event_ref->callback_data, event);
+		} else if(event->type==mini->midi_event_id) {
+			if(event->frames > maxindex) {
+				break;
+			} else {
+				const uint8_t* evt=(uint8_t*)data;
+				uint8_t command=MIDI_COMMANDMASK & evt[0];
+				unsigned int c = evt[0]&MIDI_CHANNELMASK;
+				switch (command) 
+				{	// first check the controllers
+					// they usually come in hordes
+					case MIDI_CONTROL:
+#ifdef _DEBUG 
+						fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
+						        c,  evt[0,evt[1]);
+#endif		
+						switch(evt[1]) {
+							case 1:
+								mini->modulator[ 16]=evt[2]*0.007874f; // /127.f;
+								break;
+							case 12:
+								mini->modulator[ 17]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 2:
+								mini->modulator[ 20]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 3:
+								mini->modulator[ 21]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 4:  
+								mini->modulator[ 22]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 5: 
+								mini->modulator[ 23]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 14:  
+								mini->modulator[ 24]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 15:
+								mini->modulator[ 25]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 16: 
+								mini->modulator[ 26]=evt[2]*0.007874f;// /127.f;
+								break;
+							case 17:  
+								mini->modulator[ 27]=evt[2]*0.007874f;// /127.f;
+								break;
+						}
+					case MIDI_PITCHBEND:
+						;//<---PLEASE THE C SYNTAX GODS.
+						unsigned int value=evt[1] |  (evt[2]<<8);
+#ifdef _DEBUG      
+						fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
+						        c,value);
+#endif		
+						mini->modulator[2]=value*0.0001221f; // /8192.f;
+						break;
+					case MIDI_CHANPRESS:
+#ifdef _DEBUG      
+						fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
+						        c,evt[1]);
+#endif	
+						mini->modulator[ 15]=(float)evt[1]*0.007874f;
+						break;
+					case MIDI_NOTEON:
+
+#ifdef _DEBUG      
+						fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
+						        c, ev->data.note.note);
+#endif		
+						if (evt[2]>0)
+					{
+						engine* use=use_note_minicomputer(mini,evt[1]);
+						if(use) {
+							use->lastnote=evt[1];
+							use->midif=midi2freq[evt[1]];// lookup the frequency
+							mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
+							//TODO:  Should a global parameter be set by a single note's velocity?
+							mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
+							egStart(use,0);// start the engines!
+							int* EGrepeat=use->EGrepeat;
+							if (EGrepeat[1] == 0) egStart(use,1);
+							if (EGrepeat[2] == 0) egStart(use,2);
+							if (EGrepeat[3] == 0) egStart(use,3);
+							if (EGrepeat[4] == 0) egStart(use,4);
+							if (EGrepeat[5] == 0) egStart(use,5);
+							if (EGrepeat[6] == 0) egStart(use,6);
+						} else {
+#ifdef _DEBUG      
+							fprintf(stderr, "Ran out of synth voices!     \r");
+#endif		
+						}
+						break;// not the best method but it breaks only when a note on is
+					}// if velo == 0 it should be handled as noteoff...
+						// ...so its necessary that here follow the noteoff routine
+					case  MIDI_NOTEOFF: 
+						; //<--APPEASE THE C SYNTAX GODS
+#ifdef _DEBUG      
+						fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
+						        c, evt[1]);
+#endif							
+						engine* voice=&mini->noteson[c]->e;
+						if (voice)
+					{
+						egStop(voice,0);  
+						int* EGrepeat=voice->EGrepeat;
+						if (EGrepeat[1] == 0) egStop(voice,1);  
+						if (EGrepeat[2] == 0) egStop(voice,2); 
+						if (EGrepeat[3] == 0) egStop(voice,3); 
+						if (EGrepeat[4] == 0) egStop(voice,4);  
+						if (EGrepeat[5] == 0) egStop(voice,5);  
+						if (EGrepeat[6] == 0) egStop(voice,6);
+					}
+						break;      
+#ifdef _DEBUG      
+					default:
+						fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
+						        c, evt[1]);
+#endif		
+				}// end of switch
+			}
+		}
+		lv2_event_increment(&mini->in_iterator);
+	}
+}
 
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
@@ -215,7 +366,8 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			/**
 			 * calc the main audio signal
 			 */
-
+(%i387) float(sinest(x));
+(%o387) 8.3506088780449292*10^-13*(3111680.0*x^9-1.6258791506178565*10^7*x^7+2.8081872036010493*10^7*x^5-1.7766472297271624*10^7*x^3+2988887.27006223*x)-1.2266850925018943*10^-9*(150382.7053886184*x^7-599395.6544226131*x^5+672249.7714640067*x^3-184301.0917520132*x)+1.6020187984761749*10^-6*(4727.939085902017*x^5-12961.91344730582*x^3+6853.337036039403*x)-0.0019384700189231*(74.83314773547883*x^3-110.7860346356178*x)+0.77403682639679*x
 			// get the parameter settings
 			float * param = voice->parameter;
 			// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
@@ -357,7 +509,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mod[4] *= osc2;// osc2 fm out
 
 			// ------------------------------------- mix the 2 oscillators pre filter
-			temp=(param[14]*(1.f-ta1));
+			float temp=(param[14]*(1.f-ta1));
 			temp*=osc1;
 			temp+=osc2*(param[29]*(1.f-ta2));
 			temp*=0.5f;// get the volume of the sum into a normal range	
@@ -555,7 +707,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 
 			if( voice->delayj  < 0 ) {
 				voice->delayj += delaybuffersize;
-			}\else if (voice->delayj>delaybuffersize) {
+			}else if (voice->delayj>delaybuffersize) {
 				voice->delayj= 0;
 			}
 			tdelay = result * param[114] + (voice->delaybuffer [ voice->delayj ] * param[112] );
@@ -575,15 +727,17 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			buffermixleft[index] += result * (1.f-param[107]);
 			buffermixright[index] += result * param[107];
 			}
-			}}
-			void initEngine(engine* voice) {
+			}
+}
+
+void initEngine(engine* voice) {
 				float** EG=voice->EG;
 				float* EGtrigger=voice->EGtrigger;
 				float* parameter=voice->parameter;
 				float* modulator=voice->modulator;
 				float* low=voice->low;
 				float* high=voice->high;
-		for (i=0;i<8;i++) // i is the number of envelope
+				for (i=0;i<8;i++) // i is the number of envelope
 		{
 		EG[i][1]=0.01f;
 		EG[i][2]=0.01f;
@@ -613,7 +767,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			high[i]=0;
 		}
 }
-void initEngines(minicomputer* mini) {
+static void initEngines(minicomputer* mini) {
 	minicomputer* mini= malloc(sizeof(minicomputer));
 	memset(mini->noteson,0,sizeof(mini->noteson));
 	mini->inuse=NULL;
@@ -630,7 +784,7 @@ void initEngines(minicomputer* mini) {
 	}
 }
 
-void waveTableInit() {
+static void waveTableInit() {
 	float PI=3.145;
 	float increment = (float)(PI*2) / (float)TableSize;
 	float x = 0.0f;
@@ -717,7 +871,7 @@ void waveTableInit() {
 	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 }
 
-void initOSC(minicomputer* mini) {
+static void initOSC(minicomputer* mini) {
 	// ------------------------ OSC Init ------------------------------------   
 	/* start a new server on port definied where oport points to */
 	mini->st = lo_server_thread_new(oport, error);
@@ -738,7 +892,7 @@ void initOSC(minicomputer* mini) {
  *
  * preparing for instance the waveforms
  */
-LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features) 
+static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features) 
 {
 	minicomputer* mini= malloc(sizeof(minicomputer));
 	initEngines(mini);
@@ -780,25 +934,7 @@ LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_ra
 	
 } // end of initialization
 
-
-engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
-	engineblock* result=mini->freeblocks.next;
-	if(result==&mini->freeblocks) {
-		return NULL;
-	}
-	mini->freeblocks.next=result->next;
-	result->next->previous=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
-	result->previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
-	result->next=mini->inuse;
-	if(mini->inuse) {
-		mini->inuse->previous=result;
-	}
-	mini->inuse=result;
-	mini->noteson[index]=result;
-	return &result->e;
-}
-
-void free_note_minicomputer(minicomputer* mini, unsigned char index) {
+static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
 	engineblock* result=mini->noteson[index];
 	if(result) {
 		result->h.previous->h.next=result->h.next;
@@ -811,136 +947,6 @@ void free_note_minicomputer(minicomputer* mini, unsigned char index) {
 		result->previous=mini->freeblocks.previous;
 		mini->freeblocks.previous=result;
 	}	
-}
-
-inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
-	while(lv2_event_is_valid(&mini->in_iterator)) {
-			uint8_t* data;
-			LV2_Event* event= lv2_event_get(&mini->in_iterator,&data);
-			if (event->type == 0) {
-				mini->event_ref->lv2_event_unref(event_ref->callback_data, event);
-			} else if(event->type==mini->midi_event_id) {
-				if(event->frames > maxindex) {
-					break;
-				} else {
-					const uint8_t* evt=(uint8_t*)data;
-					unit8_t command=MIDI_COMMANDMASK & evt[0];
-					unsigned int c = evt[0]&MIDI_CHANNELMASK;
-					switch (command) 
-					{	// first check the controllers
-						// they usually come in hordes
-						case MIDI_CONTROL:
-#ifdef _DEBUG 
-							fprintf(stderr, "Control event on Channel %2d: %2d %5d       \r",
-							        c,  evt[0,evt[1]);
-#endif		
-								switch(evt[1]) {
-									case 1:
-										mini->modulator[ 16]=evt[2]*0.007874f; // /127.f;
-										break;
-									case 12:
-										mini->modulator[ 17]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 2:
-										mini->modulator[ 20]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 3:
-										mini->modulator[ 21]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 4:  
-										mini->modulator[ 22]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 5: 
-										mini->modulator[ 23]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 14:  
-										mini->modulator[ 24]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 15:
-										mini->modulator[ 25]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 16: 
-										mini->modulator[ 26]=evt[2]*0.007874f;// /127.f;
-										break;
-									case 17:  
-										mini->modulator[ 27]=evt[2]*0.007874f;// /127.f;
-										break;
-								}
-						case MIDI_PITCHBEND:
-							unsigned int value=evt[1]| (evt[2]<<8);
-#ifdef _DEBUG      
-							fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
-							        c,value);
-#endif		
-								mini->modulator[2]=value*0.0001221f; // /8192.f;
-							break;
-						case MIDI_CHANPRESS:
-#ifdef _DEBUG      
-							fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
-							        c,evt[1]);
-#endif	
-							mini->modulator[ 15]=(float)evt[1]*0.007874f;
-							break;
-						case MIDI_NOTEON:
-
-#ifdef _DEBUG      
-							fprintf(stderr, "Note On event on Channel %2d: %5d       \r",
-							        c, ev->data.note.note);
-#endif		
-							if (ev->data.note.velocity>0)
-						{
-							engine* use=use_note_minicomputer(mini,evt[1]);
-							if(use) {
-								use->lastnote=evt[1];
-								use->midif=midi2freq[evt[1]];// lookup the frequency
-								mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
-								//TODO:  Should a global parameter be set by a single note's velocity?
-								mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
-								egStart(use,0);// start the engines!
-								float* EGrepeat=use->EGrepeat;
-								if (EGrepeat[1] == 0) egStart(use,1);
-								if (EGrepeat[2] == 0) egStart(use,2);
-								if (EGrepeat[3] == 0) egStart(use,3);
-								if (EGrepeat[4] == 0) egStart(use,4);
-								if (EGrepeat[5] == 0) egStart(use,5);
-								if (EGrepeat[6] == 0) egStart(use,6);
-							} else {
-#ifdef _DEBUG      
-								fprintf(stderr, "Ran out of synth voices!     \r",         
-								        c, evt[1]);
-#endif		
-							}
-							break;// not the best method but it breaks only when a note on is
-						}// if velo == 0 it should be handled as noteoff...
-							// ...so its necessary that here follow the noteoff routine
-						case SND_SEQ_EVENT_NOTEOFF: 
-#ifdef _DEBUG      
-							fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
-							        c, evt[1]);
-#endif							
-							engine* voice=&mini->noteson[c]->e;
-							if (voice)
-						{
-							egStop(voice,0);  
-							float* EGrepeat=voice->EGrepeat;
-							if (EGrepeat[1] == 0) egStop(voice,1);  
-							if (EGrepeat[2] == 0) egStop(voice,2); 
-							if (EGrepeat[3] == 0) egStop(voice,3); 
-							if (EGrepeat[4] == 0) egStop(voice,4);  
-							if (EGrepeat[5] == 0) egStop(voice,5);  
-							if (EGrepeat[6] == 0) egStop(voice,6);
-						}
-							break;      
-#ifdef _DEBUG      
-						default:
-							fprintf(stderr,"unknown event %d on Channel %2d: %5d   \r",ev->type, 
-							        c, evt[1]);
-#endif		
-					}// end of switch
-				}
-			}
-	}
-	lv2_event_increment(in_iterator);
 }
 
 // ******************************************** OSC handling for editors ***********************
@@ -1105,8 +1111,13 @@ LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 	}
 }
 
-void cleanupMinicomputer(LV2_Handle instance) {
+static void cleanupMinicomputer(LV2_Handle instance) {
 	minicomputer* mini=(minicomputer*)instance;
 	lo_server_thread_free(mini->st); 	
 	free(instance);
+}
+
+
+static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *data){
+	
 }

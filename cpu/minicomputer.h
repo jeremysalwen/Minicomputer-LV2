@@ -56,7 +56,7 @@ typedef struct _engine {
 	int EGrepeat[8] __attribute__((aligned (16)));
 	unsigned int EGtrigger[8] __attribute__((aligned (16)));
 	unsigned int EGstate[8] __attribute__((aligned (16)));
-	float midif[_MULTITEMP]  __attribute__((aligned (16)));
+	float midif  __attribute__((aligned (16)));
 	float high[4],band[4],low[4],f[4],q[4],v[4],faktor[4];
 
 	float  *port; // _multitemp * ports + 2 mix and 2 aux
@@ -82,7 +82,7 @@ static float table [_WAVECOUNT][TableSize] __attribute__((aligned (16)));
 static float midi2freq [128]  __attribute__((aligned (16)));
 
 typedef struct _minicomputer {
-	engineblock noteson[NUM_MIDI];
+	engineblock * noteson[NUM_MIDI];
 	listheader freeblocks;
 	engineblock* inuse;
 
@@ -98,12 +98,12 @@ typedef struct _minicomputer {
 	LV2_Event_Feature* event_ref;
 	int midi_event_id;
 
-	float temp=0.f;
 	float lfo;
-	float tabX = 4096.f / 48000.0f;
-	float srate = 3.145f/ 48000.f;
-	float srDivisor = 1.f / 48000.f*100000.f;
-	int i,delayBufferSize=0,maxDelayBufferSize=0,maxDelayTime=0;
+	float tabX ;
+	float srate;
+	float srDivisor ;
+	int delayBufferSize;
+	int maxDelayTime;
 	unsigned int bufsize;
 
 	float modulator[_MODCOUNT] __attribute__((aligned (16)));
@@ -113,12 +113,20 @@ typedef struct _minicomputer {
 
 #define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"
 
-const LV2_Descriptor * miniDescriptor ={.URI=MINICOMPUTER_URI, 
+static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *data);
+
+static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features);
+static void run_minicomputer(LV2_Handle instance, uint32_t nframes);
+static void cleanupMinicomputer(LV2_Handle instance);
+
+const LV2_Descriptor miniDescriptor ={
+	.URI=MINICOMPUTER_URI, 
 	.activate=NULL,
-	.cleanup=NULL,
+	.cleanup=cleanupMinicomputer,
 	.connect_port=connect_port_minicomputer,
 	.deactivate=NULL,
 	.activate=NULL,
-	.instantiate=init,
+	.instantiate=instantiateMinicomputer,
 	.run=run_minicomputer,
-	.extension_data=NULL};
+	.extension_data=NULL
+};
