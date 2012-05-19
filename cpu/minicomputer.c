@@ -27,15 +27,13 @@
  * @param the number of envelope generator
  */
 
-static inline void egStart (engine* voice, const unsigned int number)
+static inline void egStart (EG* eg, const unsigned int number)
 {
-	voice->EGtrigger[number]=1;
-	voice->EG[number][0] = 1.f; // triggerd
-	voice->EG[number][5] = 1.f; // target
-    voice->EG[number][7] = 0.0f;// state
-    voice->EGstate[number] = 0;// state  
-	voice->EGFaktor[number] = 0.f;
-		 //printf("start %i", voice);
+	eg->EGtrigger[number]=1;
+	voice->EG[number][7] = 0.0f;// state
+	eg->EGstate = 0;// state  
+	eg->EGFaktor = 0.f;
+	//printf("start %i", voice);
 }
 /** FIXED
  * set the envelope to release mode
@@ -43,27 +41,22 @@ static inline void egStart (engine* voice, const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
  */
-static inline void egStop (engine* voice,const unsigned int number)
+static inline void egStop (EG* voice,const unsigned int number)
 {
 	// if (EGrepeat[number] == 0) 
-	voice->EGtrigger[number] = 0; // triggerd
-	voice->EGstate[number] = 0; // target
+	eg->EGtrigger = 0; // triggerd
+	eg->EGstate = 0; // target
 	// printf("stop %i", voice);
 }
 /** FIXED
  * calculate the envelope, done in audiorate to avoide zippernoise
  * @param the voice number
  * @param the number of envelope generator
-*/
-static inline float egCalc (engine* voice, const unsigned int number, float srDivisor)
+ */
+static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 {
-	float  (*EG)[8][8]=&voice->EG;
-	float *EGFaktor=voice->EGFaktor;
-	unsigned int * EGstate=voice->EGstate;
-	unsigned int * EGrepeat=voice->EGrepeat;
-	unsigned int * EGtrigger=voice->EGtrigger;
 	/* EG[x] x:
-	 * 0 = trigger
+		* 0 = trigger
 	 * 1 = attack
 	 * 2 = decay
 	 * 3 = sustain
@@ -71,83 +64,82 @@ static inline float egCalc (engine* voice, const unsigned int number, float srDi
 	 * 5 = target
 	 * 6 = state
 	 */
-	if (EGtrigger[number] != 1)
+	if (eg->EGtrigger != 1)
 	{
-	int i = EGstate[number]; 
+		int i = eg->EGstate; 
 		if (i == 1){ // attack
-		         if (EGFaktor[number]<1.00f) EGFaktor[number] += 0.002f;
-			
-			 *EG[number][6] += *EG[number][1]*srDivisor*EGFaktor[number];
+			if (eg->EGFaktor<1.00f) eg->EGFaktor += 0.002f;
 
-			 if (*EG[number][6]>=1.0f)// Attackphase is finished
-			 {
-			 	*EG[number][6]=1.0f;
-			 	EGstate[number]=2;
-					EGFaktor[number] = 1.f; // triggerd
+			eg->state += es->attack*srDivisor*eg->EGFaktor;
 
-			 }
+			if (eg->state>=1.0f)// Attackphase is finished
+			{
+				eg->state=1.0f;
+				eg->EGstate=2;
+				eg->EGFaktor = 1.f; // triggerd
+
+			}
 		}
 		else if (i == 2)
 		{ // decay
-			if (*EG[number][6]>*EG[number][3])
+			if (eg->state > es->sustain)
 			{
-				 *EG[number][6] -= *EG[number][2]*srDivisor*EGFaktor[number];
+				eg->state -= es->decay*srDivisor*eg->EGFaktor;
 			}
 			else 
 			{
-				if (EGrepeat[number]==0)
+				if (eg->EGrepeat==0)
 				{
-					EGstate[number]=3; // stay on sustain
+					eg->EGstate=3; // stay on sustain
 				}
 				else
 				{
-					EGFaktor[number] = 1.f; // triggerd
+					eg->EGFaktor = 1.f; // triggerd
 					egStop(voice,number);// continue to release
 				}
 			}
 			// what happens if sustain = 0? envelope should go in stop mode when decay reached ground
-			if (*EG[number][6]<0.0f) 
-		    	{	
-		    		*EG[number][6]=0.0f;
-		    		if (EGrepeat[number]==0)
+			if (eg->state<0.0f) 
+			{	
+				eg->state=0.0f;
+				if (eg->EGrepeat==0)
 				{
-					EGstate[number]=4; // released
+					eg->EGstate=4; // released
 				}
 				else
 				{
 					egStart(voice,number);// repeat
 				}
-		    	}
+			}
 
 		} // end of decay
-		else if ((i == 0) && (*EG[number][6]>0.0f))
+		else if ((i == 0) && (eg->state>0.0f))
 		{
-		    /* release */
-		    
-		    if (EGFaktor[number]>0.025f) EGFaktor[number] -= 0.002f;
-		    *EG[number][6] -=*EG[number][4]*srDivisor*EGFaktor[number];//*EG[number][6];
+			/* release */
 
-		    if (*EG[number][6]<0.0f) 
-		    {	
-		    	*EG[number][6]=0.0f;
-		    	if (EGrepeat[number]==0)
+			if (eg->EGFaktor>0.025f) eg->EGFaktor-= 0.002f;
+			eg->state -=es->release*srDivisor*eg->EGFaktor;//*EG[number][6];
+
+			if (eg->state<0.0f) 
+			{	
+				eg->State=0.0f;
+				if (eg->EGrepeat==0)
 				{
-					EGstate[number]=4; // released
+					eg->EGstate=4; // released
 				}
 				else
 				{
 					egStart(voice,number);// repeat
 				}
-		    }
+			}
 		}
 	}
 	else
 	{
-		EGtrigger[number] = 0;
-		*EG[number][0] = 1.f; // triggerd
-		EGstate[number] = 1; // target
+		eg->EGtrigger = 0;
+		eg->EGstate = 1; // target
 	}
-	return *EG[number][6];
+	return eg->state;
 }
 //float d0,d1,d2,c1;
 
@@ -158,7 +150,7 @@ static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 		return NULL;
 	}
 	listheader rh=result->h;
-	
+
 	mini->freeblocks.next=rh.next;
 	rh.next->h.previous=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
 	rh.previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
@@ -302,7 +294,29 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 		lv2_event_increment(&mini->in_iterator);
 	}
 }
+float calcfilters(filters* filts) {
+	//----------------------- actual filter calculation -------------------------
+	// first filter
+	float reso = filts->q[0]; // for better scaling the volume with rising q
+	filts->low[0] = filts->low[0] + filts->f[0] * filts->band[0];
+	filts->high[0] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[0] - (reso*filts->band[0]);
+	filts->band[0]= filts->f[0] * filts->high[0] + filts->band[0];
 
+	reso = filts->q[1];
+	// second filter
+	filts->low[1] = filts->low[1] + filts->f[1] * filts->band[1];
+	filts->high[1] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[1] - (reso*filts->band[1]);
+	filts->band[1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
+
+	// third filter
+	reso = filts->q[2];
+	filts->low[2] = filts->low[2] + filts->f[2] * band[currentvoice][2];
+	filts->high[2] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[2] - (reso*filts->band[2]);
+	filts->band[2]= filts->f[2] * filts->high[currentvoice][2] + filts->ban[2];
+
+	return (filts->low[0]*filts->v[0])+filts->band[1]*filts->v[1]+filts->band[2]*filts->v[2];
+
+}
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
@@ -322,16 +336,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 
 	int iP1=0,iP2=0,iP3=0;
 
-#ifdef _VECTOR
-	union f4vector g __attribute__((aligned (16)));
-	union f4vector h __attribute__((aligned (16)));
-	union f4vector i __attribute__((aligned (16)));
-	union f4vector j __attribute__((aligned (16)));
-	g.f[1] = 2.f; g.f[2] = 2.f; g.f[3] = 2.f; // first entry differs always
-	//g.f[1] = 2.f*srate; g.f[2] = 2.f*srate; g.f[3] = 2.f*srate; // first entry differs always
-	i.f[0]=1.f; i.f[1] = srate; i.f[2] = srate; i.f[3] = srate; 
-	h.f[0]=1.f; h.f[1] = 0.1472725f; h.f[2] = 0.1472725f; h.f[3] = 0.1472725f;
-#endif
 	float *bufferMixLeft = mini->MixLeft_p;
 	float *bufferMixRight = mini->MixRight_p;
 	float *bufferAux1 =mini->Aux1_p;
@@ -351,7 +355,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 		 * first calculating the envelopes
 		 */
 		register unsigned int currentvoice;
-		for (currentvoice=0;currentvoice<_multitemp;++currentvoice) // for each voice
+		for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 		{		
 			engine* voice=engines+currentvoice;
 
@@ -366,8 +370,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			/**
 			 * calc the main audio signal
 			 */
-(%i387) float(sinest(x));
-(%o387) 8.3506088780449292*10^-13*(3111680.0*x^9-1.6258791506178565*10^7*x^7+2.8081872036010493*10^7*x^5-1.7766472297271624*10^7*x^3+2988887.27006223*x)-1.2266850925018943*10^-9*(150382.7053886184*x^7-599395.6544226131*x^5+672249.7714640067*x^3-184301.0917520132*x)+1.6020187984761749*10^-6*(4727.939085902017*x^5-12961.91344730582*x^3+6853.337036039403*x)-0.0019384700189231*(74.83314773547883*x^3-110.7860346356178*x)+0.77403682639679*x
 			// get the parameter settings
 			float * param = voice->parameter;
 			// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
@@ -538,31 +540,9 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mo = clib1 + 1.0f;
 			mo -= clib2;
 			mo *= 0.5f;
-			
+
 			morph=(1.0f-mo);
-
-			// parallel calculation:
-#ifdef _vector
-			union f4vector a __attribute__((aligned (16))), b __attribute__((aligned (16))),  c __attribute__((aligned (16))), d __attribute__((aligned (16))),e __attribute__((aligned (16)));
-
-			b.f[0] = morph; b.f[1] = morph; b.f[2] = morph; b.f[3] = morph;
-			a.f[0] = param[30]; a.f[1] =param[31]; a.f[2] = param[32]; a.f[3] = param[40];
-			d.f[0] = param[41]; d.f[1] =param[42]; d.f[2] = param[50]; d.f[3] = param[51];
-			c.v = a.v * b.v;
-			//c.v = __builtin_ia32_mulps (a.v, b.v);
-			e.v = d.v * b.v;
-			//e.v = __builtin_ia32_mulps (d.v, b.v);
-
-			tf1 = c.f[0];
-			voice->q[0]=c.f[1];
-			voice->v[0]=c.f[2];
-			tf2 = c.f[3];
-			voice->q[1] = e.f[0];
-			voice->v[1] = e.f[1];
-			tf3 =  e.f[2];
-			voice->q[2] = e.f[3];
-
-#else
+			
 			tf1= param[30];
 			voice->q[0] = param[31];
 			voice->v[0] = param[32];
@@ -572,8 +552,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			voice->v[1] = param[42];
 			tf3 =  param[50];
 			voice->q[2] = param[51];
-#endif
-
 			voice->v[2] = param[52];
 
 #ifdef _prefetch
@@ -588,7 +566,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&param[55],0,0);
 #endif
 
-#ifndef _vector
 			tf1*= morph;
 			tf2*= morph;
 			voice->q[0] *= morph;
@@ -598,36 +575,13 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			voice->v[1] *= morph;
 			voice->q[1] *= morph;
 			voice->q[2] *= morph;
-#endif
 
 			voice->v[2] *= morph;
 
-#ifdef _vector
-			a.f[0] = param[33]; a.f[1] =param[34]; a.f[2] = param[35]; a.f[3] = param[43];
-			d.f[0] = param[44]; d.f[1] =param[45]; d.f[2] = param[53]; d.f[3] = param[54];
-			b.f[0] = mo; b.f[1] = mo; b.f[2] = mo; b.f[3] = mo;
-			c.v = a.v * b.v;
-			//c.v = __builtin_ia32_mulps (a.v, b.v);
-			e.v = d.v * b.v;
-			//e.v = __builtin_ia32_mulps (d.v, b.v);
-
-			tf1+= c.f[0];
-			tf2+=c.f[3];
-			tf3 += e.f[2];
-			voice->q[0] += c.f[1];//parameter[currentvoice][34]*mo;
-			voice->q[1] += e.f[0];//parameter[currentvoice][44]*mo;
-			voice->q[2] += e.f[3];//parameter[currentvoice][54]*mo;
-			voice->v[0] += c.f[2];//parameter[currentvoice][35]*mo;
-			voice->v[1] += e.f[1];//parameter[currentvoice][45]*mo;
-
-#else
 			tf1+= param[33]*mo;
 			tf2+=param[43]*mo;
 			tf3 += param[53]*mo;
-#endif
 
-
-#ifndef _vector
 			voice->q[0] += param[34]*mo;
 			voice->q[1] += param[44]*mo;
 			voice->q[2] += param[54]*mo;
@@ -638,26 +592,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			tf1*=srate;
 			tf2*=srate;
 			tf3 *= srate;
-#endif
 
-#ifdef _vector
-			// prepare next calculations
-
-			a.f[0] = param[55]; a.f[1] =tf1; a.f[2] = tf2; a.f[3] = tf3;
-			g.f[0] = mo;// b.f[1] = 2.f; b.f[2] = 2.f; b.f[3] = 2.f;
-			j.v = a.v * i.v; // tf * srate
-			c.v = j.v * g.v; // tf * 2
-
-			voice->v[2] += c.f[0];//parameter[currentvoice][55]*mo;
-
-			d.v = c.v - ((j.v * j.v * j.v) * h.v);
-
-			voice->f0] = d.f[1];//(tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
-
-			voice->f[1] = d.f[2];//(tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
-
-			voice->f[2] = d.f[3];//(tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
-#else
 			voice->v[2] += param[55]*mo;
 
 			voice->f[0] = 2.f * tf1;
@@ -669,28 +604,8 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			voice->f[1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
 
 			voice->f[2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
-#endif
-			//----------------------- actual filter calculation -------------------------
-			// first filter
-			float reso = voice->q[0]; // for better scaling the volume with rising q
-			voice->low[0] = voice->low[0] + voice->f[0] * voice->band[0];
-			voice->high[0] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[0] - (reso*voice->band[0]);
-			voice->band[0]= voice->f[0] * voice->high[0] + voice->band[0];
-
-			reso = voice->q[1];
-			// second filter
-			voice->low[1] = voice->low[1] + voice->f[1] * voice->band[1];
-			voice->high[1] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[1] - (reso*voice->band[1]);
-			voice->band[1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
-
-			// third filter
-			reso = voice->q[2];
-			voice->low[2] = voice->low[2] + voice->f[2] * band[currentvoice][2];
-			voice->high[2] = ((reso + ((1.f-reso)*0.1f))*temp) - voice->low[2] - (reso*voice->band[2]);
-			voice->band[2]= voice->f[2] * voice->high[currentvoice][2] + voice->ban[2];
-
-			mod [7] = (voice->low[0]*voice->v[0])+voice->band[1]*voice->v[1]+voice->band[2]*voice->v[2];
-
+			
+			mod[7]=calcfilters(&voice->filts);
 			//---------------------------------- amplitude shaping
 
 			result = (1.f-mod[ choi[13]]*param[100] );///_multitemp;
@@ -726,53 +641,60 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			result *= param[106]; // mix volume
 			buffermixleft[index] += result * (1.f-param[107]);
 			buffermixright[index] += result * param[107];
-			}
-			}
+		}
+	}
 }
 
-void initEngine(engine* voice) {
-				float** EG=voice->EG;
-				float* EGtrigger=voice->EGtrigger;
-				float* parameter=voice->parameter;
-				float* modulator=voice->modulator;
-				float* low=voice->low;
-				float* high=voice->high;
-				for (i=0;i<8;i++) // i is the number of envelope
-		{
-		EG[i][1]=0.01f;
-		EG[i][2]=0.01f;
-		EG[i][3]=1.0f;
-		EG[i][4]=0.0001f;
-		EGtrigger[i]=0;
-  
-		EGrepeat[i]=0;
-		EGstate[i]=4; // released
-		}
-		parameter[30]=100.f;
-		parameter[31]=0.5f;
-		parameter[33]=100.f; 
-		parameter[34]=0.5f;
-		parameter[40]=100.f;
-		parameter[41]=0.5f;
-		parameter[43]=100.f; 
-		parameter[44]=0.5f;
-		parameter[50]=100.f;
-		parameter[51]=0.5f;
-		parameter[53]=100.f; 
-		parameter[54]=0.5f;
-		modulator[0] =0.f;// the none modulator, doing nothing
-		for (unsigned int i=0;i<3;++i) 
-		{
-			low[i]=0;
-			high[i]=0;
-		}
+static void initEngine(engine* voice) {
+	float* EGtrigger=voice->EGtrigger;
+	float* parameter=voice->parameter;
+	float* modulator=voice->modulator;
+	float* low=voice->low;
+	float* high=voice->high;
+	for (i=0;i<8;i++) // i is the number of envelope
+	{
+		voice->envelope_generator[i].EGTrigger=0;
+		voice->envelope_generator[i].EGstate=4; // released
+	}
+	modulator[0] =0.f;// the none modulator, doing nothing
+	for (unsigned int i=0;i<3;++i) 
+	{
+		low[i]=0;
+		high[i]=0;
+	}
 }
+static void initEnvelopeSettings(envelope_settings* es) {
+	es->attack=0.01f;
+	es->decay=0.01f;
+	es->sustain=1.0f;
+	es->release=0.0001f;
+	es->EGrepeat=0;
+}
+
+static void initParameters(float parameter[_PARACOUNT]) {
+	parameter[30]=100.f;
+	parameter[31]=0.5f;
+	parameter[33]=100.f; 
+	parameter[34]=0.5f;
+	parameter[40]=100.f;
+	parameter[41]=0.5f;
+	parameter[43]=100.f; 
+	parameter[44]=0.5f;
+	parameter[50]=100.f;
+	parameter[51]=0.5f;
+	parameter[53]=100.f; 
+	parameter[54]=0.5f;
+}
+
 static void initEngines(minicomputer* mini) {
 	minicomputer* mini= malloc(sizeof(minicomputer));
 	memset(mini->noteson,0,sizeof(mini->noteson));
 	mini->inuse=NULL;
 	mini->freeblocks.previous=(minicomputer*)&mini->freeblocks;
 	mini->freeblocks.next=(minicomputer*)&mini->freeblocks;
+
+	initEnvelopeSettings(&mini->es);
+	initParameters (mini->parameter);
 	unsigned int numvoices=8;
 	for(unsigned int i=0; i<numvoices; i++) {
 		engineblock* e=malloc(sizeof(engineblock));
@@ -794,12 +716,12 @@ static void waveTableInit() {
 	for (i=0; i<TableSize; i++)
 	{
 		table[0][i] = (float)((float)sin(x+(
-				(float)2.0f*(float)PI)));
+		                                    (float)2.0f*(float)PI)));
 		x += increment;
 		table[1][i] = (float)i/tabF*2.f-1.f;// ramp up
-			
+
 		table[2][i] = 0.9f-(i/tabF*1.8f-0.5f);// tabF-((float)i/tabF*2.f-1.f);//ramp down
-			
+
 		if (i<TableSize/2) 
 		{ 
 			tri+=(float)1.f/TableSize*3.f; 
@@ -808,51 +730,51 @@ static void waveTableInit() {
 		}
 		else
 		{
-			 tri-=(float)1.f/TableSize*3.f;
-			 table[3][i] = tri;
-			 table[4][i]=-0.9f;
+			tri-=(float)1.f/TableSize*3.f;
+			table[3][i] = tri;
+			table[4][i]=-0.9f;
 		}
 		table[5][i] = 0.f;
 		table[6][i] = 0.f;
 		if (i % 2 == 0)
 			table[7][i] = 0.9f;
 		else table [7][i] = -0.9f;
-	
+
 		table[8][i]=(float) (
-			((float)sin(x+((float)2.0f*(float)PI))) +
-			((float)sin(x*2.f+((float)2.0f*(float)PI)))+
-			((float)sin(x*3.f+((float)2.0f*(float)PI)))+
-			((float)sin(x*4.f+((float)2.0f*(float)PI)))*0.9f+
-			((float)sin(x*5.f+((float)2.0f*(float)PI)))*0.8f+
-			((float)sin(x*6.f+((float)2.0f*(float)PI)))*0.7f+
-			((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.6f+
-			((float)sin(x*8.f+((float)2.0f*(float)PI)))*0.5f
-			) / 8.0f;	
-		
+		                     ((float)sin(x+((float)2.0f*(float)PI))) +
+		                     ((float)sin(x*2.f+((float)2.0f*(float)PI)))+
+		                     ((float)sin(x*3.f+((float)2.0f*(float)PI)))+
+		                     ((float)sin(x*4.f+((float)2.0f*(float)PI)))*0.9f+
+		                     ((float)sin(x*5.f+((float)2.0f*(float)PI)))*0.8f+
+		                     ((float)sin(x*6.f+((float)2.0f*(float)PI)))*0.7f+
+		                     ((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.6f+
+		                     ((float)sin(x*8.f+((float)2.0f*(float)PI)))*0.5f
+		                     ) / 8.0f;	
+
 		table[9][i]=(float) (
-			((float)sin(x+((float)2.0f*(float)PI))) +
-			((float)sin(x*3.f+((float)2.0f*(float)PI)))+
-			((float)sin(x*5.f+((float)2.0f*(float)PI)))+
-			((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.9f+
-			((float)sin(x*9.f+((float)2.0f*(float)PI)))*0.8f+
-			((float)sin(x*11.f+((float)2.0f*(float)PI)))*0.7f+
-			((float)sin(x*13.f+((float)2.0f*(float)PI)))*0.6f+
-			((float)sin(x*15.f+((float)2.0f*(float)PI)))*0.5f
-			) / 8.0f;
-		
+		                     ((float)sin(x+((float)2.0f*(float)PI))) +
+		                     ((float)sin(x*3.f+((float)2.0f*(float)PI)))+
+		                     ((float)sin(x*5.f+((float)2.0f*(float)PI)))+
+		                     ((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.9f+
+		                     ((float)sin(x*9.f+((float)2.0f*(float)PI)))*0.8f+
+		                     ((float)sin(x*11.f+((float)2.0f*(float)PI)))*0.7f+
+		                     ((float)sin(x*13.f+((float)2.0f*(float)PI)))*0.6f+
+		                     ((float)sin(x*15.f+((float)2.0f*(float)PI)))*0.5f
+		                     ) / 8.0f;
+
 		table[10][i]=(float)(sin((double)i/(double)TableSize+(sin((double)i*4))/2))*0.5;
-			table[11][i]=(float)(sin((double)i/(double)TableSize*(sin((double)i*6)/4)))*2.;
-			table[12][i]=(float)(sin((double)i*(sin((double)i*1.3)/50)));
-			table[13][i]=(float)(sin((double)i*(sin((double)i*1.3)/5)));
-			table[14][i]=(float)sin((double)i*0.5*(cos((double)i*4)/50));
-			table[15][i]=(float)sin((double)i*0.5+(sin((double)i*14)/2));
-			table[16][i]=(float)cos((double)i*2*(sin((double)i*34)/400));
-			table[17][i]=(float)cos((double)i*4*((double)table[7][i]/150));
-			
+		table[11][i]=(float)(sin((double)i/(double)TableSize*(sin((double)i*6)/4)))*2.;
+		table[12][i]=(float)(sin((double)i*(sin((double)i*1.3)/50)));
+		table[13][i]=(float)(sin((double)i*(sin((double)i*1.3)/5)));
+		table[14][i]=(float)sin((double)i*0.5*(cos((double)i*4)/50));
+		table[15][i]=(float)sin((double)i*0.5+(sin((double)i*14)/2));
+		table[16][i]=(float)cos((double)i*2*(sin((double)i*34)/400));
+		table[17][i]=(float)cos((double)i*4*((double)table[7][i]/150));
+
 		//printf("%f ",table[17][i]);
 
 	}
-	
+
 	table[5][0] = -0.9f;
 	table[5][1] = 0.9f;
 
@@ -880,12 +802,12 @@ static void initOSC(minicomputer* mini) {
 	lo_server_thread_add_method(mini->st, "/Minicomputer/choice", "iii", generic_handler, mini);
 
 	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
-	 */
-    lo_server_thread_add_method(mini->st, "/Minicomputer", "iif", foo_handler, mini);
+	*/
+	lo_server_thread_add_method(mini->st, "/Minicomputer", "iif", foo_handler, mini);
 
-    /* add method that will match the path Minicomputer/quit with one integer */
-  	lo_server_thread_add_method(mini->st, "/Minicomputer/quit", "i", quit_handler, mini);
-	
+	/* add method that will match the path Minicomputer/quit with one integer */
+	lo_server_thread_add_method(mini->st, "/Minicomputer/quit", "i", quit_handler, mini);
+
 	lo_server_thread_start(mini->st);
 }
 /** @brief initialization
@@ -898,7 +820,7 @@ static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, doub
 	initEngines(mini);
 	initOSC(mini);
 	static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-    pthread_once(&initialized, waveTableInit);
+	pthread_once(&initialized, waveTableInit);
 
 	/* we register the output ports and tell jack these are 
 	 * terminal ports which means we don't 
@@ -906,7 +828,7 @@ static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, doub
 	 * feed our output */
 	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	
+
 	// would like to create mix ports last because qjackctrl tend to connect automatic the last ports
 	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
@@ -928,10 +850,10 @@ static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, doub
 		delayI[k]=0;
 		delayJ[k]=0;
 	}
-	#ifdef _DEBUG
+#ifdef _DEBUG
 	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
-	#endif
-	
+#endif
+
 } // end of initialization
 
 static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
@@ -960,8 +882,8 @@ static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
  */
 static inline void error(int num, const char *msg, const char *path)
 {
-    printf("liblo server error %d in path %s: %s\n", num, path, msg);
-    fflush(stdout);
+	printf("liblo server error %d in path %s: %s\n", num, path, msg);
+	fflush(stdout);
 }
 
 /** catch any incoming messages and display them. returning 1 means that the
@@ -985,7 +907,7 @@ static inline int generic_handler(const char *path, const char *types, lo_arg **
 		return 0;
 	}
 	else return 1;
-	
+
 }
 
 /** specific message handler
@@ -999,115 +921,115 @@ static inline int generic_handler(const char *path, const char *types, lo_arg **
  * @return int 0 if everything is ok, 1 means message is not fully handled
  */
 static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
-		 void *data, void *user_data)
+                              void *data, void *user_data)
 {
 	minicomputer* mini= (minicomputer*) data;
-    /* example showing pulling the argument values out of the argv array */
-   int voice =  argv[0]->i;
-   engine* voice=mini->engines[voice];
-   int i =  argv[1]->i;
-   if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT))  {
-   	voice->parameter[i]=argv[2]->f;
-   }
+	/* example showing pulling the argument values out of the argv array */
+	int voice =  argv[0]->i;
+	engine* voice=mini->engines[voice];
+	int i =  argv[1]->i;
+	if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT))  {
+		voice->parameter[i]=argv[2]->f;
+	}
 	float ** EG=voice->EG;
 	float * EGrepeat=voice->EGrepeat;
-   switch (i) {
-   	 // reset the filters 
-   	 case 0:{
-   	 	voice->low[0]	= 0.f;
-   	 	voice->high[0]	= 0.f;
-   	 	voice->band[0] = 0.f;
-   	 	voice->low[1]	= 0.f;
-   	 	voice->high[1]	= 0.f;
-   	 	voice->band[1] = 0.f;
-   	 	voice->low[2]	= 0.f;
-   	 	voice->high[2]	= 0.f;
-   	 	voice->band[2] = 0.f;
-   	 	voice->phase[1] = 0.f;
-   	 	voice->phase[2] = 0.f;
-   	 	voice->phase[3] = 0.f;
-		memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
-   	 break;}
-   	 
-   	 case 60:EG[1][1]=argv[2]->f;break;
-   	 case 61:EG[1][2]=argv[2]->f;break;
-   	 case 62:EG[1][3]=argv[2]->f;break;
-   	 case 63:EG[1][4]=argv[2]->f;break;
-   	 case 64:
-   	 {
-   	 	EGrepeat[1] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[1] > 0 ) egStart(voice,1);
-   	 	break;
-   	 }
-   	 case 65:EG[2][1]=argv[2]->f;break;
-   	 case 66:EG[2][2]=argv[2]->f;break;
-   	 case 67:EG[2][3]=argv[2]->f;break;
-   	 case 68:EG[2][4]=argv[2]->f;break;
-   	  case 69:
-   	 {
-   	 	EGrepeat[2] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[2] > 0 ) egStart(voice,2);
-   	 	break;
-   	 }
-   	 case 70:EG[3][1]=argv[2]->f;break;
-   	 case 71:EG[3][2]=argv[2]->f;break;
-   	 case 72:EG[3][3]=argv[2]->f;break;
-   	 case 73:EG[3][4]=argv[2]->f;break;
-   	  case 74:
-   	 {
-   	 	EGrepeat[3] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[3] > 0 ) egStart(voice,3);
-   	 	break;
-   	 }
-   	 case 75:EG[4][1]=argv[2]->f;break;
-   	 case 76:EG[4][2]=argv[2]->f;break;
-   	 case 77:EG[4][3]=argv[2]->f;break;
-   	 case 78:EG[4][4]=argv[2]->f;break; 
-   	  case 79:
-   	 {
-   	 	EGrepeat[4] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[4] > 0 ) egStart(voice,4);
-   	 	break;
-   	 }
-   	 case 80:EG[5][1]=argv[2]->f;break;
-   	 case 81:EG[5][2]=argv[2]->f;break;
-   	 case 82:EG[5][3]=argv[2]->f;break;
-   	 case 83:EG[5][4]=argv[2]->f;break;
-   	  case 84:
-   	 {
-   	 	EGrepeat[5] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[5] > 0 ) egStart(voice,5);
-   	 	break;
-   	 }
-   	 case 85:EG[6][1]=argv[2]->f;break;
-   	 case 86:EG[6][2]=argv[2]->f;break;
-   	 case 87:EG[6][3]=argv[2]->f;break;
-   	 case 88:EG[6][4]=argv[2]->f;break;
-   	  case 89:
-   	 {
-   	 	EGrepeat[6] = (argv[2]->f>0) ? 1:0;
-   	 	if (EGrepeat[6] > 0 ) egStart(voice,6);
-   	 	break;
-   	 }
-   	 case 102:EG[0][1]=argv[2]->f;break;
-   	 case 103:EG[0][2]=argv[2]->f;break;
-   	 case 104:EG[0][3]=argv[2]->f;break;
-   	 case 105:EG[0][4]=argv[2]->f;break;
-   	 
-   }
+	switch (i) {
+		// reset the filters 
+		case 0:{
+			voice->low[0]	= 0.f;
+			voice->high[0]	= 0.f;
+			voice->band[0] = 0.f;
+			voice->low[1]	= 0.f;
+			voice->high[1]	= 0.f;
+			voice->band[1] = 0.f;
+			voice->low[2]	= 0.f;
+			voice->high[2]	= 0.f;
+			voice->band[2] = 0.f;
+			voice->phase[1] = 0.f;
+			voice->phase[2] = 0.f;
+			voice->phase[3] = 0.f;
+			memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
+			break;}
+
+		case 60:EG[1][1]=argv[2]->f;break;
+		case 61:EG[1][2]=argv[2]->f;break;
+		case 62:EG[1][3]=argv[2]->f;break;
+		case 63:EG[1][4]=argv[2]->f;break;
+		case 64:
+		{
+			EGrepeat[1] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[1] > 0 ) egStart(voice,1);
+			break;
+		}
+			case 65:EG[2][1]=argv[2]->f;break;
+			case 66:EG[2][2]=argv[2]->f;break;
+			case 67:EG[2][3]=argv[2]->f;break;
+			case 68:EG[2][4]=argv[2]->f;break;
+		case 69:
+		{
+			EGrepeat[2] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[2] > 0 ) egStart(voice,2);
+			break;
+		}
+			case 70:EG[3][1]=argv[2]->f;break;
+			case 71:EG[3][2]=argv[2]->f;break;
+			case 72:EG[3][3]=argv[2]->f;break;
+			case 73:EG[3][4]=argv[2]->f;break;
+		case 74:
+		{
+			EGrepeat[3] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[3] > 0 ) egStart(voice,3);
+			break;
+		}
+			case 75:EG[4][1]=argv[2]->f;break;
+			case 76:EG[4][2]=argv[2]->f;break;
+			case 77:EG[4][3]=argv[2]->f;break;
+			case 78:EG[4][4]=argv[2]->f;break; 
+		case 79:
+		{
+			EGrepeat[4] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[4] > 0 ) egStart(voice,4);
+			break;
+		}
+			case 80:EG[5][1]=argv[2]->f;break;
+			case 81:EG[5][2]=argv[2]->f;break;
+			case 82:EG[5][3]=argv[2]->f;break;
+			case 83:EG[5][4]=argv[2]->f;break;
+		case 84:
+		{
+			EGrepeat[5] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[5] > 0 ) egStart(voice,5);
+			break;
+		}
+			case 85:EG[6][1]=argv[2]->f;break;
+			case 86:EG[6][2]=argv[2]->f;break;
+			case 87:EG[6][3]=argv[2]->f;break;
+			case 88:EG[6][4]=argv[2]->f;break;
+		case 89:
+		{
+			EGrepeat[6] = (argv[2]->f>0) ? 1:0;
+			if (EGrepeat[6] > 0 ) egStart(voice,6);
+			break;
+		}
+			case 102:EG[0][1]=argv[2]->f;break;
+			case 103:EG[0][2]=argv[2]->f;break;
+			case 104:EG[0][3]=argv[2]->f;break;
+			case 105:EG[0][4]=argv[2]->f;break;
+
+	}
 #ifdef _DEBUG
-   printf("%i %i %f \n",voice,i,argv[2]->f);
+	printf("%i %i %f \n",voice,i,argv[2]->f);
 #endif   
-    return 0;
+		return 0;
 }
 
 LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 {
 	switch (index) {
-	case 0:
-		return miniDescriptor;
-	default:
-		return NULL;
+		case 0:
+			return miniDescriptor;
+		default:
+			return NULL;
 	}
 }
 
@@ -1119,5 +1041,5 @@ static void cleanupMinicomputer(LV2_Handle instance) {
 
 
 static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *data){
-	
-}
+
+}	

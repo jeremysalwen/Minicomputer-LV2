@@ -45,19 +45,38 @@ static const float anti_denormal = 1e-20;// magic number to get rid of denormali
 	};
 #endif
 
+typedef struct _envelope_settings {
+	float attack __attribute__((aligned (16)));
+	float decay __attribute__((aligned (16)));
+	float sustain __attribute__((aligned (16)));
+	float release __attribute__((aligned (16)));
+	
+	int EGrepeat __attribute__((aligned (16)));
+} envelope_settings;
+
+typedef struct _envelope_generator {
+	float state __attribute__((aligned (16)));
+	float Faktor __attribute__((aligned (16)));
+	
+	unsigned int EGtrigger __attribute__((aligned (16)));
+	unsigned int EGstate __attribute__((aligned (16)));
+} EG;
+
+typedef struct _filters {
+	float high[4],band[4],low[4],f[4],q[4],v[4];
+} filters;
+
 typedef struct _engine {
+	EG envelope_generator[8];
+	filters filts;
 	float delayBuffer[96000] __attribute__((aligned (16)));
 	float parameter[_PARACOUNT] __attribute__((aligned (16)));
 
-	float EG[8][8] __attribute__((aligned (16))); // 7 8
-	float EGFaktor[8] __attribute__((aligned (16)));
 	float phase[4] __attribute__((aligned (16)));//=0.f;
 	unsigned int choice[_CHOICEMAX] __attribute__((aligned (16)));
-	int EGrepeat[8] __attribute__((aligned (16)));
-	unsigned int EGtrigger[8] __attribute__((aligned (16)));
-	unsigned int EGstate[8] __attribute__((aligned (16)));
+
+
 	float midif  __attribute__((aligned (16)));
-	float high[4],band[4],low[4],f[4],q[4],v[4],faktor[4];
 
 	float  *port; // _multitemp * ports + 2 mix and 2 aux
 
@@ -86,6 +105,8 @@ typedef struct _minicomputer {
 	listheader freeblocks;
 	engineblock* inuse;
 
+	envelope_settings ES;
+	
 	// variables
 	float *MixLeft_p;
 	float *MixRight_p;
