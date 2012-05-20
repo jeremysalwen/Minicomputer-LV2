@@ -45,6 +45,24 @@ static const float anti_denormal = 1e-20;// magic number to get rid of denormali
 	};
 #endif
 
+typedef struct _modulator_selector {
+	float type;
+	float amount;
+} mod_selector;
+typedef struct _oscillator_params {
+	float waveform;
+	float frequency;
+	float volume;
+	
+	float boost_modulation;
+	mod_selector freq_mod1;
+	mod_selector freq_mod2;
+	mod_selector amp_mod1;
+	mod_selector amp_mod2;
+	
+	float fm_output_vol;
+} oscillator_params;
+
 typedef struct _envelope_settings {
 	float attack __attribute__((aligned (16)));
 	float decay __attribute__((aligned (16)));
@@ -62,19 +80,24 @@ typedef struct _envelope_generator {
 	unsigned int EGstate __attribute__((aligned (16)));
 } EG;
 
-typedef struct _filters {
-	float high[4],band[4],low[4],f[4],q[4],v[4];
-} filters;
+typedef struct _filter_settings {
+	float f; //frequency
+	float q; //resonance
+	float v; //volume
+} filter_settings;
+
+typedef struct _filter {
+	float high;
+	float band
+	float low;
+} filter;
 
 typedef struct _engine {
 	EG envelope_generator[8];
-	filters filts;
+	
 	float delayBuffer[96000] __attribute__((aligned (16)));
-	float parameter[_PARACOUNT] __attribute__((aligned (16)));
 
 	float phase[4] __attribute__((aligned (16)));//=0.f;
-	unsigned int choice[_CHOICEMAX] __attribute__((aligned (16)));
-
 
 	float midif  __attribute__((aligned (16)));
 
@@ -104,8 +127,29 @@ typedef struct _minicomputer {
 	engineblock * noteson[NUM_MIDI];
 	listheader freeblocks;
 	engineblock* inuse;
+	
+	filter filters[3];
 
+	filter_settings filt_settings[3][2];
+	mod_selector morph_mod1;
+	mod_selector morph_mod2;
 	envelope_settings ES;
+	oscillator_params osc1;
+	oscillator_params osc2;
+	mod_selector amp_mod;
+	
+	float mod_osc_type;
+	float mod_osc_freq;
+	
+	float delay_amount;
+	float delay_time;
+	float delay_feedback;
+	float delay_volume;
+	mod_selector delay_mod;
+	
+	float sync_osc2;
+	
+	float clear_filter;
 	
 	// variables
 	float *MixLeft_p;

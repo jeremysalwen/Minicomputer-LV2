@@ -122,7 +122,7 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 
 			if (eg->state<0.0f) 
 			{	
-				eg->State=0.0f;
+				eg->state=0.0f;
 				if (eg->EGrepeat==0)
 				{
 					eg->EGstate=4; // released
@@ -317,9 +317,23 @@ float calcfilters(filters* filts) {
 	return (filts->low[0]*filts->v[0])+filts->band[1]*filts->v[1]+filts->band[2]*filts->v[2];
 
 }
+
+inline float approx_sine(float f) {
+	return f*(2-f*f*0.1472725f);// dividing by 6.7901358, i.e. the least squares polynomial
+}
+inline filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo) {
+	float morph=(1.0f-mo);
+	
+	filter_settings result;
+	
+	result.f = in1.f*morph+in2.f*mo;
+	result.q = in1.q*morph+in2.q*mo;
+	result.v = in1.v*morph+in2.v*mo;
+}
+
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
-	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,mo,mf,result,tdelay,clib1,clib2;
+	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
 	float osc1,osc2,delayMod;
 
 	// an union for a nice float to int casting trick which should be fast
@@ -518,9 +532,9 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			temp+=anti_denormal;
 
 			// ------------- calculate the filter settings ------------------------------
-			mf =  (1.f-(param[38]*mod[ choi[10]]));
-			mf+= (1.f-(param[48]*mod[ choi[11]]));
-			mo = param[56]*mf;
+			float morph_mod_amt =  (1.f-(param[38]*mod[ choi[10]]));
+			morph_mod_amt+= (1.f-(param[48]*mod[ choi[11]]));
+			float mo = param[56]*morph_mod_amt;
 
 
 #ifdef _prefetch
@@ -534,25 +548,10 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&param[51],0,0);
 			__builtin_prefetch(&param[52],0,0);
 #endif
-
-			clib1 = fabs (mo);
-			clib2 = fabs (mo-1.0f);
-			mo = clib1 + 1.0f;
-			mo -= clib2;
-			mo *= 0.5f;
-
-			morph=(1.0f-mo);
-			
-			tf1= param[30];
-			voice->q[0] = param[31];
-			voice->v[0] = param[32];
-			tf2= param[40];
-
-			voice->q[1] = param[41];
-			voice->v[1] = param[42];
-			tf3 =  param[50];
-			voice->q[2] = param[51];
-			voice->v[2] = param[52];
+			//The next three lines just clip to the [0,1] interval
+			float clib1 = fabs (mo);
+			float clib2 = fabs (mo-1.0f);
+			mo = 0.5*(clib1 + 1.0f-clib2);
 
 #ifdef _prefetch
 			__builtin_prefetch(&param[33],0,0);
@@ -565,45 +564,22 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&param[54],0,0);
 			__builtin_prefetch(&param[55],0,0);
 #endif
+			filter_settings s1;
+			filter_settings s2;
+			filter_settings s3;
+			
+			morph_filters(s1,voice->filter_settings[0][0],voice->filter_settings[0][1],mo);
+			morph_filters(s2,voice->filter_settings[1][0],voice->filter_settings[1][1],mo);
+			morph_filters(s3,voice->filter_settings[2][0],voice->filter_settings[2][1],mo);
 
-			tf1*= morph;
-			tf2*= morph;
-			voice->q[0] *= morph;
-			voice->v[0] *= morph;
+			float srate=mini->srate;
+			s1.f*=srate;
+			s2.f*=srate;
+			s3.f*=srate;
 
-			tf3 *=  morph;
-			voice->v[1] *= morph;
-			voice->q[1] *= morph;
-			voice->q[2] *= morph;
-
-			voice->v[2] *= morph;
-
-			tf1+= param[33]*mo;
-			tf2+=param[43]*mo;
-			tf3 += param[53]*mo;
-
-			voice->q[0] += param[34]*mo;
-			voice->q[1] += param[44]*mo;
-			voice->q[2] += param[54]*mo;
-
-			voice->v[0] += param[35]*mo;
-			voice->v[1] += param[45]*mo;
-
-			tf1*=srate;
-			tf2*=srate;
-			tf3 *= srate;
-
-			voice->v[2] += param[55]*mo;
-
-			voice->f[0] = 2.f * tf1;
-			voice->f[1] = 2.f * tf2;
-			voice->f[2] = 2.f * tf3; 
-
-			voice->f[0] -= (tf1*tf1*tf1) * 0.1472725f;// / 6.7901358;
-
-			voice->f[1] -= (tf2*tf2*tf2)* 0.1472725f; // / 6.7901358;;
-
-			voice->f[2] -= (tf3*tf3*tf3) * 0.1472725f;// / 6.7901358; 
+			s1.f = approx_sine(s1.f);
+			s2.f = approx_sine(s2.f);
+			s3.f = approx_sine(s3.f);
 			
 			mod[7]=calcfilters(&voice->filts);
 			//---------------------------------- amplitude shaping
