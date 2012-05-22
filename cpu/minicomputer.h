@@ -34,42 +34,37 @@
 
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
 
-
-// I experiment with optimization
-#ifdef _VECTOR
-	typedef float v4sf __attribute__ ((vector_size(16),aligned(16)));//((mode(V4SF))); // vector of four single floats
-	union f4vector
-	{
-		v4sf v;// __attribute__((aligned (16)));
-		float f[4];// __attribute__((aligned (16)));
-	};
-#endif
-
 typedef struct _modulator_selector {
-	float type;
-	float amount;
+	float type_p;
+	float amount_p;
 } mod_selector;
+
 typedef struct _oscillator_params {
-	float waveform;
-	float frequency;
-	float volume;
+	float waveform_p;
+	float volume_p;
 	
-	float boost_modulation;
+	float fix_frequency_p; //This selects whether we use a fixed frequency or not
+	float fixed_frequency_p; //This is the fixed frequency we might use
+	float tune_frequency_p; //Or if we don't use fixed frequency, this is the offset from the MIDI NOTE
+	
+	float boost_modulation_p;
+	float boost_factor;
+	
 	mod_selector freq_mod1;
 	mod_selector freq_mod2;
 	mod_selector amp_mod1;
 	mod_selector amp_mod2;
 	
-	float fm_output_vol;
+	float fm_output_vol_p;
 } oscillator_params;
 
 typedef struct _envelope_settings {
-	float attack __attribute__((aligned (16)));
-	float decay __attribute__((aligned (16)));
-	float sustain __attribute__((aligned (16)));
-	float release __attribute__((aligned (16)));
+	float attack_p __attribute__((aligned (16)));
+	float decay_p __attribute__((aligned (16)));
+	float sustain_p __attribute__((aligned (16)));
+	float release_p __attribute__((aligned (16)));
 	
-	int EGrepeat __attribute__((aligned (16)));
+	int EGrepeat_p __attribute__((aligned (16)));
 } envelope_settings;
 
 typedef struct _envelope_generator {
@@ -81,9 +76,9 @@ typedef struct _envelope_generator {
 } EG;
 
 typedef struct _filter_settings {
-	float f; //frequency
-	float q; //resonance
-	float v; //volume
+	float f_p; //frequency
+	float q_p; //resonance
+	float v_p; //volume
 } filter_settings;
 
 typedef struct _filter {
@@ -93,11 +88,14 @@ typedef struct _filter {
 } filter;
 
 typedef struct _engine {
+	float phase1;
+	float phase2;
+	
 	EG envelope_generator[8];
 	
+	filter filt;
+	
 	float delayBuffer[96000] __attribute__((aligned (16)));
-
-	float phase[4] __attribute__((aligned (16)));//=0.f;
 
 	float midif  __attribute__((aligned (16)));
 
@@ -136,10 +134,12 @@ typedef struct _minicomputer {
 	envelope_settings ES;
 	oscillator_params osc1;
 	oscillator_params osc2;
+	float osc2_sync_p;
 	mod_selector amp_mod;
 	
-	float mod_osc_type;
-	float mod_osc_freq;
+	
+	mod_selector mod_osc;
+	float mod_osc_phase;
 	
 	float delay_amount;
 	float delay_time;
@@ -147,7 +147,6 @@ typedef struct _minicomputer {
 	float delay_volume;
 	mod_selector delay_mod;
 	
-	float sync_osc2;
 	
 	float clear_filter;
 	

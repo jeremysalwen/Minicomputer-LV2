@@ -141,8 +141,12 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 	}
 	return eg->state;
 }
-//float d0,d1,d2,c1;
 
+static void normalize_parameters(minicomputer* mini) {
+	mini->osc1.boost_factor=mini->osc1.boost_modulation>0?100.0f:1.0f;
+	mini->osc2.boost_factor=mini->osc1.boost_modulation>0?100.0f:1.0f;
+	//etc...
+}
 static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 	engineblock* result=mini->freeblocks.next;
 
@@ -318,10 +322,10 @@ float calcfilters(filters* filts) {
 
 }
 
-inline float approx_sine(float f) {
+float approx_sine(float f) {
 	return f*(2-f*f*0.1472725f);// dividing by 6.7901358, i.e. the least squares polynomial
 }
-inline filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo) {
+filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo) {
 	float morph=(1.0f-mo);
 	
 	filter_settings result;
@@ -331,24 +335,58 @@ inline filter_settings morph_filters(filter_settings in1, filter_settings in2, f
 	result.v = in1.v*morph+in2.v*mo;
 }
 
-static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
-	minicomputer* mini= (minicomputer*)instance;
-	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
-	float osc1,osc2,delayMod;
+float wrap_phase(float phase) {
+	if(phase  >= tabf)
+	{
+		phase-= tabf;
+		// if (*phase>=tabf) *phase = 0; //just in case 
+	}
+	if(phase< 0.f)
+	{
+		phase+= tabf;
+		//      if(*phase < 0.f) *phase = tabf-1;
+	}
+	return phase;
+}
 
+int phase_to_table_index(float phase) {
 	// an union for a nice float to int casting trick which should be fast
 	typedef union
 	{
 		int i;
 		float f;
 	} INTORFLOAT;
-	INTORFLOAT P1 __attribute__((aligned (16)));
-	INTORFLOAT P2 __attribute__((aligned (16)));
-	INTORFLOAT P3 __attribute__((aligned (16)));
+	INTORFLOAT p1 __attribute__((aligned (16)));
 	INTORFLOAT bias; // the magic number
 	bias.i = (23 +127) << 23;// generating the magic number
+	
+	p1.f =  phase;
+	p1.f += bias.f;
+	p1.i -= bias.i;
+	
+	int result=p1.i&tabm;//i%=tablesize;
+	if (result<0) { result=tabm; }
+	/*
+	int i = (int) phase;// float to int, cost some cycles
+						// hopefully this got optimized by compiler
+	i%=TableSize;
+	*/
+	return result;
+	
+}
 
-	int iP1=0,iP2=0,iP3=0;
+float calc_phase_inc(oscillator_params* osc, float midif) {
+	float tf = osc->fixed_frequency * osc->fix_frequency;
+	tf+=(midif*(1.0f-osc->fix_frequency)*osc->tune_frequency);
+	tf+=(osc->boost_factor*osc->freq_mod1.amount)*mod[choi[osc->freq_mod1.type_p]];
+	tf+=osc->freq_mod2.amount*mod[choi[osc->freq_mod2.type_p]];
+	return tf;
+}
+
+static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
+	minicomputer* mini= (minicomputer*)instance;
+	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
+	float delayMod;
 
 	float *bufferMixLeft = mini->MixLeft_p;
 	float *bufferMixRight = mini->MixRight_p;
@@ -387,25 +425,11 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			// get the parameter settings
 			float * param = voice->parameter;
 			// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
-			p1.f =  voice->phase[1];
-			p2.f =  voice->phase[2];
-			p3.f =  voice->phase[3];
-			p1.f += bias.f;
-			p2.f += bias.f;
-			p3.f += bias.f;
-			p1.i -= bias.i;
-			p2.i -= bias.i;
-			p3.i -= bias.i;
-			ip1=p1.i&tabm;//i%=tablesize;
-			ip2=p2.i&tabm;//i%=tablesize;
-			ip3=p3.i&tabm;//i%=tablesize;
-
-			if (ip1<0) ip1=tabm;
-			if (ip2<0) ip2=tabm;
-			if (ip3<0) ip3=tabm;
-
-			// create the next oscillator phase step for osc 3
-			voice->phase[3]+= tabx * param[90];
+			int ip1=phase_to_table_index(voice->phase1);
+			int ip2=phase_to_table_index(voice->phase2);
+			int ip3=phase_to_table_index(voice->mod_osc_phase);
+			
+			
 #ifdef _prefetch
 			__builtin_prefetch(&param[1],0,0);
 			__builtin_prefetch(&param[2],0,1);
@@ -415,48 +439,39 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&param[7],0,0);
 			__builtin_prefetch(&param[11],0,0);
 #endif
+			voice->mod_osc_phase=wrap_phase(voice->mod_osc_phase);
 
-			if(voice->phase[3]  >= tabf)
-			{
-				voice->phase[3]-= tabf;
-				// if (*phase>=tabf) *phase = 0; //just in case of extreme fm
-			}
-			if(voice->phase[3]< 0.f)
-			{
-				voice->phase[3]+= tabf;
-				//	if(*phase < 0.f) *phase = tabf-1;
-			}
-
+			
 			unsigned int * choi = voice->choice;
-			//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&phase[currentvoice][3]);
+			//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&mod_osc_phase);
 			// write the oscillator 3 output to modulators
 			mod[14] = table[choi[12]][ip3] ;
 
 			// --------------- calculate the parameters and modulations of main oscillators 1 and 2
-			tf = param[1];
-			tf *=param[2];
-			ta1 = param[9];
-			ta1 *= mod[choi[2]]; // osc1 first ampmod
+			oscillator_settings* osc1=&mini->osc1;
+			
+			tf = osc1->fixed_frequency * osc1->fix_frequency;
+			ta1 = mod[choi[2]]*osc1->amp_mod1.amount; // osc1 first ampmod
 
 #ifdef _prefetch
-			__builtin_prefetch(&voice->phase[1],0,2);
-			__builtin_prefetch(&voice->phase[2],0,2);
+			__builtin_prefetch(&voice->phase1,0,2);
+			__builtin_prefetch(&voice->phase2,0,2);
 #endif
 
-			tf+=(voice->midif*(1.0f-param[2])*param[3]);
-			ta1+= param[11]*mod[choi[3]];// osc1 second ampmod
-			tf+=(param[4]*param[5])*mod[choi[0]];
-			tf+=param[7]*mod[choi[1]];
+			tf+=(voice->midif*(1.0f-osc1->fix_frequency)*osc1->tune_frequency);
+			ta1+= osc1->amp_mod2.amount*mod[choi[3]];// osc1 second ampmod
+			tf+=(osc1->boost_factor*osc1->freq_mod1.amount)*mod[choi[0]];
+			tf+=osc1->freq_mod2.amount*mod[choi[1]];
 
 			// generate phase of oscillator 1
-			voice->phase[1]+= tabx * tf;
+			voice->phase1+= tabx * tf;
 
-			if(voice->phase[1]  >= tabf)
+			if(voice->phase1  >= tabf)
 			{
-				voice->phase[1]-= tabf;
-				//if (param[115]>0.f) phase[currentvoice][2]= 0; // sync osc2 to 1
+				voice->phase1-= tabf;
+				//if (mini->osc2_sync_p>0.f) phase2= 0; // sync osc2 to 1
 				// branchless sync:
-				voice->phase[1]-= voice->phase[2]*param[115];
+				voice->phase2-= voice->phase2*mini->osc2_sync_p;
 
 				// if (*phase>=tabf) *phase = 0; //just in case of extreme fm
 			}
@@ -475,23 +490,20 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&voice->choice[9],0,0);
 #endif
 
-			if(voice->phase[1]< 0.f)
+			if(voice->phase1< 0.f)
 			{
-				voice->phase[1]+= tabf;
+				voice->phase1+= tabf;
 				//	if(*phase < 0.f) *phase = tabf-1;
 			}
-			osc1 = table[choi[4]][ip1] ;
+			float osc1_sample = table[choi[4]][ip1] ;
 			//}
-			//osc1 = oscillator(tf,choice[currentvoice][4],&phase[currentvoice][1]);
-			mod[3]=osc1*(param[13]*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
+			//osc1 = oscillator(tf,choice[currentvoice][4],&phase1);
+			mod[3]=osc1_sample*(osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 			// ------------------------ calculate oscillator 2 ---------------------
 			// first the modulations and frequencys
-			tf2 = param[16];
-			tf2 *=param[17];
-			ta2 = param[23];
-			ta2 *=mod[choi[8]]; // osc2 first amp mod
-			//tf2+=(midif[currentvoice]*parameter[currentvoice][17]*parameter[currentvoice][18]);
+			tf2 = param[16]*param[17];
+			ta2 = param[23]*mod[choi[8]]; // osc2 first amp mod
 			tf2+=(voice->midif*(1.0f-param[17])*param[18]);
 			ta3 = param[25];
 			ta3 *=mod[choi[9]];// osc2 second amp mod
@@ -502,12 +514,8 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mod[4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 
 			// then generate the actual phase:
-			voice->phase[2]+= tabx * tf2;
-			if(voice->phase[2]  >= tabf)
-			{
-				voice->phase[2]-= tabf;
-				// if (*phase>=tabf) *phase = 0; //just in case of extreme fm
-			}
+			voice->phase2+= tabx * tf2;
+			voice->phase2=wrap_phase(voice->phase2);
 
 #ifdef _prefetch
 			__builtin_prefetch(&param[14],0,0);
@@ -517,17 +525,13 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			__builtin_prefetch(&param[56],0,0);
 #endif
 
-			if(voice->phase[2]< 0.f)
-			{
-				voice->phase[2]+= tabf;
-			}
-			osc2 = table[choi[5]][ip2] ;
-			mod[4] *= osc2;// osc2 fm out
+			float osc2_sample = table[choi[5]][ip2] ;
+			mod[4] *= osc2_sample;// osc2 fm out
 
 			// ------------------------------------- mix the 2 oscillators pre filter
 			float temp=(param[14]*(1.f-ta1));
-			temp*=osc1;
-			temp+=osc2*(param[29]*(1.f-ta2));
+			temp*=osc1_sample;
+			temp+=osc2_sample*(param[29]*(1.f-ta2));
 			temp*=0.5f;// get the volume of the sum into a normal range	
 			temp+=anti_denormal;
 
@@ -921,9 +925,9 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
 			voice->low[2]	= 0.f;
 			voice->high[2]	= 0.f;
 			voice->band[2] = 0.f;
-			voice->phase[1] = 0.f;
-			voice->phase[2] = 0.f;
-			voice->phase[3] = 0.f;
+			voice->phase1 = 0.f;
+			voice->phase2 = 0.f;
+			voice->mod_osc_phase = 0.f;
 			memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
 			break;}
 
