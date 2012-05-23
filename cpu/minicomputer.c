@@ -191,34 +191,34 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 #endif		
 						switch(evt[1]) {
 							case 1:
-								mini->modulator[ 16]=evt[2]*0.007874f; // /127.f;
+								mini->modulator[ mod_wheel]=evt[2]*0.007874f; // /127.f;
 								break;
 							case 12:
-								mini->modulator[ 17]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc12]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 2:
-								mini->modulator[ 20]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc2]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 3:
-								mini->modulator[ 21]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc3]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 4:  
-								mini->modulator[ 22]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc4]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 5: 
-								mini->modulator[ 23]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc5]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 14:  
-								mini->modulator[ 24]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc14]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 15:
-								mini->modulator[ 25]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc15]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 16: 
-								mini->modulator[ 26]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc16]=evt[2]*0.007874f;// /127.f;
 								break;
 							case 17:  
-								mini->modulator[ 27]=evt[2]*0.007874f;// /127.f;
+								mini->modulator[ mod_cc17]=evt[2]*0.007874f;// /127.f;
 								break;
 						}
 					case MIDI_PITCHBEND:
@@ -228,14 +228,14 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 						fprintf(stderr,"Pitchbender event on Channel %2d: %5d   \r", 
 						        c,value);
 #endif		
-						mini->modulator[2]=value*0.0001221f; // /8192.f;
+						mini->modulator[mod_pitch_bend]=value*0.0001221f; // /8192.f;
 						break;
 					case MIDI_CHANPRESS:
 #ifdef _DEBUG      
 						fprintf(stderr,"touch event on Channel %2d: %5d   \r", 
 						        c,evt[1]);
 #endif	
-						mini->modulator[ 15]=(float)evt[1]*0.007874f;
+						mini->modulator[ mod_touch]=(float)evt[1]*0.007874f;
 						break;
 					case MIDI_NOTEON:
 
@@ -249,9 +249,8 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 						if(use) {
 							use->lastnote=evt[1];
 							use->midif=midi2freq[evt[1]];// lookup the frequency
-							mini->modulator[19]=evt[1]*0.007874f;// fill the value in as normalized modulator
-							//TODO:  Should a global parameter be set by a single note's velocity?
-							mini->modulator[1]=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
+							use->mod_midi_note=evt[1]*0.007874f;// fill the value in as normalized modulator
+							use->mod_midi_velocity=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
 							egStart(use,0);// start the engines!
 							int* EGrepeat=use->EGrepeat;
 							if (EGrepeat[1] == 0) egStart(use,1);
@@ -375,14 +374,22 @@ int phase_to_table_index(float phase) {
 	
 }
 
-float calc_phase_inc(oscillator_params* osc, float midif) {
-	float tf = osc->fixed_frequency * osc->fix_frequency;
-	tf+=(midif*(1.0f-osc->fix_frequency)*osc->tune_frequency);
+float calc_phase_inc(common_osc_params* osc, float midif, float tabx) {
+	float fixed=(*osc->fix_frequency>0);
+	float tf = *osc->fixed_frequency * fixed;
+	tf+=(midif*(1.0f-fixed)*osc->tune_frequency);//TODO: This isn't really semitones
 	tf+=(osc->boost_factor*osc->freq_mod1.amount)*mod[choi[osc->freq_mod1.type_p]];
 	tf+=osc->freq_mod2.amount*mod[choi[osc->freq_mod2.type_p]];
-	return tf;
+	return tabx*tf;
 }
 
+float* lookup_mod_table(float [_MODCOUNT] mod, float port_value) {
+	int index=(int)port_value;
+	if(index>=_MODCOUNT || index<0) {
+		index=0;
+	}
+	return mod+index;
+}
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
@@ -392,6 +399,26 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	float *bufferMixRight = mini->MixRight_p;
 	float *bufferAux1 =mini->Aux1_p;
 	float *bufferAux2 =mini->Aux2_p;
+	
+	float mod[_MODCOUNT];
+	
+	float * osc1_freq1_mod_val=lookup_mod_table (mod,*mini->osc1.freq_mod1.type_p);
+	float * osc1_freq2_mod_val=lookup_mod_table (mod,*mini->osc1.freq_mod2.type_p);
+	float * osc1_amp1_mod_val=lookup_mod_table (mod,*mini->osc1.amp_mod1.type_p);
+	float * osc1_amp2_mod_val=lookup_mod_table (mod,*mini->osc1_amp_mod2.type_p);
+	
+	float * osc2_freq1_mod_val=lookup_mod_table (mod,*mini->osc2.freq_mod1.type_p);
+	float * osc2_freq2_mod_val=lookup_mod_table (mod,*mini->osc2.freq_mod2.type_p);
+	float * osc2_amp1_mod_val=lookup_mod_table (mod,*mini->osc2.amp_mod1.type_p);
+	float * osc2_fm_amp_mod_val=lookup_mod_table (mod,*mini->osc2_fm_amp_mod.type_p);
+	
+	float * filter_morph1_mod_val=lookup_mod_table(mod,*mini->morph_mod1.type_p);
+	float * filter_morph2_mod_val=lookup_mod_table(mod,*mini->morph_mod2.type_p);
+
+	float * amp_mod_val=lookup_mod_table(mod,*mini->amp_mod.type_p);
+	
+	float * delay_mod_val=lookup_mod_table(mod,*mini->delay_mod.type_p);
+
 
 	/* main loop */
 	register unsigned int index;
@@ -413,12 +440,12 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 
 			// calc the modulators
 			float * mod = voice->modulator;
-			mod[8] =1.f-egcalc(voice,1);
-			mod[9] =1.f-egcalc(voice,2);
-			mod[10]=1.f-egcalc(voice,3);
-			mod[11]=1.f-egcalc(voice,4);
-			mod[12]=1.f-egcalc(voice,5);
-			mod[13]=1.f-egcalc(voice,6);
+			mod[mod_envelope1] =1.f-egcalc(voice,1);
+			mod[mod_envelope2] =1.f-egcalc(voice,2);
+			mod[mod_envelope3]=1.f-egcalc(voice,3);
+			mod[mod_envelope4]=1.f-egcalc(voice,4);
+			mod[mod_envelope5]=1.f-egcalc(voice,5);
+			mod[mod_envelope6]=1.f-egcalc(voice,6);
 			/**
 			 * calc the main audio signal
 			 */
@@ -445,26 +472,23 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			unsigned int * choi = voice->choice;
 			//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&mod_osc_phase);
 			// write the oscillator 3 output to modulators
-			mod[14] = table[choi[12]][ip3] ;
+			mod[mod_osc] = table[choi[12]][ip3] ;
 
 			// --------------- calculate the parameters and modulations of main oscillators 1 and 2
 			oscillator_settings* osc1=&mini->osc1;
 			
-			tf = osc1->fixed_frequency * osc1->fix_frequency;
-			ta1 = mod[choi[2]]*osc1->amp_mod1.amount; // osc1 first ampmod
+			ta1 = (*osc1_amp1_mod_val)*osc1->amp_mod1.amount; // osc1 first ampmod
 
 #ifdef _prefetch
 			__builtin_prefetch(&voice->phase1,0,2);
 			__builtin_prefetch(&voice->phase2,0,2);
 #endif
 
-			tf+=(voice->midif*(1.0f-osc1->fix_frequency)*osc1->tune_frequency);
-			ta1+= osc1->amp_mod2.amount*mod[choi[3]];// osc1 second ampmod
-			tf+=(osc1->boost_factor*osc1->freq_mod1.amount)*mod[choi[0]];
-			tf+=osc1->freq_mod2.amount*mod[choi[1]];
+			ta1+= osc1->amp_mod2.amount*(*osc1_amp2_mod_val);// osc1 second ampmod
+
 
 			// generate phase of oscillator 1
-			voice->phase1+= tabx * tf;
+			voice->phase1+= calc_phase_inc(&mini->osc1,voice->midif,mini->tabx);
 
 			if(voice->phase1  >= tabf)
 			{
@@ -498,35 +522,23 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			float osc1_sample = table[choi[4]][ip1] ;
 			//}
 			//osc1 = oscillator(tf,choice[currentvoice][4],&phase1);
-			mod[3]=osc1_sample*(osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
+			mod[mod_osc1_fm_out]=osc1_sample*(osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 			// ------------------------ calculate oscillator 2 ---------------------
 			// first the modulations and frequencys
-			tf2 = param[16]*param[17];
-			ta2 = param[23]*mod[choi[8]]; // osc2 first amp mod
-			tf2+=(voice->midif*(1.0f-param[17])*param[18]);
-			ta3 = param[25];
-			ta3 *=mod[choi[9]];// osc2 second amp mod
-			tf2+=param[15]*param[19]*mod[choi[6]];
-			tf2+=param[21]*mod[choi[7]];
+
+			ta2 = param[23]*(*osc2_amp1_mod_val); // osc2 first amp mod
+			ta3 = param[25]*(*osc2_fm_amp_mod_val);// osc2 second amp mod
 			//tf/=3.f;		
 			//ta/=2.f;
-			mod[4] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
+			mod[mod_osc2_fm_out] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
 
 			// then generate the actual phase:
-			voice->phase2+= tabx * tf2;
+			voice->phase2+= calc_phase_inc(&mini->osc2,voice->midif,mini->tabx);
 			voice->phase2=wrap_phase(voice->phase2);
 
-#ifdef _prefetch
-			__builtin_prefetch(&param[14],0,0);
-			__builtin_prefetch(&param[29],0,0);
-			__builtin_prefetch(&param[38],0,0);
-			__builtin_prefetch(&param[48],0,0);
-			__builtin_prefetch(&param[56],0,0);
-#endif
-
 			float osc2_sample = table[choi[5]][ip2] ;
-			mod[4] *= osc2_sample;// osc2 fm out
+			mod[mod_osc2_fm_out] *= osc2_sample;// osc2 fm out
 
 			// ------------------------------------- mix the 2 oscillators pre filter
 			float temp=(param[14]*(1.f-ta1));
@@ -536,22 +548,11 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			temp+=anti_denormal;
 
 			// ------------- calculate the filter settings ------------------------------
-			float morph_mod_amt =  (1.f-(param[38]*mod[ choi[10]]));
-			morph_mod_amt+= (1.f-(param[48]*mod[ choi[11]]));
+			float morph_mod_amt = 1.f-(*filter_morph1_mod_val)*param[38];
+			morph_mod_amt+= 1.f-(*filter_morph2_mod_val)*param[48];
 			float mo = param[56]*morph_mod_amt;
 
 
-#ifdef _prefetch
-			__builtin_prefetch(&param[30],0,0);
-			__builtin_prefetch(&param[31],0,0);
-			__builtin_prefetch(&param[32],0,0);
-			__builtin_prefetch(&param[40],0,0);
-			__builtin_prefetch(&param[41],0,0);
-			__builtin_prefetch(&param[42],0,0);
-			__builtin_prefetch(&param[50],0,0);
-			__builtin_prefetch(&param[51],0,0);
-			__builtin_prefetch(&param[52],0,0);
-#endif
 			//The next three lines just clip to the [0,1] interval
 			float clib1 = fabs (mo);
 			float clib2 = fabs (mo-1.0f);
@@ -585,18 +586,18 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			s2.f = approx_sine(s2.f);
 			s3.f = approx_sine(s3.f);
 			
-			mod[7]=calcfilters(&voice->filts);
+			mod[mod_filter]=calcfilters(&voice->filts);
 			//---------------------------------- amplitude shaping
 
-			result = (1.f-mod[ choi[13]]*param[100] );///_multitemp;
-				result *= mod[7];
+			result = (1.f-(*amp_mod_val)*param[100] );///_multitemp;
+				result *= mod[mod_filter];
 			result *= egcalc(voice,0);// the final shaping envelope
 
 			// --------------------------------- delay unit
 			if( voice->delayi>= delaybuffersize ) {
 				voice->delayi = 0;
 			}
-			delaymod = 1.f-(param[110]* mod[choi[14]]);
+			delaymod = 1.f-(param[110]* (*delay_mod_val));
 
 			voice->delayj = voice->delayi- ((param[111]* maxdelaytime)*delaymod);
 
@@ -609,7 +610,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			tdelay += anti_denormal;
 			voice->delaybuffer[voice->delayi ] = tdelay;
 
-			mod[18]= tdelay;
+			mod[mod_delay]= tdelay;
 			result += tdelay * param[113];
 			voice->delayi=voice->delayi+1;
 
@@ -636,7 +637,7 @@ static void initEngine(engine* voice) {
 		voice->envelope_generator[i].EGTrigger=0;
 		voice->envelope_generator[i].EGstate=4; // released
 	}
-	modulator[0] =0.f;// the none modulator, doing nothing
+	modulator[mod_none] =0.f;// the none modulator, doing nothing
 	for (unsigned int i=0;i<3;++i) 
 	{
 		low[i]=0;

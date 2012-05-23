@@ -34,12 +34,41 @@
 
 static const float anti_denormal = 1e-20;// magic number to get rid of denormalizing
 
+enum modulators {
+	mod_none=0,
+	mod_velocity,
+	mod_pitch_bend,
+	mod_osc1_fm_out,
+	mod_osc2_fm_out,
+	mod_filter=7,
+	mod_envelope1,
+	mod_envelope2,
+	mod_envelope3,
+	mod_envelope4,
+	mod_envelope5,
+	mod_envelope6,
+	mod_osc,
+	mod_touch,
+	mod_wheel,
+	mod_cc12,
+	mod_delay,
+	mod_midi_note,
+	mod_cc2,
+	mod_cc3,
+	mod_cc4,
+	mod_cc5,
+	mod_cc14,
+	mod_cc15,
+	mod_cc16,
+	mod_cc17
+};
+
 typedef struct _modulator_selector {
 	float type_p;
 	float amount_p;
 } mod_selector;
 
-typedef struct _oscillator_params {
+typedef struct _common_osc_params {
 	float waveform_p;
 	float volume_p;
 	
@@ -53,10 +82,9 @@ typedef struct _oscillator_params {
 	mod_selector freq_mod1;
 	mod_selector freq_mod2;
 	mod_selector amp_mod1;
-	mod_selector amp_mod2;
 	
 	float fm_output_vol_p;
-} oscillator_params;
+} common_osc_params;
 
 typedef struct _envelope_settings {
 	float attack_p __attribute__((aligned (16)));
@@ -90,6 +118,9 @@ typedef struct _filter {
 typedef struct _engine {
 	float phase1;
 	float phase2;
+	
+	float mod_midi_note;
+	float mod_midi_velocity;
 	
 	EG envelope_generator[8];
 	
@@ -132,9 +163,14 @@ typedef struct _minicomputer {
 	mod_selector morph_mod1;
 	mod_selector morph_mod2;
 	envelope_settings ES;
-	oscillator_params osc1;
-	oscillator_params osc2;
-	float osc2_sync_p;
+	
+	common_osc_params osc1;
+	mod_selector osc1_amp_mod2;
+	
+	common_osc_params osc2;
+	mod_Selector osc2_fm_amp_mod;
+	float* osc2_sync_p;
+	
 	mod_selector amp_mod;
 	
 	
