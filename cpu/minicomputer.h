@@ -66,31 +66,34 @@ enum modulators {
 typedef struct _modulator_selector {
 	float type_p;
 	float amount_p;
+	
+	float* mod_val; //This is temporary storage for a pointer to the value of
+					//the modulator referenced.
 } mod_selector;
 
 typedef struct _common_osc_params {
-	float waveform_p;
-	float volume_p;
+	float* waveform_p;
+	float* volume_p;
 	
-	float fix_frequency_p; //This selects whether we use a fixed frequency or not
-	float fixed_frequency_p; //This is the fixed frequency we might use
-	float tune_frequency_p; //Or if we don't use fixed frequency, this is the offset from the MIDI NOTE
+	float* fix_frequency_p; //This selects whether we use a fixed frequency or not
+	float* fixed_frequency_p; //This is the fixed frequency we might use
+	float* tune_frequency_p; //Or if we don't use fixed frequency, this is the offset from the MIDI NOTE
 	
-	float boost_modulation_p;
+	float* boost_modulation_p;
 	float boost_factor;
 	
 	mod_selector freq_mod1;
 	mod_selector freq_mod2;
 	mod_selector amp_mod1;
 	
-	float fm_output_vol_p;
+	float* fm_output_vol_p;
 } common_osc_params;
 
 typedef struct _envelope_settings {
-	float attack_p __attribute__((aligned (16)));
-	float decay_p __attribute__((aligned (16)));
-	float sustain_p __attribute__((aligned (16)));
-	float release_p __attribute__((aligned (16)));
+	float* attack_p __attribute__((aligned (16)));
+	float* decay_p __attribute__((aligned (16)));
+	float* sustain_p __attribute__((aligned (16)));
+	float* release_p __attribute__((aligned (16)));
 	
 	int EGrepeat_p __attribute__((aligned (16)));
 } envelope_settings;
@@ -104,9 +107,9 @@ typedef struct _envelope_generator {
 } EG;
 
 typedef struct _filter_settings {
-	float f_p; //frequency
-	float q_p; //resonance
-	float v_p; //volume
+	float* f_p; //frequency
+	float* q_p; //resonance
+	float* v_p; //volume
 } filter_settings;
 
 typedef struct _filter {

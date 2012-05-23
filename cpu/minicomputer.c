@@ -383,13 +383,38 @@ float calc_phase_inc(common_osc_params* osc, float midif, float tabx) {
 	return tabx*tf;
 }
 
-float* lookup_mod_table(float [_MODCOUNT] mod, float port_value) {
-	int index=(int)port_value;
+void lookup_mod_table(float [_MODCOUNT] mod, mod_selector* mod_sel) {
+	int index=(int)(*mod_sel->type_p);
 	if(index>=_MODCOUNT || index<0) {
 		index=0;
 	}
-	return mod+index;
+	mod_sel->mod_val=mod+index;
 }
+
+void lookup_mod_tables(float [_MODCOUNT] mod, minicomputer* mini) {
+	lookup_mod_table (mod,&mini->osc1.freq_mod1);
+	lookup_mod_table (mod,&mini->osc1.freq_mod2);
+	lookup_mod_table (mod,&mini->osc1.amp_mod1);
+	lookup_mod_table (mod,&mini->osc1_amp_mod2);
+	
+	lookup_mod_table (mod,&mini->osc2.freq_mod1);
+	lookup_mod_table (mod,&mini->osc2.freq_mod2);
+	lookup_mod_table (mod,&mini->osc2.amp_mod1);
+	lookup_mod_tables(mod,&mini->morph_mod1);
+	lookup_mod_table(mod,&mini->morph_mod2);
+
+	lookup_mod_table(mod,&mini->amp_mod);
+	
+	lookup_mod_table(mod,&mini->delay_mod);
+}
+/**
+ *  Note that this assumes that we have already done lookup_mod_table, so
+ *  the mod_val field references the actual location of the modulator value.
+ **/
+float modulator_get_val(mod_selector selector) {
+	return (*selector.amount_p)*(*selector.mod_val);
+}
+
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
 	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
@@ -402,23 +427,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	
 	float mod[_MODCOUNT];
 	
-	float * osc1_freq1_mod_val=lookup_mod_table (mod,*mini->osc1.freq_mod1.type_p);
-	float * osc1_freq2_mod_val=lookup_mod_table (mod,*mini->osc1.freq_mod2.type_p);
-	float * osc1_amp1_mod_val=lookup_mod_table (mod,*mini->osc1.amp_mod1.type_p);
-	float * osc1_amp2_mod_val=lookup_mod_table (mod,*mini->osc1_amp_mod2.type_p);
-	
-	float * osc2_freq1_mod_val=lookup_mod_table (mod,*mini->osc2.freq_mod1.type_p);
-	float * osc2_freq2_mod_val=lookup_mod_table (mod,*mini->osc2.freq_mod2.type_p);
-	float * osc2_amp1_mod_val=lookup_mod_table (mod,*mini->osc2.amp_mod1.type_p);
-	float * osc2_fm_amp_mod_val=lookup_mod_table (mod,*mini->osc2_fm_amp_mod.type_p);
-	
-	float * filter_morph1_mod_val=lookup_mod_table(mod,*mini->morph_mod1.type_p);
-	float * filter_morph2_mod_val=lookup_mod_table(mod,*mini->morph_mod2.type_p);
-
-	float * amp_mod_val=lookup_mod_table(mod,*mini->amp_mod.type_p);
-	
-	float * delay_mod_val=lookup_mod_table(mod,*mini->delay_mod.type_p);
-
+	lookup_mod_tables(mod,mini);
 
 	/* main loop */
 	register unsigned int index;
@@ -455,20 +464,9 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			int ip1=phase_to_table_index(voice->phase1);
 			int ip2=phase_to_table_index(voice->phase2);
 			int ip3=phase_to_table_index(voice->mod_osc_phase);
-			
-			
-#ifdef _prefetch
-			__builtin_prefetch(&param[1],0,0);
-			__builtin_prefetch(&param[2],0,1);
-			__builtin_prefetch(&param[3],0,0);
-			__builtin_prefetch(&param[4],0,0);
-			__builtin_prefetch(&param[5],0,0);
-			__builtin_prefetch(&param[7],0,0);
-			__builtin_prefetch(&param[11],0,0);
-#endif
+
 			voice->mod_osc_phase=wrap_phase(voice->mod_osc_phase);
 
-			
 			unsigned int * choi = voice->choice;
 			//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&mod_osc_phase);
 			// write the oscillator 3 output to modulators
@@ -477,14 +475,8 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			// --------------- calculate the parameters and modulations of main oscillators 1 and 2
 			oscillator_settings* osc1=&mini->osc1;
 			
-			ta1 = (*osc1_amp1_mod_val)*osc1->amp_mod1.amount; // osc1 first ampmod
-
-#ifdef _prefetch
-			__builtin_prefetch(&voice->phase1,0,2);
-			__builtin_prefetch(&voice->phase2,0,2);
-#endif
-
-			ta1+= osc1->amp_mod2.amount*(*osc1_amp2_mod_val);// osc1 second ampmod
+			ta1 = modulator_get_val(osc1->amp_mod1);// osc1 first ampmod
+			ta1+= modulator_get_val(osc1->amp_mod2);// osc1 second ampmod
 
 
 			// generate phase of oscillator 1
@@ -500,20 +492,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 				// if (*phase>=tabf) *phase = 0; //just in case of extreme fm
 			}
 
-#ifdef _prefetch
-			__builtin_prefetch(&param[15],0,0);
-			__builtin_prefetch(&param[16],0,0);
-			__builtin_prefetch(&param[17],0,0);
-			__builtin_prefetch(&param[18],0,0);
-			__builtin_prefetch(&param[19],0,0);
-			__builtin_prefetch(&param[23],0,0);
-			__builtin_prefetch(&param[25],0,0);
-			__builtin_prefetch(&voice->choice[6],0,0);
-			__builtin_prefetch(&voice->choice[7],0,0);
-			__builtin_prefetch(&voice->choice[8],0,0);
-			__builtin_prefetch(&voice->choice[9],0,0);
-#endif
-
 			if(voice->phase1< 0.f)
 			{
 				voice->phase1+= tabf;
@@ -525,10 +503,12 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mod[mod_osc1_fm_out]=osc1_sample*(osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 			// ------------------------ calculate oscillator 2 ---------------------
+			common_osc_params osc2=&mini->osc2;
+			
 			// first the modulations and frequencys
 
-			ta2 = param[23]*(*osc2_amp1_mod_val); // osc2 first amp mod
-			ta3 = param[25]*(*osc2_fm_amp_mod_val);// osc2 second amp mod
+			ta2 = modulator_get_val(osc2->amp_mod1); // osc2 first amp mod
+			ta3 = modulator_get_val(mini->osc2_fm_amp_mod);// osc2 second amp mod
 			//tf/=3.f;		
 			//ta/=2.f;
 			mod[mod_osc2_fm_out] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
@@ -548,8 +528,8 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			temp+=anti_denormal;
 
 			// ------------- calculate the filter settings ------------------------------
-			float morph_mod_amt = 1.f-(*filter_morph1_mod_val)*param[38];
-			morph_mod_amt+= 1.f-(*filter_morph2_mod_val)*param[48];
+			float morph_mod_amt = 1.f-modulator_get_val(mini->morph_mod1);
+			morph_mod_amt+= 1.f-modulator_get_val(mini->morph_mod2);
 			float mo = param[56]*morph_mod_amt;
 
 
@@ -558,17 +538,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			float clib2 = fabs (mo-1.0f);
 			mo = 0.5*(clib1 + 1.0f-clib2);
 
-#ifdef _prefetch
-			__builtin_prefetch(&param[33],0,0);
-			__builtin_prefetch(&param[34],0,0);
-			__builtin_prefetch(&param[35],0,0);
-			__builtin_prefetch(&param[43],0,0);
-			__builtin_prefetch(&param[44],0,0);
-			__builtin_prefetch(&param[45],0,0);
-			__builtin_prefetch(&param[53],0,0);
-			__builtin_prefetch(&param[54],0,0);
-			__builtin_prefetch(&param[55],0,0);
-#endif
 			filter_settings s1;
 			filter_settings s2;
 			filter_settings s3;
@@ -589,15 +558,15 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mod[mod_filter]=calcfilters(&voice->filts);
 			//---------------------------------- amplitude shaping
 
-			result = (1.f-(*amp_mod_val)*param[100] );///_multitemp;
-				result *= mod[mod_filter];
+			result = (1.f-modulator_get_val(mini->amp_mod));///_multitemp;
+			result *= mod[mod_filter];
 			result *= egcalc(voice,0);// the final shaping envelope
 
 			// --------------------------------- delay unit
 			if( voice->delayi>= delaybuffersize ) {
 				voice->delayi = 0;
 			}
-			delaymod = 1.f-(param[110]* (*delay_mod_val));
+			delaymod = 1.f-modulator_get_val(mini->delay_mod);
 
 			voice->delayj = voice->delayi- ((param[111]* maxdelaytime)*delaymod);
 
