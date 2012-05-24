@@ -63,9 +63,11 @@ enum modulators {
 	mod_cc17
 };
 
+//NOTE: All variables with names ending in _p are ports, and all ending in _c
+// are cached normalized values of those ports.
 typedef struct _modulator_selector {
-	float type_p;
-	float amount_p;
+	float* type_p;
+	float* amount_p;
 	
 	float* mod_val; //This is temporary storage for a pointer to the value of
 					//the modulator referenced.
@@ -74,13 +76,15 @@ typedef struct _modulator_selector {
 typedef struct _common_osc_params {
 	float* waveform_p;
 	float* volume_p;
+	float volume_c;
 	
 	float* fix_frequency_p; //This selects whether we use a fixed frequency or not
+	float fixed_c;			//This is just a cached normalized version of fix_frequency_p
 	float* fixed_frequency_p; //This is the fixed frequency we might use
-	float* tune_frequency_p; //Or if we don't use fixed frequency, this is the offset from the MIDI NOTE
+	float* tuned_frequency_p; //Or if we don't use fixed frequency, this is the offset from the MIDI NOTE
 	
 	float* boost_modulation_p;
-	float boost_factor;
+	float boost_factor_c;
 	
 	mod_selector freq_mod1;
 	mod_selector freq_mod2;
@@ -95,7 +99,8 @@ typedef struct _envelope_settings {
 	float* sustain_p __attribute__((aligned (16)));
 	float* release_p __attribute__((aligned (16)));
 	
-	int EGrepeat_p __attribute__((aligned (16)));
+	float* EGrepeat_p __attribute__((aligned (16)));
+	int EGrepeat_c __attribute__((aligned (16)));
 } envelope_settings;
 
 typedef struct _envelope_generator {
@@ -106,15 +111,21 @@ typedef struct _envelope_generator {
 	unsigned int EGstate __attribute__((aligned (16)));
 } EG;
 
-typedef struct _filter_settings {
+typedef struct _filter_ports {
 	float* f_p; //frequency
 	float* q_p; //resonance
 	float* v_p; //volume
+} filter_ports;
+
+typedef struct _filter_settings {
+	float f;
+	float q;
+	float v;
 } filter_settings;
 
 typedef struct _filter {
 	float high;
-	float band
+	float band;
 	float low;
 } filter;
 
@@ -127,7 +138,7 @@ typedef struct _engine {
 	
 	EG envelope_generator[8];
 	
-	filter filt;
+	filter filt[3];
 	
 	float delayBuffer[96000] __attribute__((aligned (16)));
 
@@ -160,18 +171,17 @@ typedef struct _minicomputer {
 	listheader freeblocks;
 	engineblock* inuse;
 	
-	filter filters[3];
-
-	filter_settings filt_settings[3][2];
+	float* morph_p;
+	filter_ports filt_settings[3][2];
 	mod_selector morph_mod1;
 	mod_selector morph_mod2;
-	envelope_settings ES;
+	envelope_settings es[8];
 	
 	common_osc_params osc1;
 	mod_selector osc1_amp_mod2;
 	
 	common_osc_params osc2;
-	mod_Selector osc2_fm_amp_mod;
+	mod_selector osc2_fm_amp_mod;
 	float* osc2_sync_p;
 	
 	mod_selector amp_mod;

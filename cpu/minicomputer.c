@@ -15,8 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-// a way to compile it was:
-//  gcc -o synthesizer synth2.c -ljack -ffast-math -O3 -march=k8 -mtune=k8 -funit-at-a-time -fpeel-loops -ftracer -funswitch-loops -llo -lasound
 
 #include "minicomputer.h"
 
@@ -27,12 +25,11 @@
  * @param the number of envelope generator
  */
 
-static inline void egStart (EG* eg, const unsigned int number)
+static inline void egStart (EG* eg)
 {
-	eg->EGtrigger[number]=1;
-	voice->EG[number][7] = 0.0f;// state
+	eg->EGtrigger=1;
 	eg->EGstate = 0;// state  
-	eg->EGFaktor = 0.f;
+	eg->Faktor = 0.f;
 	//printf("start %i", voice);
 }
 /** FIXED
@@ -41,7 +38,7 @@ static inline void egStart (EG* eg, const unsigned int number)
  * @param the voice number
  * @param the number of envelope generator
  */
-static inline void egStop (EG* voice,const unsigned int number)
+static inline void egStop (EG* eg)
 {
 	// if (EGrepeat[number] == 0) 
 	eg->EGtrigger = 0; // triggerd
@@ -56,7 +53,7 @@ static inline void egStop (EG* voice,const unsigned int number)
 static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 {
 	/* EG[x] x:
-		* 0 = trigger
+	 * 0 = trigger
 	 * 1 = attack
 	 * 2 = decay
 	 * 3 = sustain
@@ -68,47 +65,47 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 	{
 		int i = eg->EGstate; 
 		if (i == 1){ // attack
-			if (eg->EGFaktor<1.00f) eg->EGFaktor += 0.002f;
+			if (eg->Faktor<1.00f) eg->Faktor += 0.002f;
 
-			eg->state += es->attack*srDivisor*eg->EGFaktor;
+			eg->state += (*es->attack_p)*srDivisor*eg->Faktor;
 
 			if (eg->state>=1.0f)// Attackphase is finished
 			{
 				eg->state=1.0f;
 				eg->EGstate=2;
-				eg->EGFaktor = 1.f; // triggerd
+				eg->Faktor = 1.f; // triggerd
 
 			}
 		}
 		else if (i == 2)
 		{ // decay
-			if (eg->state > es->sustain)
+			if (eg->state > (*es->sustain_p))
 			{
-				eg->state -= es->decay*srDivisor*eg->EGFaktor;
+				eg->state -= (*es->decay_p)*srDivisor*eg->Faktor;
 			}
 			else 
 			{
-				if (eg->EGrepeat==0)
+				if (es->EGrepeat_p==0)
 				{
-					eg->EGstate=3; // stay on sustain
+					eg->state=3; // stay on sustain
 				}
 				else
 				{
-					eg->EGFaktor = 1.f; // triggerd
-					egStop(voice,number);// continue to release
+					eg->Faktor = 1.f; // triggerd
+					egStop(eg);// continue to release
 				}
 			}
 			// what happens if sustain = 0? envelope should go in stop mode when decay reached ground
 			if (eg->state<0.0f) 
 			{	
 				eg->state=0.0f;
-				if (eg->EGrepeat==0)
+				if (es->EGrepeat_c==0)
 				{
 					eg->EGstate=4; // released
 				}
 				else
 				{
-					egStart(voice,number);// repeat
+					egStart(eg);// repeat
 				}
 			}
 
@@ -117,19 +114,19 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 		{
 			/* release */
 
-			if (eg->EGFaktor>0.025f) eg->EGFaktor-= 0.002f;
-			eg->state -=es->release*srDivisor*eg->EGFaktor;//*EG[number][6];
+			if (eg->Faktor>0.025f) eg->Faktor-= 0.002f;
+			eg->state -=(*es->release_p)*srDivisor*eg->Faktor;//*EG[number][6];
 
 			if (eg->state<0.0f) 
 			{	
 				eg->state=0.0f;
-				if (eg->EGrepeat==0)
+				if (es->EGrepeat_c==0)
 				{
 					eg->EGstate=4; // released
 				}
 				else
 				{
-					egStart(voice,number);// repeat
+					egStart(eg);// repeat
 				}
 			}
 		}
@@ -141,12 +138,19 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 	}
 	return eg->state;
 }
-
-static void normalize_parameters(minicomputer* mini) {
-	mini->osc1.boost_factor=mini->osc1.boost_modulation>0?100.0f:1.0f;
-	mini->osc2.boost_factor=mini->osc1.boost_modulation>0?100.0f:1.0f;
-	//etc...
+/**
+ *  Note that this assumes that we have already done lookup_mod_table, so
+ *  the mod_val field references the actual location of the modulator value.
+ **/
+float modulator_get_val(mod_selector selector) {
+	return (*selector.amount_p)*(*selector.mod_val);
 }
+static void calc_osc_factors(common_osc_params* osc) {
+	osc->boost_factor_c=(*osc->boost_modulation_p>0)?100.0f:1.0f;
+	osc->fixed_c=(*osc->fix_frequency_p)>0;
+	osc->volume_c=(*osc->volume_p);
+}
+
 static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 	engineblock* result=mini->freeblocks.next;
 
@@ -166,7 +170,6 @@ static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 	mini->noteson[index]=result;
 	return &result->e;
 }
-
 
 static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 	while(lv2_event_is_valid(&mini->in_iterator)) {
@@ -251,14 +254,13 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 							use->midif=midi2freq[evt[1]];// lookup the frequency
 							use->mod_midi_note=evt[1]*0.007874f;// fill the value in as normalized modulator
 							use->mod_midi_velocity=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
-							egStart(use,0);// start the engines!
-							int* EGrepeat=use->EGrepeat;
-							if (EGrepeat[1] == 0) egStart(use,1);
-							if (EGrepeat[2] == 0) egStart(use,2);
-							if (EGrepeat[3] == 0) egStart(use,3);
-							if (EGrepeat[4] == 0) egStart(use,4);
-							if (EGrepeat[5] == 0) egStart(use,5);
-							if (EGrepeat[6] == 0) egStart(use,6);
+							
+							egStart(use->envelope_generator+0);// start the engines!
+							for(int i=1; i<7; i++) {
+								if (mini->es[i].EGrepeat_c == 0) {
+									egStart(use->envelope_generator+i);
+								}
+							}
 						} else {
 #ifdef _DEBUG      
 							fprintf(stderr, "Ran out of synth voices!     \r");
@@ -274,17 +276,12 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 						        c, evt[1]);
 #endif							
 						engine* voice=&mini->noteson[c]->e;
-						if (voice)
-					{
-						egStop(voice,0);  
-						int* EGrepeat=voice->EGrepeat;
-						if (EGrepeat[1] == 0) egStop(voice,1);  
-						if (EGrepeat[2] == 0) egStop(voice,2); 
-						if (EGrepeat[3] == 0) egStop(voice,3); 
-						if (EGrepeat[4] == 0) egStop(voice,4);  
-						if (EGrepeat[5] == 0) egStop(voice,5);  
-						if (EGrepeat[6] == 0) egStop(voice,6);
-					}
+						if (voice) {
+							egStop(voice->envelope_generator+0);  
+							for(int i=1; i<7; i++) {
+								if (mini->es[i].EGrepeat_c == 0) egStop(voice->envelope_generator+i);
+							}
+						}
 						break;      
 #ifdef _DEBUG      
 					default:
@@ -297,33 +294,23 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 		lv2_event_increment(&mini->in_iterator);
 	}
 }
-float calcfilters(filters* filts) {
-	//----------------------- actual filter calculation -------------------------
-	// first filter
-	float reso = filts->q[0]; // for better scaling the volume with rising q
-	filts->low[0] = filts->low[0] + filts->f[0] * filts->band[0];
-	filts->high[0] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[0] - (reso*filts->band[0]);
-	filts->band[0]= filts->f[0] * filts->high[0] + filts->band[0];
-
-	reso = filts->q[1];
-	// second filter
-	filts->low[1] = filts->low[1] + filts->f[1] * filts->band[1];
-	filts->high[1] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[1] - (reso*filts->band[1]);
-	filts->band[1]= f[currentvoice][1] * high[currentvoice][1] + band[currentvoice][1];
-
-	// third filter
-	reso = filts->q[2];
-	filts->low[2] = filts->low[2] + filts->f[2] * band[currentvoice][2];
-	filts->high[2] = ((reso + ((1.f-reso)*0.1f))*temp) - filts->low[2] - (reso*filts->band[2]);
-	filts->band[2]= filts->f[2] * filts->high[currentvoice][2] + filts->ban[2];
-
-	return (filts->low[0]*filts->v[0])+filts->band[1]*filts->v[1]+filts->band[2]*filts->v[2];
-
+void dofilter(filter_settings settings, filter* filter,float sample) {
+	float reso = settings.q; // for better scaling the volume with rising q
+	filter->low = filter->low + settings.f * filter->band;
+	filter->high = ((reso + ((1.f-reso)*0.1f))*sample) - filter->low - (reso*filter->band);
+	filter->band= settings.f * filter->high + filter->band;
 }
 
 float approx_sine(float f) {
 	return f*(2-f*f*0.1472725f);// dividing by 6.7901358, i.e. the least squares polynomial
 }
+filter_settings get_filter_settings(filter_ports ports) {
+	filter_settings result;
+	result.f=*ports.f_p;
+	result.q=*ports.q_p;
+	result.v=*ports.v_p;
+}
+
 filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo) {
 	float morph=(1.0f-mo);
 	
@@ -335,14 +322,14 @@ filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo
 }
 
 float wrap_phase(float phase) {
-	if(phase  >= tabf)
+	if(phase  >= tabF)
 	{
-		phase-= tabf;
+		phase-= tabF;
 		// if (*phase>=tabf) *phase = 0; //just in case 
 	}
 	if(phase< 0.f)
 	{
-		phase+= tabf;
+		phase+= tabF;
 		//      if(*phase < 0.f) *phase = tabf-1;
 	}
 	return phase;
@@ -363,8 +350,8 @@ int phase_to_table_index(float phase) {
 	p1.f += bias.f;
 	p1.i -= bias.i;
 	
-	int result=p1.i&tabm;//i%=tablesize;
-	if (result<0) { result=tabm; }
+	int result=p1.i&tabM;//i%=tablesize;
+	if (result<0) { result=tabM; }
 	/*
 	int i = (int) phase;// float to int, cost some cycles
 						// hopefully this got optimized by compiler
@@ -375,44 +362,46 @@ int phase_to_table_index(float phase) {
 }
 
 float calc_phase_inc(common_osc_params* osc, float midif, float tabx) {
-	float fixed=(*osc->fix_frequency>0);
-	float tf = *osc->fixed_frequency * fixed;
-	tf+=(midif*(1.0f-fixed)*osc->tune_frequency);//TODO: This isn't really semitones
-	tf+=(osc->boost_factor*osc->freq_mod1.amount)*mod[choi[osc->freq_mod1.type_p]];
-	tf+=osc->freq_mod2.amount*mod[choi[osc->freq_mod2.type_p]];
+	float tf = *osc->fixed_frequency_p * osc->fixed_c;
+	tf+=*osc->tuned_frequency_p*(midif*(1.0f-osc->fixed_c));//TODO: This isn't really semitones
+	tf+=osc->boost_factor_c*modulator_get_val(osc->freq_mod1);
+	tf+=modulator_get_val(osc->freq_mod2);
 	return tabx*tf;
 }
 
-void lookup_mod_table(float [_MODCOUNT] mod, mod_selector* mod_sel) {
+void lookup_mod_table(float mod[_MODCOUNT], mod_selector* mod_sel) {
 	int index=(int)(*mod_sel->type_p);
 	if(index>=_MODCOUNT || index<0) {
 		index=0;
 	}
 	mod_sel->mod_val=mod+index;
 }
-
-void lookup_mod_tables(float [_MODCOUNT] mod, minicomputer* mini) {
-	lookup_mod_table (mod,&mini->osc1.freq_mod1);
-	lookup_mod_table (mod,&mini->osc1.freq_mod2);
-	lookup_mod_table (mod,&mini->osc1.amp_mod1);
-	lookup_mod_table (mod,&mini->osc1_amp_mod2);
-	
-	lookup_mod_table (mod,&mini->osc2.freq_mod1);
-	lookup_mod_table (mod,&mini->osc2.freq_mod2);
-	lookup_mod_table (mod,&mini->osc2.amp_mod1);
-	lookup_mod_tables(mod,&mini->morph_mod1);
-	lookup_mod_table(mod,&mini->morph_mod2);
-
-	lookup_mod_table(mod,&mini->amp_mod);
-	
-	lookup_mod_table(mod,&mini->delay_mod);
+void lookup_mod_tables_osc(float mod[_MODCOUNT], common_osc_params* osc) {
+	lookup_mod_table(mod,&osc->freq_mod1);
+	lookup_mod_table(mod,&osc->freq_mod2);
+	lookup_mod_table(mod,&osc->amp_mod1);
 }
-/**
- *  Note that this assumes that we have already done lookup_mod_table, so
- *  the mod_val field references the actual location of the modulator value.
- **/
-float modulator_get_val(mod_selector selector) {
-	return (*selector.amount_p)*(*selector.mod_val);
+void lookup_mod_tables(minicomputer* mini) {
+	lookup_mod_tables_osc(mini->modulator,&mini->osc1);
+	lookup_mod_table(mini->modulator,&mini->osc1_amp_mod2);
+	
+	lookup_mod_tables_osc(mini->modulator,&mini->osc2);
+	lookup_mod_table(mini->modulator,&mini->osc2_fm_amp_mod);
+	
+	lookup_mod_table(mini->modulator,&mini->morph_mod1);
+	lookup_mod_table(mini->modulator,&mini->morph_mod2);
+
+	lookup_mod_table(mini->modulator,&mini->amp_mod);
+	
+	lookup_mod_table(mini->modulator,&mini->delay_mod);
+}
+void calc_envelope_params(envelope_settings* es) {
+	es->EGrepeat_c=(*es->EGrepeat_p)>0;
+}
+void calc_envelopes_params(minicomputer* mini) {
+	for(int i=0; i<7; i++) {
+		calc_envelope_params(&mini->es[i]);
+	}
 }
 
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
@@ -425,10 +414,22 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	float *bufferAux1 =mini->Aux1_p;
 	float *bufferAux2 =mini->Aux2_p;
 	
-	float mod[_MODCOUNT];
+	calc_envelopes_params(mini);
+	lookup_mod_tables(mini);
+	calc_osc_factors(&mini->osc1);
+	calc_osc_factors(&mini->osc2);
 	
-	lookup_mod_tables(mod,mini);
+	filter_settings filt_settings[3][2];
+	for(int x=0; x<3; x++) {
+		for(int y=0; y<2; y++) {
+			filt_settings[x][y]=get_filter_settings(mini->filt_settings[x][y]);
+		}
+	}
 
+	float morph_c=*mini->morph_p;
+	
+	float * mod = mini->modulator;
+	
 	/* main loop */
 	register unsigned int index;
 	for (index = 0; index < nframes; ++index) 
@@ -448,7 +449,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			engine* voice=engines+currentvoice;
 
 			// calc the modulators
-			float * mod = voice->modulator;
 			mod[mod_envelope1] =1.f-egcalc(voice,1);
 			mod[mod_envelope2] =1.f-egcalc(voice,2);
 			mod[mod_envelope3]=1.f-egcalc(voice,3);
@@ -478,7 +478,6 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			ta1 = modulator_get_val(osc1->amp_mod1);// osc1 first ampmod
 			ta1+= modulator_get_val(osc1->amp_mod2);// osc1 second ampmod
 
-
 			// generate phase of oscillator 1
 			voice->phase1+= calc_phase_inc(&mini->osc1,voice->midif,mini->tabx);
 
@@ -500,7 +499,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			float osc1_sample = table[choi[4]][ip1] ;
 			//}
 			//osc1 = oscillator(tf,choice[currentvoice][4],&phase1);
-			mod[mod_osc1_fm_out]=osc1_sample*(osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
+			mod[mod_osc1_fm_out]=osc1_sample*(*osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 			// ------------------------ calculate oscillator 2 ---------------------
 			common_osc_params osc2=&mini->osc2;
@@ -521,16 +520,15 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			mod[mod_osc2_fm_out] *= osc2_sample;// osc2 fm out
 
 			// ------------------------------------- mix the 2 oscillators pre filter
-			float temp=(param[14]*(1.f-ta1));
-			temp*=osc1_sample;
-			temp+=osc2_sample*(param[29]*(1.f-ta2));
-			temp*=0.5f;// get the volume of the sum into a normal range	
-			temp+=anti_denormal;
+			float mixed_oscillator_sample=osc1_sample*(osc1->volume_c*(1.f-ta1));
+			mixed_oscillator_sample+=osc2_sample*(osc2->volume_c*(1.f-ta2));
+			mixed_oscillator_sample*=0.5f;// get the volume of the sum into a normal range	
+			mixed_oscillator_sample+=anti_denormal;
 
 			// ------------- calculate the filter settings ------------------------------
 			float morph_mod_amt = 1.f-modulator_get_val(mini->morph_mod1);
 			morph_mod_amt+= 1.f-modulator_get_val(mini->morph_mod2);
-			float mo = param[56]*morph_mod_amt;
+			float mo = morph_c*morph_mod_amt;//TODO: do we really want multiplicative modulation?
 
 
 			//The next three lines just clip to the [0,1] interval
@@ -538,24 +536,17 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			float clib2 = fabs (mo-1.0f);
 			mo = 0.5*(clib1 + 1.0f-clib2);
 
-			filter_settings s1;
-			filter_settings s2;
-			filter_settings s3;
+			filter_settings s[3];
 			
-			morph_filters(s1,voice->filter_settings[0][0],voice->filter_settings[0][1],mo);
-			morph_filters(s2,voice->filter_settings[1][0],voice->filter_settings[1][1],mo);
-			morph_filters(s3,voice->filter_settings[2][0],voice->filter_settings[2][1],mo);
-
-			float srate=mini->srate;
-			s1.f*=srate;
-			s2.f*=srate;
-			s3.f*=srate;
-
-			s1.f = approx_sine(s1.f);
-			s2.f = approx_sine(s2.f);
-			s3.f = approx_sine(s3.f);
+			for(int i=0; i<3; i++) {
+				morph_filters(s[i],filt_settings[i][0],filt_settings[i][1],mo);
+				s[i].f*=mini->srate;
+				s[i].f=approx_sine(s[i].f);
+				dofilter(s[i],&voice->filt[i],mixed_oscillator_sample)
+			}
 			
-			mod[mod_filter]=calcfilters(&voice->filts);
+			filter* filts=&voice->filt;
+			mod[mod_filter]=filts[0].low*s[0].v + filts[1].band*s[1].v + filts[2].band*s[2].v;
 			//---------------------------------- amplitude shaping
 
 			result = (1.f-modulator_get_val(mini->amp_mod));///_multitemp;
@@ -657,7 +648,7 @@ static void initEngines(minicomputer* mini) {
 }
 
 static void waveTableInit() {
-	float PI=3.145;
+#define PI 3.14159265358979;
 	float increment = (float)(PI*2) / (float)TableSize;
 	float x = 0.0f;
 	float tri = -0.9f;
@@ -665,8 +656,7 @@ static void waveTableInit() {
 	// calculate wavetables
 	for (i=0; i<TableSize; i++)
 	{
-		table[0][i] = (float)((float)sin(x+(
-		                                    (float)2.0f*(float)PI)));
+		table[0][i] = sinf(x+(2.0f*PI));
 		x += increment;
 		table[1][i] = (float)i/tabF*2.f-1.f;// ramp up
 
@@ -690,27 +680,27 @@ static void waveTableInit() {
 			table[7][i] = 0.9f;
 		else table [7][i] = -0.9f;
 
-		table[8][i]=(float) (
-		                     ((float)sin(x+((float)2.0f*(float)PI))) +
-		                     ((float)sin(x*2.f+((float)2.0f*(float)PI)))+
-		                     ((float)sin(x*3.f+((float)2.0f*(float)PI)))+
-		                     ((float)sin(x*4.f+((float)2.0f*(float)PI)))*0.9f+
-		                     ((float)sin(x*5.f+((float)2.0f*(float)PI)))*0.8f+
-		                     ((float)sin(x*6.f+((float)2.0f*(float)PI)))*0.7f+
-		                     ((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.6f+
-		                     ((float)sin(x*8.f+((float)2.0f*(float)PI)))*0.5f
-		                     ) / 8.0f;	
+		table[8][i]= (
+		              (sinf(x+(2.0f*PI))) +
+		              (sinf(x*2.f+(2.0f*PI)))+
+		              (sinf(x*3.f+(2.0f*PI)))+
+		              (sinf(x*4.f+(2.0f*PI)))*0.9f+
+		              (sinf(x*5.f+(2.0f*PI)))*0.8f+
+		              (sinf(x*6.f+(2.0f*PI)))*0.7f+
+		              (sinf(x*7.f+(2.0f*PI)))*0.6f+
+		              (sinf(x*8.f+(2.0f*PI)))*0.5f
+		              ) / 8.0f;	
 
-		table[9][i]=(float) (
-		                     ((float)sin(x+((float)2.0f*(float)PI))) +
-		                     ((float)sin(x*3.f+((float)2.0f*(float)PI)))+
-		                     ((float)sin(x*5.f+((float)2.0f*(float)PI)))+
-		                     ((float)sin(x*7.f+((float)2.0f*(float)PI)))*0.9f+
-		                     ((float)sin(x*9.f+((float)2.0f*(float)PI)))*0.8f+
-		                     ((float)sin(x*11.f+((float)2.0f*(float)PI)))*0.7f+
-		                     ((float)sin(x*13.f+((float)2.0f*(float)PI)))*0.6f+
-		                     ((float)sin(x*15.f+((float)2.0f*(float)PI)))*0.5f
-		                     ) / 8.0f;
+		table[9][i]= (
+		              (sinf(x+(2.0f*PI))) +
+		              (sinf(x*3.f+(2.0f*PI)))+
+		              (sinf(x*5.f+(2.0f*PI)))+
+		              (sinf(x*7.f+(2.0f*PI)))*0.9f+
+		              (sinf(x*9.f+(2.0f*PI)))*0.8f+
+		              (sinf(x*11.f+(2.0f*PI)))*0.7f+
+		              (sinf(x*13.f+(2.0f*PI)))*0.6f+
+		              (sinf(x*15.f+(2.0f*PI)))*0.5f
+		              ) / 8.0f;
 
 		table[10][i]=(float)(sin((double)i/(double)TableSize+(sin((double)i*4))/2))*0.5;
 		table[11][i]=(float)(sin((double)i/(double)TableSize*(sin((double)i*6)/4)))*2.;
@@ -741,25 +731,9 @@ static void waveTableInit() {
 
 	// miditable for notes to frequency
 	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
+#undef PI
 }
 
-static void initOSC(minicomputer* mini) {
-	// ------------------------ OSC Init ------------------------------------   
-	/* start a new server on port definied where oport points to */
-	mini->st = lo_server_thread_new(oport, error);
-
-	/* add method that will match /Minicomputer/choice with three integers */
-	lo_server_thread_add_method(mini->st, "/Minicomputer/choice", "iii", generic_handler, mini);
-
-	/* add method that will match the path /Minicomputer, with three numbers, int (voicenumber), int (parameter) and float (value) 
-	*/
-	lo_server_thread_add_method(mini->st, "/Minicomputer", "iif", foo_handler, mini);
-
-	/* add method that will match the path Minicomputer/quit with one integer */
-	lo_server_thread_add_method(mini->st, "/Minicomputer/quit", "i", quit_handler, mini);
-
-	lo_server_thread_start(mini->st);
-}
 /** @brief initialization
  *
  * preparing for instance the waveforms
@@ -822,43 +796,6 @@ static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
 }
 
 // ******************************************** OSC handling for editors ***********************
-//!\name OSC routines
-//!{ 
-/** @brief OSC error handler 
- *
- * @param num errornumber
- * @param pointer msg errormessage
- * @param pointer path where it occured
- */
-static inline void error(int num, const char *msg, const char *path)
-{
-	printf("liblo server error %d in path %s: %s\n", num, path, msg);
-	fflush(stdout);
-}
-
-/** catch any incoming messages and display them. returning 1 means that the
- * message has not been fully handled and the server should try other methods 
- *
- * @param pointer path osc path
- * @param pointer types
- * @param argv pointer to array of arguments 
- * @param argc amount of arguments
- * @param pointer data
- * @param pointer user_data
- * @return int 0 if everything is ok, 1 means message is not fully handled
- * */
-static inline int generic_handler(const char *path, const char *types, lo_arg **argv,
-                                  int argc, void *data, void *user_data)
-{
-
-	if ( (argv[0]->i < _MULTITEMP) && (argv[1]->i < _CHOICEMAX) )
-	{	
-		((minicomputer*) user_data)->engines[argv[0]->i]->choice[argv[1]->i]=argv[2]->i;
-		return 0;
-	}
-	else return 1;
-
-}
 
 /** specific message handler
  *
