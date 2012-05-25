@@ -166,6 +166,23 @@ static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 	return &result->e;
 }
 
+static engineblock* free_note_minicomputer(minicomputer* mini, unsigned char index) {
+	engineblock* result=mini->noteson[index];
+	if(result) {
+		result->h.previous->h.next=result->h.next;
+		if(result->h.next) {
+			result->h.next->h.previous=result->h.previous;
+		}
+		mini->noteson[index]=NULL;
+		mini->freeblocks.previous->h.next=result;
+		result->h.next=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
+		result->h.previous=mini->freeblocks.previous;
+		mini->freeblocks.previous=result;
+	}	
+	return result;
+}
+
+
 static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 	while(lv2_event_is_valid(&mini->in_iterator)) {
 		uint8_t* data;
@@ -270,11 +287,11 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 						fprintf(stderr, "Note Off event on Channel %2d: %5d      \r",         
 						        c, evt[1]);
 #endif							
-						engine* voice=&mini->noteson[c]->e;
+						engineblock* voice=free_note_minicomputer(mini,c);
 						if (voice) {
-							egStop(voice->envelope_generator+0);  
+							egStop(&voice->e.envelope_generator[0]);  
 							for(int i=1; i<7; i++) {
-								if (mini->es[i].EGrepeat_c == 0) egStop(voice->envelope_generator+i);
+								if (mini->es[i].EGrepeat_c == 0) egStop(&voice->e.envelope_generator[i]);
 							}
 						}
 						break;      
@@ -304,6 +321,7 @@ filter_settings get_filter_settings(filter_ports ports) {
 	result.f=*ports.f_p;
 	result.q=*ports.q_p;
 	result.v=*ports.v_p;
+	return result;
 }
 
 filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo) {
@@ -314,6 +332,7 @@ filter_settings morph_filters(filter_settings in1, filter_settings in2, float mo
 	result.f = in1.f*morph+in2.f*mo;
 	result.q = in1.q*morph+in2.q*mo;
 	result.v = in1.v*morph+in2.v*mo;
+	return result;
 }
 
 float wrap_phase(float phase) {
@@ -414,14 +433,29 @@ float* get_wavetable(float* port) {
 	}
 	return table[index];
 }
+void clear_filters(minicomputer* mini) {
+	for(int i=0; i<_MULTITEMP; i++) {
+		engine* voice=&mini->engines[i].e;
+		for(int j=0; j<3; j++) {
+			voice->filt[j].low  = 0.f;
+			voice->filt[j].high = 0.f;
+			voice->filt[j].band = 0.f;
+		}
+		voice->phase1 = 0.f;
+		voice->phase2 = 0.f;
+		memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
+	}
+	mini->mod_osc_phase = 0.f;
+}
 
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
+	
+	if(*mini->clear_filter_p>0) {
+		clear_filters(mini);
+	}
 
-	float *bufferMixLeft = mini->MixLeft_p;
-	float *bufferMixRight = mini->MixRight_p;
-	float *bufferAux1 =mini->Aux1_p;
-	float *bufferAux2 =mini->Aux2_p;
+	float *audio_out_p=mini->audio_out_p;
 	
 	calc_envelopes_params(mini);
 	lookup_mod_tables(mini);
@@ -455,10 +489,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	for (index = 0; index < nframes; ++index) 
 	{
 		handlemidi(mini,index);
-		bufferMixLeft[index]=0.f;
-		bufferMixRight[index]=0.f;
-		bufferAux1[index]=0.f;
-		bufferAux2[index]=0.f;
+		audio_out_p[index]=0.f;
 		
 		int ip3=phase_to_table_index(mini->mod_osc_phase);
 
@@ -599,14 +630,9 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			result += tdelay * (*mini->delay_volume_p);
 
 			// --------------------------------- output
-			float *buffer = (float*) jack_port_get_buffer(voice->port, nframes);
-			buffer[index] = result * param[101];
-			bufferaux1[index] += result * param[108];
-			bufferaux2[index] += result * param[109];
-			result *= param[106]; // mix volume
-			buffermixleft[index] += result * (1.f-param[107]);
-			buffermixright[index] += result * param[107];
+			audio_out_p[index] += result; // output volume
 		}
+		audio_out_p[index]*= *mini->audio_out_volume_p;
 	}
 }
 
@@ -627,8 +653,8 @@ static void initEngine(engine* voice,int delayBufferSize) {
 
 static void initEngines(minicomputer* mini) {
 	memset(mini->noteson,0,sizeof(mini->noteson));
-	mini->freeblocks.previous=(minicomputer*)&mini->freeblocks;
-	mini->freeblocks.next=(minicomputer*)&mini->freeblocks;
+	mini->freeblocks.previous=(engineblock*)&mini->freeblocks;
+	mini->freeblocks.next=(engineblock*)&mini->freeblocks;
 
 	mini->modulator[mod_none] =0.f;
 	
@@ -638,7 +664,7 @@ static void initEngines(minicomputer* mini) {
 		e->h.next=mini->freeblocks.next;
 		e->h.next->h.previous=e;
 		mini->freeblocks.next=e;
-		e->h.previous=(engineblock*)mini->freeblocks;
+		e->h.previous=(engineblock*)&mini->freeblocks;
 	}
 }
 
@@ -744,94 +770,20 @@ static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, doub
 	// depending on it the delaybuffer
 	mini->maxDelayTime = (int)s_rate;
 	initEngines(mini);
-	initOSC(mini);
+	
 	static pthread_once_t initialized = PTHREAD_ONCE_INIT;
 	pthread_once(&initialized, waveTableInit);
 
-	/* we register the output ports and tell jack these are 
-	 * terminal ports which means we don't 
-	 * have any input ports from which we could somhow 
-	 * feed our output */
-	port[10] = jack_port_register(client, "aux out 1", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[11] = jack_port_register(client, "aux out 2", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-
-	// would like to create mix ports last because qjackctrl tend to connect automatic the last ports
-	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
-
-	// generate the delaybuffers for each voice
-	int k;
 	mini->delayI=0;
 #ifdef _DEBUG
 	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
 #endif
 
+	return mini;
 } // end of initialization
 
-static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
-	engineblock* result=mini->noteson[index];
-	if(result) {
-		result->h.previous->h.next=result->h.next;
-		if(result->h.next) {
-			result->h.next->h.previous=result->h.previous;
-		}
-		mini->noteson[index]=NULL;
-		mini->freeblocks.previous->h.next=result;
-		result->h.next=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
-		result->h.previous=mini->freeblocks.previous;
-		mini->freeblocks.previous=result;
-	}	
-}
 
-// ******************************************** OSC handling for editors ***********************
 
-/** specific message handler
- *
- * @param pointer path osc path
- * @param pointer types
- * @param argv pointer to array of arguments 
- * @param argc amount of arguments
- * @param pointer data
- * @param pointer user_data
- * @return int 0 if everything is ok, 1 means message is not fully handled
- */
-static inline int foo_handler(const char *path, const char *types, lo_arg **argv, int argc,
-                              void *data, void *user_data)
-{
-	minicomputer* mini= (minicomputer*) data;
-	/* example showing pulling the argument values out of the argv array */
-	int voice =  argv[0]->i;
-	engine* voice=mini->engines[voice];
-	int i =  argv[1]->i;
-	if ((voice<_MULTITEMP)&&(i>0) && (i<_PARACOUNT))  {
-		voice->parameter[i]=argv[2]->f;
-	}
-	float ** EG=voice->EG;
-	float * EGrepeat=voice->EGrepeat;
-	switch (i) {
-		// reset the filters 
-		case 0:{
-			voice->low[0]	= 0.f;
-			voice->high[0]	= 0.f;
-			voice->band[0] = 0.f;
-			voice->low[1]	= 0.f;
-			voice->high[1]	= 0.f;
-			voice->band[1] = 0.f;
-			voice->low[2]	= 0.f;
-			voice->high[2]	= 0.f;
-			voice->band[2] = 0.f;
-			voice->phase1 = 0.f;
-			voice->phase2 = 0.f;
-			voice->mod_osc_phase = 0.f;
-			memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
-			break;}
-
-	}
-#ifdef _DEBUG
-	printf("%i %i %f \n",voice,i,argv[2]->f);
-#endif   
-		return 0;
-}
 
 LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 {

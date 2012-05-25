@@ -200,13 +200,10 @@ typedef struct _minicomputer {
 	
 	int delayI,delayO;
 	
-	float clear_filter;
+	float* clear_filter_p;
 	
-	// variables
-	float *MixLeft_p;
-	float *MixRight_p;
-	float *Aux1_p;
-	float *Aux2_p;
+	float *audio_out_volume_p;
+	float *audio_out_p;
 
 	LV2_Event_Buffer *MidiIn;
 	LV2_Event_Iterator in_iterator;
@@ -214,12 +211,10 @@ typedef struct _minicomputer {
 	LV2_Event_Feature* event_ref;
 	int midi_event_id;
 
-	float lfo;
 	float tabX ;
 	float srate;
 	float srDivisor;
 	int maxDelayTime;
-	unsigned int bufsize;
 
 	float modulator[_MODCOUNT] __attribute__((aligned (16)));
 
