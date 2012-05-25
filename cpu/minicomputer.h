@@ -75,6 +75,7 @@ typedef struct _modulator_selector {
 
 typedef struct _common_osc_params {
 	float* waveform_p;
+	
 	float* volume_p;
 	float volume_c;
 	
@@ -169,7 +170,7 @@ static float midi2freq [128]  __attribute__((aligned (16)));
 typedef struct _minicomputer {
 	engineblock * noteson[NUM_MIDI];
 	listheader freeblocks;
-	engineblock* inuse;
+	engineblock engines[_MULTITEMP];
 	
 	float* morph_p;
 	filter_ports filt_settings[3][2];
@@ -186,8 +187,8 @@ typedef struct _minicomputer {
 	
 	mod_selector amp_mod;
 	
-	
-	mod_selector mod_osc;
+	float* mod_osc_freq_p;
+	float* mod_osc_waveform_p;
 	float mod_osc_phase;
 	
 	float delay_amount;

@@ -161,12 +161,7 @@ static engine* use_note_minicomputer(minicomputer* mini, unsigned char index) {
 
 	mini->freeblocks.next=rh.next;
 	rh.next->h.previous=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
-	rh.previous=(engineblock*)&mini->inuse; //using the fact that the next index is stored first;
-	rh.next=mini->inuse;
-	if(mini->inuse) {
-		mini->inuse->h.previous=result;
-	}
-	mini->inuse=result;
+
 	mini->noteson[index]=result;
 	return &result->e;
 }
@@ -404,10 +399,16 @@ void calc_envelopes_params(minicomputer* mini) {
 	}
 }
 
+float* get_wavetable(float* port) {
+	int index =(int)*port;
+	if(index<0 || index>=_WAVECOUNT) {
+		index=0;
+	}
+	return table[index];
+}
+
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
-	float tf,tf1,tf2,tf3,ta1,ta2,ta3,morph,result,tdelay;
-	float delayMod;
 
 	float *bufferMixLeft = mini->MixLeft_p;
 	float *bufferMixRight = mini->MixRight_p;
@@ -427,6 +428,11 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	}
 
 	float morph_c=*mini->morph_p;
+	float osc2_sync_factor=1.0f-(*mini->osc2_sync_p>0);
+	
+	float* osc1_table=get_wavetable(mini->osc1.waveform_p);
+	float* osc2_table=get_wavetable(mini->osc2.waveform_p);
+	float* mod_osc_table=get_wavetable(mini->mod_osc_waveform_p);
 	
 	float * mod = mini->modulator;
 	
@@ -439,6 +445,16 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 		bufferMixRight[index]=0.f;
 		bufferAux1[index]=0.f;
 		bufferAux2[index]=0.f;
+		
+		int ip3=phase_to_table_index(mini->mod_osc_phase);
+
+		mini->mod_osc_phase+= *mini->mod_osc_freq_p * mini->tabX;
+		mini->mod_osc_phase=wrap_phase(mini->mod_osc_phase);
+			
+		//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&mod_osc_phase);
+		// write the oscillator 3 output to modulators
+		mod[mod_osc] = mod_osc_table[ip3];
+
 		/*
 		 * I dont know if its better to separate the calculation blocks, so I try it
 		 * first calculating the envelopes
@@ -446,77 +462,66 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 		register unsigned int currentvoice;
 		for (currentvoice=0;currentvoice<_MULTITEMP;++currentvoice) // for each voice
 		{		
-			engine* voice=engines+currentvoice;
+			engine* voice=&mini->engines[currentvoice].e;
 
 			// calc the modulators
-			mod[mod_envelope1] =1.f-egcalc(voice,1);
-			mod[mod_envelope2] =1.f-egcalc(voice,2);
-			mod[mod_envelope3]=1.f-egcalc(voice,3);
-			mod[mod_envelope4]=1.f-egcalc(voice,4);
-			mod[mod_envelope5]=1.f-egcalc(voice,5);
-			mod[mod_envelope6]=1.f-egcalc(voice,6);
+			for(int i=0; i<6; i++) {
+				mod[mod_envelope1+i] = 1.f-egCalc(&voice->envelope_generator[i+1],&mini->es[i+1],mini->srDivisor);
+			}
+			
 			/**
 			 * calc the main audio signal
 			 */
-			// get the parameter settings
-			float * param = voice->parameter;
+
 			// casting floats to int for indexing the 3 oscillator wavetables with custom typecaster
 			int ip1=phase_to_table_index(voice->phase1);
 			int ip2=phase_to_table_index(voice->phase2);
-			int ip3=phase_to_table_index(voice->mod_osc_phase);
-
-			voice->mod_osc_phase=wrap_phase(voice->mod_osc_phase);
-
-			unsigned int * choi = voice->choice;
-			//modulator [currentvoice][14]=oscillator(parameter[currentvoice][90],choice[currentvoice][12],&mod_osc_phase);
-			// write the oscillator 3 output to modulators
-			mod[mod_osc] = table[choi[12]][ip3] ;
-
-			// --------------- calculate the parameters and modulations of main oscillators 1 and 2
-			oscillator_settings* osc1=&mini->osc1;
 			
-			ta1 = modulator_get_val(osc1->amp_mod1);// osc1 first ampmod
-			ta1+= modulator_get_val(osc1->amp_mod2);// osc1 second ampmod
+			// --------------- calculate the parameters and modulations of main oscillators 1 and 2
+			common_osc_params* osc1=&mini->osc1;
+			
+			float ta1 = modulator_get_val(osc1->amp_mod1);// osc1 first ampmod
+			ta1+= modulator_get_val(mini->osc1_amp_mod2);// osc1 second ampmod
 
 			// generate phase of oscillator 1
-			voice->phase1+= calc_phase_inc(&mini->osc1,voice->midif,mini->tabx);
+			voice->phase1+= calc_phase_inc(&mini->osc1,voice->midif,mini->tabX);
 
-			if(voice->phase1  >= tabf)
+			if(voice->phase1  >= tabF)
 			{
-				voice->phase1-= tabf;
+				voice->phase1-= tabF;
 				//if (mini->osc2_sync_p>0.f) phase2= 0; // sync osc2 to 1
 				// branchless sync:
-				voice->phase2-= voice->phase2*mini->osc2_sync_p;
+				voice->phase2*=osc2_sync_factor;
 
 				// if (*phase>=tabf) *phase = 0; //just in case of extreme fm
 			}
 
 			if(voice->phase1< 0.f)
 			{
-				voice->phase1+= tabf;
+				voice->phase1+= tabF;
 				//	if(*phase < 0.f) *phase = tabf-1;
 			}
-			float osc1_sample = table[choi[4]][ip1] ;
+			float osc1_sample = osc1_table[ip1] ;
 			//}
 			//osc1 = oscillator(tf,choice[currentvoice][4],&phase1);
 			mod[mod_osc1_fm_out]=osc1_sample*(*osc1->fm_output_vol_p*(1.f+ta1));//+parameter[currentvoice][13]*ta1);
 
 			// ------------------------ calculate oscillator 2 ---------------------
-			common_osc_params osc2=&mini->osc2;
+			common_osc_params* osc2=&mini->osc2;
 			
 			// first the modulations and frequencys
 
-			ta2 = modulator_get_val(osc2->amp_mod1); // osc2 first amp mod
-			ta3 = modulator_get_val(mini->osc2_fm_amp_mod);// osc2 second amp mod
+			float ta2 = modulator_get_val(osc2->amp_mod1); // osc2 first amp mod
+			float ta3 = modulator_get_val(mini->osc2_fm_amp_mod);// osc2 second amp mod
 			//tf/=3.f;		
 			//ta/=2.f;
-			mod[mod_osc2_fm_out] = (param[28]+param[28]*(1.f-ta3));// osc2 fm out
+			mod[mod_osc2_fm_out] = param[28]*(2.f-ta3));// osc2 fm out
 
 			// then generate the actual phase:
 			voice->phase2+= calc_phase_inc(&mini->osc2,voice->midif,mini->tabx);
 			voice->phase2=wrap_phase(voice->phase2);
 
-			float osc2_sample = table[choi[5]][ip2] ;
+			float osc2_sample = osc2_table[ip2] ;
 			mod[mod_osc2_fm_out] *= osc2_sample;// osc2 fm out
 
 			// ------------------------------------- mix the 2 oscillators pre filter
@@ -630,20 +635,18 @@ static void initParameters(float parameter[_PARACOUNT]) {
 static void initEngines(minicomputer* mini) {
 	minicomputer* mini= malloc(sizeof(minicomputer));
 	memset(mini->noteson,0,sizeof(mini->noteson));
-	mini->inuse=NULL;
 	mini->freeblocks.previous=(minicomputer*)&mini->freeblocks;
 	mini->freeblocks.next=(minicomputer*)&mini->freeblocks;
 
 	initEnvelopeSettings(&mini->es);
 	initParameters (mini->parameter);
-	unsigned int numvoices=8;
-	for(unsigned int i=0; i<numvoices; i++) {
-		engineblock* e=malloc(sizeof(engineblock));
+	for(unsigned int i=0; i<_MULTITEMP; i++) {
+		engineblock* e=&mini->engines[i];
 		initEngine(&e->e);
-		e->next=mini->freeblocks.next;
-		e->next.previous=e;
+		e->h.next=mini->freeblocks.next;
+		e->h.next->previous=e;
 		mini->freeblocks.next=e;
-		e->previous=(minicomputer*)mini->freeblocks;
+		e->h.previous=(minicomputer*)mini->freeblocks;
 	}
 }
 
@@ -929,4 +932,4 @@ static void cleanupMinicomputer(LV2_Handle instance) {
 
 static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *data){
 
-}	
+}
