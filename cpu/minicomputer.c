@@ -85,7 +85,7 @@ static inline float egCalc (EG* eg, envelope_settings* es, float srDivisor)
 			}
 			else 
 			{
-				if (es->EGrepeat_p==0)
+				if (es->EGrepeat_c==0)
 				{
 					eg->state=3; // stay on sustain
 				}
@@ -395,7 +395,15 @@ void calc_envelope_params(envelope_settings* es) {
 }
 void calc_envelopes_params(minicomputer* mini) {
 	for(int i=0; i<7; i++) {
-		calc_envelope_params(&mini->es[i]);
+		envelope_settings* es=&mini->es[i];
+		calc_envelope_params(es);
+		for(int j=0; j<_MULTITEMP; j++) {
+			EG* eg=&mini->engines[j].e.envelope_generator[i];
+			
+			if (es->EGrepeat_c && eg->EGstate == 4) {
+				egStart(eg);
+			}
+		}
 	}
 }
 
@@ -430,6 +438,12 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	float morph_c=*mini->morph_p;
 	float osc2_sync_factor=1.0f-(*mini->osc2_sync_p>0);
 	
+	float delayBufferSize=2*mini->maxDelayTime;
+	float delay_time_c=*mini->delay_time_p;
+	//Clamp to the interval [0,mini->maxDelayTime];
+	delay_time_c=0.5*(fabs(delay_time_c)+mini->maxDelayTime-fabs(delay_time_c-mini->maxDelayTime));
+	
+	
 	float* osc1_table=get_wavetable(mini->osc1.waveform_p);
 	float* osc2_table=get_wavetable(mini->osc2.waveform_p);
 	float* mod_osc_table=get_wavetable(mini->mod_osc_waveform_p);
@@ -455,6 +469,11 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 		// write the oscillator 3 output to modulators
 		mod[mod_osc] = mod_osc_table[ip3];
 
+		mini->delayI++;
+		if(mini->delayI >= delayBufferSize ) {
+			mini->delayI = 0;
+		}
+		
 		/*
 		 * I dont know if its better to separate the calculation blocks, so I try it
 		 * first calculating the envelopes
@@ -515,10 +534,10 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			float ta3 = modulator_get_val(mini->osc2_fm_amp_mod);// osc2 second amp mod
 			//tf/=3.f;		
 			//ta/=2.f;
-			mod[mod_osc2_fm_out] = param[28]*(2.f-ta3));// osc2 fm out
+			mod[mod_osc2_fm_out] = (*mini->osc2_fm_amp_mod.amount_p)*(1.f+1.f-ta3);// osc2 fm out
 
 			// then generate the actual phase:
-			voice->phase2+= calc_phase_inc(&mini->osc2,voice->midif,mini->tabx);
+			voice->phase2+= calc_phase_inc(&mini->osc2,voice->midif,mini->tabX);
 			voice->phase2=wrap_phase(voice->phase2);
 
 			float osc2_sample = osc2_table[ip2] ;
@@ -544,40 +563,40 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 			filter_settings s[3];
 			
 			for(int i=0; i<3; i++) {
-				morph_filters(s[i],filt_settings[i][0],filt_settings[i][1],mo);
+				s[i]=morph_filters(filt_settings[i][0],filt_settings[i][1],mo);
 				s[i].f*=mini->srate;
 				s[i].f=approx_sine(s[i].f);
-				dofilter(s[i],&voice->filt[i],mixed_oscillator_sample)
+				dofilter(s[i],&voice->filt[i],mixed_oscillator_sample);
 			}
 			
-			filter* filts=&voice->filt;
-			mod[mod_filter]=filts[0].low*s[0].v + filts[1].band*s[1].v + filts[2].band*s[2].v;
+			mod[mod_filter]=voice->filt[0].low*s[0].v + 
+							voice->filt[1].band*s[1].v +
+							voice->filt[2].band*s[2].v;
+							
 			//---------------------------------- amplitude shaping
 
-			result = (1.f-modulator_get_val(mini->amp_mod));///_multitemp;
+			float result = (1.f-modulator_get_val(mini->amp_mod));///_multitemp;
 			result *= mod[mod_filter];
-			result *= egcalc(voice,0);// the final shaping envelope
+			result *= egCalc(&voice->envelope_generator[0],&mini->es[0],mini->srDivisor);// the final shaping envelope
 
 			// --------------------------------- delay unit
-			if( voice->delayi>= delaybuffersize ) {
-				voice->delayi = 0;
-			}
-			delaymod = 1.f-modulator_get_val(mini->delay_mod);
 
-			voice->delayj = voice->delayi- ((param[111]* maxdelaytime)*delaymod);
+			float delaymod = 1.f-modulator_get_val(mini->delay_mod);
 
-			if( voice->delayj  < 0 ) {
-				voice->delayj += delaybuffersize;
-			}else if (voice->delayj>delaybuffersize) {
-				voice->delayj= 0;
+			int delayO = mini->delayI - ((delay_time_c* mini->maxDelayTime)*delaymod);
+
+			if(delayO  < 0 ) {
+				delayO += delayBufferSize;
+			}else if (delayO>delayBufferSize) {
+				delayO= 0;
 			}
-			tdelay = result * param[114] + (voice->delaybuffer [ voice->delayj ] * param[112] );
+			float tdelay = result * (*mini->delay_amount_p) +
+						  (voice->delayBuffer[delayO] * (*mini->delay_feedback_p));
 			tdelay += anti_denormal;
-			voice->delaybuffer[voice->delayi ] = tdelay;
+			voice->delayBuffer[mini->delayI] = tdelay;
 
 			mod[mod_delay]= tdelay;
-			result += tdelay * param[113];
-			voice->delayi=voice->delayi+1;
+			result += tdelay * (*mini->delay_volume_p);
 
 			// --------------------------------- output
 			float *buffer = (float*) jack_port_get_buffer(voice->port, nframes);
@@ -591,73 +610,46 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	}
 }
 
-static void initEngine(engine* voice) {
-	float* EGtrigger=voice->EGtrigger;
-	float* parameter=voice->parameter;
-	float* modulator=voice->modulator;
-	float* low=voice->low;
-	float* high=voice->high;
-	for (i=0;i<8;i++) // i is the number of envelope
+static void initEngine(engine* voice,int delayBufferSize) {
+	voice->delayBuffer=malloc(delayBufferSize);
+	for (int i=0;i<7;i++) // i is the number of envelope
 	{
-		voice->envelope_generator[i].EGTrigger=0;
+		voice->envelope_generator[i].EGtrigger=0;
 		voice->envelope_generator[i].EGstate=4; // released
 	}
-	modulator[mod_none] =0.f;// the none modulator, doing nothing
 	for (unsigned int i=0;i<3;++i) 
 	{
-		low[i]=0;
-		high[i]=0;
+		voice->filt[i].low=0;
+		voice->filt[i].high=0;
+		voice->filt[i].band=0;
 	}
-}
-static void initEnvelopeSettings(envelope_settings* es) {
-	es->attack=0.01f;
-	es->decay=0.01f;
-	es->sustain=1.0f;
-	es->release=0.0001f;
-	es->EGrepeat=0;
-}
-
-static void initParameters(float parameter[_PARACOUNT]) {
-	parameter[30]=100.f;
-	parameter[31]=0.5f;
-	parameter[33]=100.f; 
-	parameter[34]=0.5f;
-	parameter[40]=100.f;
-	parameter[41]=0.5f;
-	parameter[43]=100.f; 
-	parameter[44]=0.5f;
-	parameter[50]=100.f;
-	parameter[51]=0.5f;
-	parameter[53]=100.f; 
-	parameter[54]=0.5f;
 }
 
 static void initEngines(minicomputer* mini) {
-	minicomputer* mini= malloc(sizeof(minicomputer));
 	memset(mini->noteson,0,sizeof(mini->noteson));
 	mini->freeblocks.previous=(minicomputer*)&mini->freeblocks;
 	mini->freeblocks.next=(minicomputer*)&mini->freeblocks;
 
-	initEnvelopeSettings(&mini->es);
-	initParameters (mini->parameter);
+	mini->modulator[mod_none] =0.f;
+	
 	for(unsigned int i=0; i<_MULTITEMP; i++) {
 		engineblock* e=&mini->engines[i];
-		initEngine(&e->e);
+		initEngine(&e->e,mini->maxDelayTime*2);
 		e->h.next=mini->freeblocks.next;
-		e->h.next->previous=e;
+		e->h.next->h.previous=e;
 		mini->freeblocks.next=e;
-		e->h.previous=(minicomputer*)mini->freeblocks;
+		e->h.previous=(engineblock*)mini->freeblocks;
 	}
 }
 
 static void waveTableInit() {
-#define PI 3.14159265358979;
+#define PI 3.14159265358979
 	float increment = (float)(PI*2) / (float)TableSize;
 	float x = 0.0f;
 	float tri = -0.9f;
 
 	// calculate wavetables
-	for (i=0; i<TableSize; i++)
+	for (int i=0; i<TableSize; i++)
 	{
 		table[0][i] = sinf(x+(2.0f*PI));
 		x += increment;
@@ -684,25 +676,25 @@ static void waveTableInit() {
 		else table [7][i] = -0.9f;
 
 		table[8][i]= (
-		              (sinf(x+(2.0f*PI))) +
-		              (sinf(x*2.f+(2.0f*PI)))+
-		              (sinf(x*3.f+(2.0f*PI)))+
-		              (sinf(x*4.f+(2.0f*PI)))*0.9f+
-		              (sinf(x*5.f+(2.0f*PI)))*0.8f+
-		              (sinf(x*6.f+(2.0f*PI)))*0.7f+
-		              (sinf(x*7.f+(2.0f*PI)))*0.6f+
-		              (sinf(x*8.f+(2.0f*PI)))*0.5f
+		              sinf(x+(2.0f*PI)) +
+		              sinf(x*2.f+(2.0f*PI))+
+		              sinf(x*3.f+(2.0f*PI))+
+		              sinf(x*4.f+(2.0f*PI))*0.9f+
+		              sinf(x*5.f+(2.0f*PI))*0.8f+
+		              sinf(x*6.f+(2.0f*PI))*0.7f+
+		              sinf(x*7.f+(2.0f*PI))*0.6f+
+		              sinf(x*8.f+(2.0f*PI))*0.5f
 		              ) / 8.0f;	
 
 		table[9][i]= (
-		              (sinf(x+(2.0f*PI))) +
-		              (sinf(x*3.f+(2.0f*PI)))+
-		              (sinf(x*5.f+(2.0f*PI)))+
-		              (sinf(x*7.f+(2.0f*PI)))*0.9f+
-		              (sinf(x*9.f+(2.0f*PI)))*0.8f+
-		              (sinf(x*11.f+(2.0f*PI)))*0.7f+
-		              (sinf(x*13.f+(2.0f*PI)))*0.6f+
-		              (sinf(x*15.f+(2.0f*PI)))*0.5f
+		              sinf(x+(2.0f*PI)) +
+		              sinf(x*3.f+(2.0f*PI))+
+		              sinf(x*5.f+(2.0f*PI))+
+		              sinf(x*7.f+(2.0f*PI))*0.9f+
+		              sinf(x*9.f+(2.0f*PI))*0.8f+
+		              sinf(x*11.f+(2.0f*PI))*0.7f+
+		              sinf(x*13.f+(2.0f*PI))*0.6f+
+		              sinf(x*15.f+(2.0f*PI))*0.5f
 		              ) / 8.0f;
 
 		table[10][i]=(float)(sin((double)i/(double)TableSize+(sin((double)i*4))/2))*0.5;
@@ -733,7 +725,7 @@ static void waveTableInit() {
 	table[6][9] = 0.2f;
 
 	// miditable for notes to frequency
-	for (i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
+	for (int i = 0;i<128;++i) midi2freq[i] = 8.1758f * pow(2,(i/12.f));
 #undef PI
 }
 
@@ -744,6 +736,13 @@ static void waveTableInit() {
 static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features) 
 {
 	minicomputer* mini= malloc(sizeof(minicomputer));
+	
+	// handling the sampling frequency
+	mini->tabX = 4096.f / s_rate;
+	mini->srate = 3.145f/ s_rate;
+	mini->srDivisor = 1.f / s_rate * 100000.f;
+	// depending on it the delaybuffer
+	mini->maxDelayTime = (int)s_rate;
 	initEngines(mini);
 	initOSC(mini);
 	static pthread_once_t initialized = PTHREAD_ONCE_INIT;
@@ -760,23 +759,9 @@ static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, doub
 	port[8] = jack_port_register(client, "mix out left", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 	port[9] = jack_port_register(client, "mix out right", JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsTerminal, 0);
 
-
-	bufsize = jack_get_buffer_size(client);
-
-	// handling the sampling frequency
-	tabX = 4096.f / s_rate;
-	srate = 3.145f/ s_rate;
-	srDivisor = 1.f / s_rate * 100000.f;
-	// depending on it the delaybuffer
-	maxDelayTime = (int)s_rate;
-	delayBufferSize = maxDelayTime*2;
 	// generate the delaybuffers for each voice
 	int k;
-	for (k=0; k<_MULTITEMP;++k)
-	{
-		delayI[k]=0;
-		delayJ[k]=0;
-	}
+	mini->delayI=0;
 #ifdef _DEBUG
 	printf("bsize:%d %d\n",delayBufferSize,maxDelayTime);
 #endif
@@ -788,12 +773,12 @@ static void free_note_minicomputer(minicomputer* mini, unsigned char index) {
 	if(result) {
 		result->h.previous->h.next=result->h.next;
 		if(result->h.next) {
-			result->h.next->previous=result->h.previous;
+			result->h.next->h.previous=result->h.previous;
 		}
 		mini->noteson[index]=NULL;
 		mini->freeblocks.previous->h.next=result;
-		result->next=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
-		result->previous=mini->freeblocks.previous;
+		result->h.next=(engineblock*)&mini->freeblocks; //using the fact that the next index is stored first;
+		result->h.previous=mini->freeblocks.previous;
 		mini->freeblocks.previous=result;
 	}	
 }
@@ -841,71 +826,6 @@ static inline int foo_handler(const char *path, const char *types, lo_arg **argv
 			memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
 			break;}
 
-		case 60:EG[1][1]=argv[2]->f;break;
-		case 61:EG[1][2]=argv[2]->f;break;
-		case 62:EG[1][3]=argv[2]->f;break;
-		case 63:EG[1][4]=argv[2]->f;break;
-		case 64:
-		{
-			EGrepeat[1] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[1] > 0 ) egStart(voice,1);
-			break;
-		}
-			case 65:EG[2][1]=argv[2]->f;break;
-			case 66:EG[2][2]=argv[2]->f;break;
-			case 67:EG[2][3]=argv[2]->f;break;
-			case 68:EG[2][4]=argv[2]->f;break;
-		case 69:
-		{
-			EGrepeat[2] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[2] > 0 ) egStart(voice,2);
-			break;
-		}
-			case 70:EG[3][1]=argv[2]->f;break;
-			case 71:EG[3][2]=argv[2]->f;break;
-			case 72:EG[3][3]=argv[2]->f;break;
-			case 73:EG[3][4]=argv[2]->f;break;
-		case 74:
-		{
-			EGrepeat[3] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[3] > 0 ) egStart(voice,3);
-			break;
-		}
-			case 75:EG[4][1]=argv[2]->f;break;
-			case 76:EG[4][2]=argv[2]->f;break;
-			case 77:EG[4][3]=argv[2]->f;break;
-			case 78:EG[4][4]=argv[2]->f;break; 
-		case 79:
-		{
-			EGrepeat[4] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[4] > 0 ) egStart(voice,4);
-			break;
-		}
-			case 80:EG[5][1]=argv[2]->f;break;
-			case 81:EG[5][2]=argv[2]->f;break;
-			case 82:EG[5][3]=argv[2]->f;break;
-			case 83:EG[5][4]=argv[2]->f;break;
-		case 84:
-		{
-			EGrepeat[5] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[5] > 0 ) egStart(voice,5);
-			break;
-		}
-			case 85:EG[6][1]=argv[2]->f;break;
-			case 86:EG[6][2]=argv[2]->f;break;
-			case 87:EG[6][3]=argv[2]->f;break;
-			case 88:EG[6][4]=argv[2]->f;break;
-		case 89:
-		{
-			EGrepeat[6] = (argv[2]->f>0) ? 1:0;
-			if (EGrepeat[6] > 0 ) egStart(voice,6);
-			break;
-		}
-			case 102:EG[0][1]=argv[2]->f;break;
-			case 103:EG[0][2]=argv[2]->f;break;
-			case 104:EG[0][3]=argv[2]->f;break;
-			case 105:EG[0][4]=argv[2]->f;break;
-
 	}
 #ifdef _DEBUG
 	printf("%i %i %f \n",voice,i,argv[2]->f);
@@ -917,7 +837,7 @@ LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 {
 	switch (index) {
 		case 0:
-			return miniDescriptor;
+			return &miniDescriptor;
 		default:
 			return NULL;
 	}
@@ -925,6 +845,9 @@ LV2_SYMBOL_EXPORT const LV2_Descriptor *lv2_descriptor(uint32_t index)
 
 static void cleanupMinicomputer(LV2_Handle instance) {
 	minicomputer* mini=(minicomputer*)instance;
+	for(int i=0; i<_MULTITEMP; i++) {
+		free(mini->engines[i].e.delayBuffer);
+	} 
 	lo_server_thread_free(mini->st); 	
 	free(instance);
 }

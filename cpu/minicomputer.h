@@ -137,18 +137,18 @@ typedef struct _engine {
 	float mod_midi_note;
 	float mod_midi_velocity;
 	
-	EG envelope_generator[8];
+	EG envelope_generator[7];
 	
 	filter filt[3];
 	
-	float delayBuffer[96000] __attribute__((aligned (16)));
+	float * delayBuffer;
 
 	float midif  __attribute__((aligned (16)));
 
 	float  *port; // _multitemp * ports + 2 mix and 2 aux
 
 	unsigned int lastnote;
-	int delayI,delayJ;
+	
 } engine;
 
 struct _engineblock;
@@ -191,12 +191,14 @@ typedef struct _minicomputer {
 	float* mod_osc_waveform_p;
 	float mod_osc_phase;
 	
-	float delay_amount;
-	float delay_time;
-	float delay_feedback;
-	float delay_volume;
+	
+	float* delay_amount_p;
+	float* delay_time_p;
+	float* delay_feedback_p;
+	float* delay_volume_p;
 	mod_selector delay_mod;
 	
+	int delayI,delayO;
 	
 	float clear_filter;
 	
@@ -215,8 +217,7 @@ typedef struct _minicomputer {
 	float lfo;
 	float tabX ;
 	float srate;
-	float srDivisor ;
-	int delayBufferSize;
+	float srDivisor;
 	int maxDelayTime;
 	unsigned int bufsize;
 
