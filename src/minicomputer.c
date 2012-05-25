@@ -262,7 +262,6 @@ static inline void handlemidi(minicomputer* mini, unsigned int maxindex) {
 					{
 						engine* use=use_note_minicomputer(mini,evt[1]);
 						if(use) {
-							use->lastnote=evt[1];
 							use->midif=midi2freq[evt[1]];// lookup the frequency
 							use->mod_midi_note=evt[1]*0.007874f;// fill the value in as normalized modulator
 							use->mod_midi_velocity=(float)1.f-(evt[2]*0.007874f);// fill in the velocity as modulator
@@ -444,10 +443,19 @@ void clear_filters(minicomputer* mini) {
 		voice->phase1 = 0.f;
 		voice->phase2 = 0.f;
 		memset(voice->delayBuffer,0,sizeof(voice->delayBuffer));
+
+		for (int i=0;i<7;i++) // i is the number of envelope
+		{
+			voice->envelope_generator[i].EGtrigger=0;
+			voice->envelope_generator[i].EGstate=4; // released
+		}
 	}
 	mini->mod_osc_phase = 0.f;
 }
 
+void activateMinicomputer (LV2_Handle instance) {
+	clear_filters((minicomputer*)instance);
+}
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 	minicomputer* mini= (minicomputer*)instance;
 	
@@ -638,17 +646,7 @@ static void run_minicomputer(LV2_Handle instance, uint32_t nframes) {
 
 static void initEngine(engine* voice,int delayBufferSize) {
 	voice->delayBuffer=malloc(delayBufferSize);
-	for (int i=0;i<7;i++) // i is the number of envelope
-	{
-		voice->envelope_generator[i].EGtrigger=0;
-		voice->envelope_generator[i].EGstate=4; // released
-	}
-	for (unsigned int i=0;i<3;++i) 
-	{
-		voice->filt[i].low=0;
-		voice->filt[i].high=0;
-		voice->filt[i].band=0;
-	}
+
 }
 
 static void initEngines(minicomputer* mini) {

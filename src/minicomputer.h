@@ -146,8 +146,6 @@ typedef struct _engine {
 	float midif  __attribute__((aligned (16)));
 
 	float  *port; // _multitemp * ports + 2 mix and 2 aux
-
-	unsigned int lastnote;
 	
 } engine;
 
@@ -228,14 +226,13 @@ static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *
 static LV2_Handle instantiateMinicomputer(const LV2_Descriptor *descriptor, double s_rate, const char *path, const LV2_Feature * const* features);
 static void run_minicomputer(LV2_Handle instance, uint32_t nframes);
 static void cleanupMinicomputer(LV2_Handle instance);
-
+static void activateMinicomputer(LV2_Handle instance);
 const LV2_Descriptor miniDescriptor ={
 	.URI=MINICOMPUTER_URI, 
-	.activate=NULL,
 	.cleanup=cleanupMinicomputer,
 	.connect_port=connect_port_minicomputer,
+	.activate=activateMinicomputer,
 	.deactivate=NULL,
-	.activate=NULL,
 	.instantiate=instantiateMinicomputer,
 	.run=run_minicomputer,
 	.extension_data=NULL

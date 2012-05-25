@@ -1,0 +1,177 @@
+midi_out;
+audio_out;
+clear;
+osc1 {
+	volume;
+	waveform;
+	fm_output_volume;
+	pitch {
+		fix;
+		fixed;
+		tuned;
+	}
+	boost_modulation;
+	freqmod1 {
+		modulator;
+		amount;
+	}
+	freqmod2 {
+		modulator;
+		amount;
+	}
+	ampmod1 {
+		modulator;
+		amount;
+	}
+	ampmod2 {
+		modulator;
+		amount;
+	}
+}
+osc2 {
+	volume;
+	waveform;
+	fm_output_volume;
+	sync_to_osc1;
+	pitch {
+		fix;
+		fixed;
+		tuned;
+	}
+	boost_modulation;
+	freqmod1 {
+		modulator;
+		amount;
+	}
+	freqmod2 {
+		modulator;
+		amount;
+	}
+	ampmod1 {
+		modulator;
+		amount;
+	}
+	fm_out_ampmod {
+		modulator;
+		amount;
+	}
+}
+filters {
+	filter1 {
+		leftsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+		rightsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+	}
+	filter2 {
+		leftsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+		rightsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+	}
+	filter3 {
+		leftsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+		rightsettings {
+			frequency;
+			resonance;
+			volume;
+		}
+	}
+	morph;
+	morph_mod1 {
+		modulator;
+		amount;
+	}
+	morph_mod2 {
+		modulator;
+		amount;
+	}	
+}
+modulators {
+	envelope1 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	envelope2 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	envelope3 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	envelope4 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	envelope5 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	envelope6 {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	modulation_oscillator {
+		frequency;
+		waveform;
+	}
+}
+volume {
+	volume_modulator {
+		modulator;
+		amount;
+	}
+	volume_envelope {
+		attack;
+		decay;
+		sustain;
+		release;
+		repeat;
+	}
+	volume;
+}
+delay {
+	input_volume;
+	time;
+	time_modulator {
+		modulator;
+		amount;
+	}
+	feedback;
+	output_volume;
+}
