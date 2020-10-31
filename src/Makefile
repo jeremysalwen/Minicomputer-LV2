@@ -1,6 +1,6 @@
 OBJECTS = minicomputer.o
 LIBRARY = libminicomputer.so
-TTLS = minicomputer manifest.ttl
+TTLS = minicomputer.ttl manifest.ttl
 CC = gcc
 CFLAGS += -std=c99 -Wall -Wextra -fPIC
 INSTALLDIR = $(DESTDIR)/usr/lib/lv2/
