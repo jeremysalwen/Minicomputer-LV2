@@ -219,7 +219,7 @@ typedef struct _minicomputer {
 	lo_server_thread st;
 } minicomputer;
 
-#define MINICOMPUTER_URI "urn:malte.steiner:plugins:minicomputer"
+#define MINICOMPUTER_URI "http://malte.steiner.org/lv2/minicomputer"
 
 static void connect_port_minicomputer(LV2_Handle instance, uint32_t port, void *data);
 
