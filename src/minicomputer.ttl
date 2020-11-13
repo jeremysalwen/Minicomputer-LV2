@@ -1,77 +1,97 @@
-@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix doap: <http://usefulinc.com/ns/doap#> .
-@prefix ev: <http://lv2plug.in/ns/ext/event#>.
-<urn:malte.steiner:plugins:minicomputer> a lv2:Plugin ;
-	a lv2:InstrumentPlugin;
-    doap:name "Minicomputer Synthesizer" ;
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix opts: <http://lv2plug.in/ns/ext/options#> .
+@prefix ev:   <http://lv2plug.in/ns/ext/event#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix unit: <http://lv2plug.in/ns/extensions/units#> .
+
+<http://malte.steiner.org/lv2/minicomputer>
+    a lv2:InstrumentPlugin, lv2:Plugin ;
+
+    lv2:optionalFeature <http://lv2plug.in/ns/lv2core#hardRTCapable> ;
+    
+    lv2:requiredFeature <http://lv2plug.in/ns/ext/event> ,
+                        <http://lv2plug.in/ns/ext/uri-map> ;
+	
+    lv2:port [
+        a lv2:AudioPort ;
+        a lv2:OutputPort ;
+        lv2:index 0 ;
+        lv2:symbol "out" ;
+        lv2:name "Audio Out" ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a ev:EventPort ;
+        lv2:index 1 ;
+        ev:supportsEvent <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
+        lv2:symbol "midi" ;
+        lv2:name "MIDI Input" ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a lv2:ControlPort ;
+        lv2:index 2 ;
+        lv2:symbol "volume" ;
+        lv2:name "Volume" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 2 ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a lv2:ControlPort ;
+        lv2:index 3 ;
+        lv2:symbol "osc1_fix_freq" ;
+        lv2:name "Fix Osc1 frequency" ;
+        lv2:portProperty lv2:toggled ;
+        lv2:default 0 ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a lv2:ControlPort ;
+        lv2:index 4 ;
+        lv2:symbol "osc1_fixed_freq" ;
+        lv2:name "Osc 1 Fixed Frequency" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1000 ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a lv2:ControlPort ;
+        lv2:index 5 ;
+        lv2:symbol "osc1_tuned_freq" ;
+        lv2:name "Osc 1 Transposition" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 17 ;
+    ] ,
+    [
+        a lv2:InputPort ;
+        a lv2:ControlPort ;
+        lv2:index 6 ;
+        lv2:symbol "osc1_tuned_freq" ;
+        lv2:name "Osc 1 Transposition" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 17 ;
+    ] ;
+    
+    doap:name "Minicomputer Synthetizer" ;
     doap:license <http://usefulinc.com/doap/licenses/gpl> ;
     doap:developer [
       foaf:name "Malte Steiner";
+      foaf:homepage <https://github.com/jeremysalwen/Minicomputer-LV2> ;
     ] ;
+    
     doap:maintainer [ 
       foaf:name "Jeremy Salwen";
       foaf:mbox <mailto:jeremysalwen@gmail.com>;
+      foaf:homepage <https://github.com/jeremysalwen/Minicomputer-LV2> ;
     ] ;
-    lv2:requiredFeature <http://lv2plug.in/ns/ext/event> ;
-    lv2:requiredFeature <http://lv2plug.in/ns/ext/uri-map> ;
-	
-    lv2:port [
-    a lv2:AudioPort ;
-    a lv2:OutputPort ;
-    lv2:index 0 ;
-    lv2:symbol "out" ;
-    lv2:name "Audio Out" ;
-    ],[
-    a lv2:InputPort;
-    a ev:EventPort;
-    lv2:index 1 ;
-    ev:supportsEvent <http://lv2plug.in/ns/ext/midi#MidiEvent>;
-    lv2:symbol "midi";
-    lv2:name "MIDI Input";
-    ],[
-    a lv2:InputPort;
-    a lv2:ControlPort;
-    lv2:index 2;
-    lv2:symbol "volume";
-    lv2:name "Volume";
-    lv2:default 1;
-    lv2:minimum 0;
-    lv2:maximum 2;
-    ],[
-    a lv2:InputPort;
-    a lv2:ControlPort;
-    lv2:index 3;
-    lv2:symbol "osc1_fix_freq";
-    lv2:name "Fix Osc1 frequency";
-    lv2:portProperty lv2:toggled;
-    lv2:default 0;
-    ],[
-    a lv2:InputPort;
-    a lv2:ControlPort;
-    lv2:index 4;
-    lv2:symbol "osc1_fixed_freq";
-    lv2:name "Osc 1 Fixed Frequency";
-    lv2:default 0;
-    lv2:minimum 0;
-    lv2:maximum 1000;
-    ],[
-    a lv2:InputPort;
-    a lv2:ControlPort;
-    lv2:index 5;
-    lv2:symbol "osc1_tuned_freq";
-    lv2:name "Osc 1 Transposition";
-    lv2:default 1;
-    lv2:minimum 0;
-    lv2:maximum 17;
-    ],[
-    a lv2:InputPort;
-    a lv2:ControlPort;
-    lv2:index 6;
-    lv2:symbol "osc1_tuned_freq";
-    lv2:name "Osc 1 Transposition";
-    lv2:default 1;
-    lv2:minimum 0;
-    lv2:maximum 17;
-    ]
-    .
+    
+    lv2:microVersion 1 ;
+    lv2:minorVersion 0 .
