@@ -6,7 +6,7 @@ CFLAGS += -std=c99 -Wall -Wextra -fPIC
 INSTALLDIR = $(DESTDIR)/usr/lib/lv2/
 INSTALLNAME = minicomputer.lv2/
 $(LIBRARY) : $(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) -shared -o $@
+	$(CC) $(CFLAGS) $(OBJECTS) -shared -o $@ -llo
 
 .SUFFIXES : .c .o
 
